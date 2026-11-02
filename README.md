@@ -198,6 +198,56 @@ For manual Docker Compose setup, pinned versions and troubleshooting, follow the
 
 > **Windows 提示**：`Makefile` 和部分脚本假设 bash。用 **WSL2** 或 **Git Bash** 执行；机器上没有 `make` 时，本节所有命令都给了等价的 `docker compose` 原生命令，可以直接复制。
 
+### 0. 先做一次：避开本机已被占用的端口
+
+这台机器上已经有 Postgres 或 Redis 在跑（另一个项目、一个 vllm 栈、本机自己装的数据库）时，直接 `up` 会停在这一句：
+
+```
+Error response from daemon: failed to set up container networking: driver failed
+programming external connectivity on endpoint agenticos-db-1 (...):
+Bind for 0.0.0.0:5432 failed: port is already allocated
+```
+
+这不是 Docker 坏了，是 compose 要给 `db` 占宿主机的 5432，而那个端口已经有人。**应用容器之间走 compose 内网**（`POSTGRES_HOST=db`），改映射不影响它们；5433 只是留给 psql / DBeaver 从宿主机连。
+
+在仓库根目录新建 `docker-compose.local.yml`（这个文件属于本机配置，不进仓库）：
+
+```yaml
+services:
+  db:
+    ports: !override ["5433:5432"]   # 5432 被别的服务占着时让开
+```
+
+> `!override` 是必须的：不带它，compose 会把新旧端口**合并**成"同时发布 5432 和 5433"，错误照旧。
+
+然后设一个环境变量，让后面**每一条** `docker compose` 命令（包括 `make` 包装的那些）都自动带上这层覆盖，不必再逐个加 `-f`：
+
+```bash
+# macOS / Linux / Git Bash —— 分隔符是冒号
+export COMPOSE_FILE="docker-compose.yml:docker-compose.override.yml:docker-compose.local.yml"
+
+# Windows PowerShell —— 分隔符是分号，写成冒号会报
+# CreateFile ... syntax is incorrect
+$env:COMPOSE_FILE="docker-compose.yml;docker-compose.override.yml;docker-compose.local.yml"
+```
+
+**最容易踩的坑**：compose 只会自动合并 `docker-compose.override.yml`，`docker-compose.local.yml` 是自定义名字，**不会自动合并**。所以只要有一条命令漏了 `-f`，db 就会按 5432 被重建，报上面那个错。设 `COMPOSE_FILE` 就是为了杜绝这种"某一条命令忘了带"。
+
+`export` 只对当前终端有效，新开窗口就没了。这台机器长期需要让端口的话，把它写进 shell 配置一次性解决：
+
+```bash
+echo 'export COMPOSE_FILE="docker-compose.yml:docker-compose.override.yml:docker-compose.local.yml"' >> ~/.bashrc
+```
+
+不想设变量的话，每条命令都写全三层：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.override.yml \
+  -f docker-compose.local.yml --profile console up -d --build frontend
+```
+
+端口不冲突（本机 5432 空着）时可以跳过整节，下面所有命令照原样用。
+
 ### 路线 A：全容器一键起（不需要本机 Python / Node）
 
 ```bash
@@ -210,13 +260,7 @@ docker compose --profile sandbox up -d --build
 
 - 首次构建 **5～15 分钟**：后端镜像里带 LibreOffice 和 Tesseract 做文档解析，前端是 Next.js 生产构建。之后有层缓存，约 1 分钟。
 - 启动链路：`migrate` 先跑数据库迁移（到位即空跑）→ `app`（API）→ `worker`（后台任务）+ `db`（pgvector）/ `redis`。数据持久化在 Docker volume 里。
-- Postgres `5432`、Redis `6379` 会映射到本机，方便用 psql / 客户端直连。**本机已有 Postgres 占着 5432 时**，写一个只作用于这台机器的覆盖文件把端口让开（应用容器走 compose 网络连 `db`，不受影响）：
-  ```yaml
-  # docker-compose.local.yml，启动时用 -f 追加上
-  services:
-    db:
-      ports: !override ["5433:5432"]
-  ```
+- Postgres `5432`、Redis `6379` 会映射到本机，方便用 psql / 客户端直连。这两个端口被本机别的服务占着时，先做上面[第 0 步](#0-先做一次避开本机已被占用的端口)。
 - **密钥要在 bootstrap 之前定好。** `SECRET_KEY` / `VAULT_MASTER_KEY` 留空时会用示例值兜底，而 `bootstrap` 是用**当时**的密钥把 sandbox 凭据封存进去的 —— 之后再换密钥就解不开，`doctor` 会报 `credential could not be unsealed`。本地图省事就让两者都留空，或先 `openssl rand -hex 32` 各生成一个再启动。
 
 **前端要单独起一次。** 在源码目录里 compose 把 console 放在 `console` profile 后面，`docker compose up` 故意不带它，避免和本机 `bun dev` 抢 3000 端口：
@@ -224,6 +268,8 @@ docker compose --profile sandbox up -d --build
 ```bash
 docker compose --profile console up -d --build frontend
 ```
+
+这条命令同样依赖第 0 步的 `COMPOSE_FILE`。`frontend` 会连同它 `depends_on` 的 `db` 一起纳入本次编排，所以端口没让开时，报的就是 `agenticos-db-1 ... 5432 already allocated`——看起来是前端起不来，其实是数据库那一层。构建完成后 <http://localhost:3000> 直接可用（Next.js 生产构建，没有热重载；要热重载走路线 B）。
 
 **创建组织、管理员、模型和初始智能体**（空库不能用，必须先走这一步）：
 
@@ -281,6 +327,8 @@ printf '\nSANDBOXD_TOKEN=%s\n' "$(openssl rand -hex 32)" >> backend/.env
 
 ### 常用命令对照
 
+下表假设第 0 步已经做完（`COMPOSE_FILE` 已设）；没设的话每条都要补 `-f` 三层。
+
 | 目的 | Make | 等价 `docker compose` |
 | --- | --- | --- |
 | 起后端全栈 | `make dev` | `docker compose --profile sandbox up -d --build` |
@@ -298,7 +346,8 @@ printf '\nSANDBOXD_TOKEN=%s\n' "$(openssl rand -hex 32)" >> backend/.env
 | --- | --- |
 | 页面能开但每块都是空状态 | 多半是后端没起。前端把失败渲染成空态而不是报错 —— 先 `docker compose ps`、`docker compose logs -f app` |
 | API 起不来 | `docker compose logs migrate`：迁移失败时 API 不会启动 |
-| 端口被占（5432 / 6379 / 8000 / 3000） | 本机已有 Postgres/Redis 或另一份 compose 在跑；改 `docker-compose.override.yml` 的端口映射 |
+| `Bind for 0.0.0.0:5432 failed: port is already allocated` | 本机已有 Postgres，**或者这条命令漏了 `docker-compose.local.yml`**（最常见：只带了 `docker-compose.override.yml`）。按第 0 步建覆盖文件并设 `COMPOSE_FILE` |
+| 端口被占（6379 / 8000 / 3000） | 另一份 compose 或本机服务在跑，`docker compose ps` 看是谁。注意容器版前端和本机 `bun dev` 不能同时占 3000 |
 | 构建很慢或失败 | `docker compose build app --no-cache`；确认 Docker 能拉 `python:3.15-slim`、`ghcr.io/astral-sh/uv` |
 | 改了代码没生效 | 源码是 bind mount + reload 的，`app` 会热重载；`worker` 不会，改它用 `docker compose restart worker` |
 

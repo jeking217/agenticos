@@ -11,6 +11,14 @@
 #   docker compose -f docker-compose.yml -f docker-compose.override.yml \
 #     -f docker-compose.local.yml --profile sandbox up -d
 #
+# Or export it once so every `docker compose` command picks it up (note the
+# separator: `;` on Windows, `:` elsewhere):
+#   export COMPOSE_FILE="docker-compose.yml;docker-compose.override.yml;docker-compose.local.yml"
+#
+# Forgetting the `-f` is what produces
+#   Bind for 0.0.0.0:5432 failed: port is already allocated
+# because compose auto-merges docker-compose.override.yml but not this file.
+#
 # The `!override` tag replaces the inherited list rather than appending to it.
 services:
   db:
