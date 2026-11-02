@@ -76,6 +76,7 @@ capabilities:
 - clock
 skills:
 - artifact-pages
+- office-docs
 - visual-design
 attach:
 - sandbox

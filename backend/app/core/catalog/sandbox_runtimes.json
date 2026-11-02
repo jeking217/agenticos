@@ -4,7 +4,7 @@
     "description": "Python, Node and LibreOffice - documents, data, charts and code",
     "base_image": "python:3.12-slim",
     "setup_commands": [
-      "apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates ripgrep fd-find jq less procps xz-utils poppler-utils libreoffice-writer libreoffice-calc libreoffice-impress unzip zip tzdata fonts-dejavu-core && ln -s /usr/bin/fdfind /usr/local/bin/fd && rm -rf /var/lib/apt/lists/*",
+      "apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates ripgrep fd-find jq less procps xz-utils poppler-utils libreoffice-writer libreoffice-calc libreoffice-impress unzip zip tzdata fonts-dejavu-core fonts-noto-cjk && ln -s /usr/bin/fdfind /usr/local/bin/fd && rm -rf /var/lib/apt/lists/*",
       "arch=\"$(dpkg --print-architecture)\"; case \"$arch\" in amd64) node_arch=x64 ;; arm64) node_arch=arm64 ;; *) echo \"no Node build for $arch\" >&2; exit 1 ;; esac; curl -fsSL \"https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-${node_arch}.tar.xz\" | tar -xJ -C /usr/local --strip-components=1 --exclude CHANGELOG.md --exclude README.md --exclude LICENSE && npm install -g tsx @anthropic-ai/claude-code@2.1.288 @openai/codex@0.160.0 && npm cache clean --force",
       "curl -fsSL https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin INSTALLER_NO_MODIFY_PATH=1 sh"
     ],
@@ -43,6 +43,7 @@
       "`--no-ocr` is much faster and is right for a PDF that already has text, but on a scan it succeeds and returns almost nothing. If the output is suspiciously short, that is why.",
       "Write office files with `python-docx`, `openpyxl` and `python-pptx`, which is also the most precise way to read `.docx` and `.xlsx`.",
       "LibreOffice is here and headless: `soffice --headless --convert-to pdf deck.pptx` renders what you built, `--convert-to png` gives you a picture of the first slide you can read back and look at, and it is what lets `lit` read the legacy `.doc`, `.xls` and `.ppt` formats at all. About a second per document.",
+      "Chinese, Japanese and Korean text renders here: Noto Sans CJK is installed. A file that names a font this container does not have - Microsoft YaHei, SimSun, PingFang - is still the right choice for the person who will open it on their own machine, because LibreOffice substitutes a CJK font that has the glyphs and the render you check stays legible. For matplotlib, set `font.family` to `Noto Sans CJK SC` and `axes.unicode_minus` to `False`, or the labels come out as empty boxes.",
       "There is no C compiler, so a package with no prebuilt wheel will fail to install."
     ],
     "mem_limit": "2g",
