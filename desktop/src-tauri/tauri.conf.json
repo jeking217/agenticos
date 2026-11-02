@@ -51,7 +51,9 @@
           "English",
           "Polish",
           "German",
-          "Spanish"
+          "Spanish",
+          "SimpChinese",
+          "TradChinese"
         ],
         "displayLanguageSelector": false,
         "startMenuFolder": "AgenticOS",

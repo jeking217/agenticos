@@ -31,6 +31,8 @@ Two things are versioned separately from this file and worth knowing about:
 
 - The documentation no longer says the console stops at three languages, and neither does the shipped agent's own instructions - an agent told the interface speaks three would tell a Chinese reader their language is unavailable.
 
+- The Windows installer follows Chinese too. The NSIS `.exe` now carries `SimpChinese` and `TradChinese` beside English, Polish, German and Spanish, so a Chinese Windows gets a Chinese wizard instead of an English one; the language selector stays off and the system's own language picks, with English first as the fallback. The `.msi` stays `en-US`, because WiX fixes its UI language at build time and a `language` list produces one `.msi` per entry rather than a single installer that adapts.
+
 ## [1.34.2] - 2026-11-01
 
 ### Fixed
