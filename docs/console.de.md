@@ -1,5 +1,5 @@
 ---
-source_sha: "fed639325e0e"
+source_sha: "a11d8f0ec1b7"
 ---
 
 # Die Konsole { #the-console }
@@ -795,14 +795,25 @@ erhalten.
 
 ## Sprachen { #languages }
 
-Die Konsole spricht Englisch, Polnisch und Deutsch, vollständig bis auf die
-rechtlichen Seiten, die Englisch bleiben. Die erste Karte des Rundgangs bietet die
-drei an, und das Kontomenü wechselt die Sprache jederzeit; die Wahl wird in Ihrem
-Konto gespeichert, sodass die Konsole auf jedem Gerät, auf dem Sie sich anmelden,
-in ihr öffnet. Sie können auch einen Agent bitten - "auf Englisch umstellen" -, und
-die Seite wechselt, während er antwortet, ohne Neuladen. Jeder Agent antwortet in
-ihr, außer Sie schreiben in einer anderen Sprache. Produktwörter - Agent, Skill, Run, Budget, MCP und der Rest der Liste
-unter [Übersetzen](howto/translate.md) - bleiben in jeder Sprache Englisch.
+Die Konsole spricht Englisch, Polnisch, Deutsch, vereinfachtes und traditionelles
+Chinesisch. Die erste Karte des Rundgangs bietet alle fünf an, und das Kontomenü
+wechselt die Sprache jederzeit; die Wahl wird in Ihrem Konto gespeichert, sodass
+die Konsole auf jedem Gerät, auf dem Sie sich anmelden, in ihr öffnet. Sie können
+auch einen Agent bitten - "auf Englisch umstellen" -, und die Seite wechselt,
+während er antwortet, ohne Neuladen. Jeder Agent antwortet in ihr, außer Sie
+schreiben in einer anderen Sprache.
+
+Produktwörter - Agent, Skill, Run, Budget, MCP und der Rest der Liste unter
+[Übersetzen](howto/translate.md) - bleiben in jeder Sprache Englisch. Ein Text,
+den noch niemand übersetzt hat, erscheint auf Englisch, damit kein Bildschirm leer
+bleibt, während ein Katalog nachzieht.
+
+Das Menü kennzeichnet eine Sprache mit einem einzelnen Zeichen statt einer Flagge -
+英, 波, 德, 简, 繁 -, weil eine Flagge ein Land benennt und eine Sprache kein Land
+ist, und die beiden chinesischen Varianten müssten sich eine teilen. Die Sprache
+steht auch in der Adresse, `/zh-CN/...` und `/zh-TW/...`, sodass ein Link die
+Sprache behält, in der er kopiert wurde; Englisch, die Quellsprache, ist die
+einzige ohne Präfix.
 
 Dieselbe Karte fragt, was Sie tun, und **Einstellungen → Profil (Settings →
 Profile)** hält den Rest dessen, was Agents über Sie wissen: Ihre Rolle, woran Sie

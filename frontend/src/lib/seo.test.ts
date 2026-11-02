@@ -26,6 +26,10 @@ describe("pageMetadata", () => {
       en: `${siteOrigin()}/en/legal/terms`,
       pl: `${siteOrigin()}/pl/legal/terms`,
       de: `${siteOrigin()}/de/legal/terms`,
+      // The region subtag is part of the code, and is why `zh-CN` is a locale of
+      // its own rather than a second spelling of `zh`.
+      "zh-CN": `${siteOrigin()}/zh-CN/legal/terms`,
+      "zh-TW": `${siteOrigin()}/zh-TW/legal/terms`,
     });
   });
 
@@ -37,6 +41,8 @@ describe("pageMetadata", () => {
       en: `${siteOrigin()}/en`,
       pl: `${siteOrigin()}/pl`,
       de: `${siteOrigin()}/de`,
+      "zh-CN": `${siteOrigin()}/zh-CN`,
+      "zh-TW": `${siteOrigin()}/zh-TW`,
     });
   });
 
@@ -99,7 +105,12 @@ describe("pageMetadata", () => {
     const meta = pageMetadata({ title: "Regulamin", description: "…", locale: "pl" });
 
     expect(meta.openGraph?.locale).toBe(OG_LOCALE.pl);
-    expect(meta.openGraph?.alternateLocale).toEqual([OG_LOCALE.en, OG_LOCALE.de]);
+    expect(meta.openGraph?.alternateLocale).toEqual([
+      OG_LOCALE.en,
+      OG_LOCALE.de,
+      OG_LOCALE["zh-CN"],
+      OG_LOCALE["zh-TW"],
+    ]);
   });
 
   it("falls back to the dynamic OG image, and takes an override", () => {

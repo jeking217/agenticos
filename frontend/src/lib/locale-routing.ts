@@ -1,6 +1,6 @@
 import { defineRouting } from "next-intl/routing";
 
-import { locales, defaultLocale, type Locale } from "@/i18n";
+import { locales, defaultLocale, matchLocale, type Locale } from "@/i18n";
 
 /**
  * The cookie holding the locale the visitor picked.
@@ -44,15 +44,17 @@ export const routing = defineRouting({
  * `/PL/agents` is a Polish path to it, redirected to the canonical `/pl/agents`.
  * Reading it as unprefixed here would put a second prefix on the front of a path
  * that already has one - `/pl/PL/agents`, which no route serves.
+ *
+ * The match returns the catalog's spelling rather than the path's, so a
+ * `/zh-cn/agents` bookmark is remembered as `zh-CN`: the cookie outlives the URL,
+ * and a cache keyed on `zh-cn` is a second copy of the catalog.
  */
 export function localePrefixOf(pathname: string): Locale | null {
-  const segment = pathname.split("/")[1]?.toLowerCase();
-  return segment && (locales as readonly string[]).includes(segment) ? (segment as Locale) : null;
+  return matchLocale(pathname.split("/")[1]);
 }
 
 /** The locale the visitor picked, when this deployment serves it and it is not the default. */
 export function pickedLocale(value: string | undefined): Locale | null {
-  return value && value !== defaultLocale && (locales as readonly string[]).includes(value)
-    ? (value as Locale)
-    : null;
+  const match = matchLocale(value);
+  return match === null || match === defaultLocale ? null : match;
 }

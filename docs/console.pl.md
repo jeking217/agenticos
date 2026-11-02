@@ -1,5 +1,5 @@
 ---
-source_sha: "fed639325e0e"
+source_sha: "a11d8f0ec1b7"
 ---
 
 # Konsola { #the-console }
@@ -726,14 +726,22 @@ wartości formularzy.
 
 ## Języki { #languages }
 
-Konsola mówi po angielsku, polsku i niemiecku, w całości poza stronami
-prawnymi, które zostają po angielsku. Pierwsza karta przewodnika proponuje te trzy
-języki, a menu konta zmienia język w każdej chwili; wybór jest zapisywany na twoim
-koncie, więc konsola otwiera się w nim na każdym urządzeniu, na którym się
-logujesz. Możesz też poprosić agenta - "przełącz na angielski" - a strona zmieni
-się, gdy odpowie, bez przeładowania. Każdy agent odpowiada w nim, chyba że
-napiszesz w innym języku. Słowa produktu - agent, skill, run, budget, MCP i reszta listy z
-[tłumaczenia](howto/translate.md) - zostają angielskie w każdym języku.
+Konsola mówi po angielsku, polsku, niemiecku, chińsku uproszczonym i chińsku
+tradycyjnym. Pierwsza karta przewodnika proponuje wszystkie pięć, a menu konta
+zmienia język w każdej chwili; wybór jest zapisywany na twoim koncie, więc konsola
+otwiera się w nim na każdym urządzeniu, na którym się logujesz. Możesz też
+poprosić agenta - "przełącz na angielski" - a strona zmieni się, gdy odpowie, bez
+przeładowania. Każdy agent odpowiada w nim, chyba że napiszesz w innym języku.
+
+Słowa produktu - agent, skill, run, budget, MCP i reszta listy z
+[tłumaczenia](howto/translate.md) - zostają angielskie w każdym języku. Tekst,
+którego jeszcze nikt nie przetłumaczył, pokazuje się po angielsku, więc żaden
+ekran nie robi się pusty, zanim katalog nadgoni.
+
+Menu oznacza język pojedynczym znakiem, nie flagą - 英, 波, 德, 简, 繁 - bo flaga
+nazywa kraj, a język to nie kraj, i oba języki chińskie musiałyby dzielić jedną.
+Język jest też w adresie, `/zh-CN/...` i `/zh-TW/...`, więc link zachowuje język,
+w którym go skopiowano; angielski, język źródłowy, jest tym jedynym bez prefiksu.
 
 Ta sama karta pyta, czym się zajmujesz, a **Ustawienia → Profil (Settings →
 Profile)** trzymają resztę tego, co agenci o tobie wiedzą: twoją rolę, nad czym

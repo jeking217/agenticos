@@ -3,13 +3,14 @@
 import { Check, Globe } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
+import { LocaleBadge } from "@/components/locale-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { locales, type Locale, getLocaleLabel, getLocaleFlag } from "@/i18n";
+import { locales, type Locale, getLocaleLabel } from "@/i18n";
 import { usePathname, useRouter } from "@/lib/locale-navigation";
 import { cn } from "@/lib/utils";
 
@@ -51,14 +52,12 @@ export function LanguageSwitcherIcon() {
           const active = loc === locale;
           return (
             <DropdownMenuItem key={loc} onSelect={() => handleChange(loc)} className="gap-2.5">
-              <span aria-hidden className="text-base leading-none">
-                {getLocaleFlag(loc)}
-              </span>
+              <LocaleBadge locale={loc} />
               <span className="flex-1">{getLocaleLabel(loc)}</span>
               {active ? (
                 <Check className="text-foreground h-4 w-4" />
               ) : (
-                <span className="text-muted-foreground font-mono text-xs tracking-wider uppercase">
+                <span className="text-muted-foreground font-mono text-[10px] tracking-wider uppercase">
                   {loc}
                 </span>
               )}

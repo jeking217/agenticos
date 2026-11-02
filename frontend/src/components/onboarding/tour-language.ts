@@ -1,4 +1,4 @@
-import { getLocaleFlag, getLocaleLabel, locales, type Locale } from "@/i18n";
+import { getLocaleLabel, locales, type Locale } from "@/i18n";
 
 /**
  * The language row on the walkthrough's first card (#2072).
@@ -22,7 +22,9 @@ export function appendLanguageChoice(
   for (const locale of locales) {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = `${getLocaleFlag(locale)} ${getLocaleLabel(locale)}`;
+    // The name alone: the badge in the menus exists to tell two Chinese locales
+    // apart at a glance, and a row of buttons has the name for that already.
+    button.textContent = getLocaleLabel(locale);
     button.setAttribute("aria-pressed", String(locale === current));
     button.addEventListener("click", () => {
       if (locale !== current) choose(locale);

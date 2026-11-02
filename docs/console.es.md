@@ -1,5 +1,5 @@
 ---
-source_sha: "fed639325e0e"
+source_sha: "a11d8f0ec1b7"
 ---
 
 # La consola { #the-console }
@@ -746,17 +746,23 @@ cambiar de pestaña conserva los valores del formulario sin guardar.
 
 ## Idiomas { #languages }
 
-La consola habla inglés, polaco y alemán, en su totalidad salvo las páginas
-legales, que siguen en inglés. La primera tarjeta del recorrido ofrece los tres, y
-el menú de la cuenta cambia el idioma en cualquier momento; la elección se guarda
-en tu cuenta, así que la consola se abre en él en cada dispositivo en el que
-inicias sesión. También puedes pedírselo a un agent - "cambia a inglés" - y la
-página cambia mientras responde, sin recargar. Todos los agents responden en él
-salvo que escribas en otro idioma.
+La consola habla inglés, polaco, alemán, chino simplificado y chino tradicional.
+La primera tarjeta del recorrido ofrece los cinco, y el menú de la cuenta cambia el
+idioma en cualquier momento; la elección se guarda en tu cuenta, así que la consola
+se abre en él en cada dispositivo en el que inicias sesión. También puedes
+pedírselo a un agent - "cambia a inglés" - y la página cambia mientras responde,
+sin recargar. Todos los agents responden en él salvo que escribas en otro idioma.
 
 Las palabras del producto - agent, skill, run, budget, MCP y el
 resto de la lista de [traducir](howto/translate.md) - siguen en inglés en todos
-los idiomas.
+los idiomas. Un texto que nadie ha traducido todavía se muestra en inglés, así que
+ninguna pantalla queda en blanco mientras un catálogo se pone al día.
+
+El menú marca cada idioma con un solo carácter en lugar de una bandera - 英, 波,
+德, 简, 繁 - porque una bandera nombra un país y un idioma no lo es, y los dos
+idiomas chinos tendrían que compartirla. El idioma está también en la dirección,
+`/zh-CN/...` y `/zh-TW/...`, así que un enlace conserva el idioma en el que se
+copió; el inglés, el idioma de origen, es el único sin prefijo.
 
 La misma tarjeta pregunta a qué te dedicas, y **Settings → Profile** guarda el
 resto de lo que los agents saben de ti: tu rol, en qué trabajas y tu zona horaria.

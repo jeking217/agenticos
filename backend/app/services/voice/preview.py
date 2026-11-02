@@ -37,12 +37,17 @@ from app.services.voice.settings import resolve_voice
 
 logger = logging.getLogger(__name__)
 
-PreviewLocale = Literal["en", "pl", "de"]
+PreviewLocale = Literal["en", "pl", "de", "zh-CN", "zh-TW"]
 
 PREVIEW_LINES: dict[PreviewLocale, str] = {
     "en": "Hi, this is how I sound. Ask me anything, and I'll answer out loud.",
     "pl": "Cześć, tak brzmi mój głos. Zapytaj mnie o cokolwiek, a odpowiem na głos.",
     "de": "Hallo, so klingt meine Stimme. Frag mich etwas, und ich antworte laut.",
+    # Two lines rather than one: a Mandarin voice reading Traditional characters
+    # reads them in Mandarin, and what the person is judging is the voice - the
+    # script they read their console in is the one that should be spoken.
+    "zh-CN": "你好，这就是我的声音。随便问我什么，我会用语音回答。",
+    "zh-TW": "你好，這就是我的聲音。隨便問我什麼，我會用語音回答。",
 }
 
 CACHE_SECONDS = 7 * 24 * 3600

@@ -24,12 +24,22 @@ HEADING = {
     "en": "{count} new from your watches:",
     "pl": "Znaleziska z twoich obserwacji ({count}):",
     "de": "Neu aus Ihren Beobachtungen ({count}):",
+    "zh-CN": "你的关注发现 {count} 条新内容：",
+    "zh-TW": "你的關注發現 {count} 條新內容：",
 }
-MORE = {"en": "…and {count} more.", "pl": "…i jeszcze {count}.", "de": "…und {count} weitere."}
+MORE = {
+    "en": "…and {count} more.",
+    "pl": "…i jeszcze {count}.",
+    "de": "…und {count} weitere.",
+    "zh-CN": "…以及另外 {count} 条。",
+    "zh-TW": "…以及另外 {count} 條。",
+}
 OPEN = {
     "en": "All of it in your inbox: {url}",
     "pl": "Wszystko w twoim inboksie: {url}",
     "de": "Alles in Ihrem Posteingang: {url}",
+    "zh-CN": "全部内容在收件箱：{url}",
+    "zh-TW": "全部內容在收件匣：{url}",
 }
 
 

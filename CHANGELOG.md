@@ -19,6 +19,18 @@ Two things are versioned separately from this file and worth knowing about:
 
 ## [Unreleased]
 
+### Added
+
+- **Simplified and Traditional Chinese.** `zh-CN` and `zh-TW` join the console's locale list beside English, Polish and German, and both are complete: 10,308 strings each, against 10,080 for Polish and 10,032 for German. Traditional is Taiwanese usage rather than a glyph conversion - 專案, 檔案, 使用者, 智慧體 - and the backend's own strings name both locales: voice previews, briefing headings, welcome greetings, and the language every agent is told a person's console is in.
+
+- **A language menu that reads without a flag.** One character marks each locale - 英, 波, 德, 简, 繁 - because a flag names a country and a language is not one, and the two Chinese locales would have to share a flag that half their readers read as somebody else's.
+
+### Changed
+
+- A locale in the URL is matched without regard to case and normalised to the catalog's spelling, so `/zh-cn/dashboard` and `/ZH-CN/dashboard` both settle on `zh-CN` instead of redirecting twice. `og:locale` and `hreflang` carry the two forms each language expects (`zh_CN` and `zh-CN`).
+
+- The documentation no longer says the console stops at three languages, and neither does the shipped agent's own instructions - an agent told the interface speaks three would tell a Chinese reader their language is unavailable.
+
 ## [1.34.2] - 2026-11-01
 
 ### Fixed

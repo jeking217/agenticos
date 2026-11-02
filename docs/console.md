@@ -698,14 +698,23 @@ values.
 
 ## Languages
 
-The console speaks English, Polish and German, all of it except the legal
-pages, which stay in English. The walkthrough's first card offers the three, and
-the account menu changes the language at any time; the choice is kept on your
-account, so the console opens in it on every device you sign in on. You can also
-ask an agent - "switch to English" - and the page changes as it answers, without a
-reload. Every agent answers in it unless you write in another language. Product
-words - agent, skill, run, budget, MCP and the rest of the list in
-[translating](howto/translate.md) - stay English in every language.
+The console speaks English, Polish, German, Simplified Chinese and Traditional
+Chinese. The walkthrough's first card offers all five, and the account menu changes
+the language at any time; the choice is kept on your account, so the console opens
+in it on every device you sign in on. You can also ask an agent - "switch to
+English" - and the page changes as it answers, without a reload. Every agent
+answers in it unless you write in another language.
+
+Product words - agent, skill, run, budget, MCP and the rest of the list in
+[translating](howto/translate.md) - stay English in every language. A string
+nobody has translated yet shows in English, so no screen goes blank while a
+catalog catches up.
+
+The menu marks each language with a single character rather than a flag - 英, 波,
+德, 简, 繁 - because a flag names a country and a language is not one, and the
+two Chinese locales would have to share it. The locale is in the URL too,
+`/zh-CN/...` and `/zh-TW/...`, so a link keeps the language it was copied in;
+English, the source language, is the one that carries no prefix.
 
 The same card asks what you do, and **Settings → Profile** keeps the rest of what
 agents know about you: your role, what you work on and your time zone. Every agent

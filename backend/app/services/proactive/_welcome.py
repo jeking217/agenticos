@@ -48,6 +48,14 @@ GREETING = {
         "Willkommen bei {organization}! Ich bin {bot}, der KI-Assistent hier. Fragen Sie mich "
         "alles direkt in diesem Chat - die Konsole finden Sie hier: {url}"
     ),
+    "zh-CN": (
+        "欢迎来到 {organization}！我是 {bot}，这里的 AI 助手。可以直接在这个对话里问我"
+        "任何问题 — 或打开控制台：{url}"
+    ),
+    "zh-TW": (
+        "歡迎來到 {organization}！我是 {bot}，這裡的 AI 助理。可以直接在這個對話裡問我"
+        "任何問題 — 或開啟主控台：{url}"
+    ),
 }
 
 PLATFORMS = ("slack", "mattermost", "teams")

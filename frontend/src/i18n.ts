@@ -1,13 +1,13 @@
 import { getRequestConfig } from "next-intl/server";
 
-import { locales, defaultLocale, type Locale } from "./lib/locales";
+import { locales, defaultLocale, matchLocale, type Locale } from "./lib/locales";
 
 import en from "../messages/en.json";
 
 // Imported and re-exported rather than declared here: `next.config.ts` needs the
 // same list and cannot import this file, which drags in next-intl and the whole
 // English catalog. Fifty modules import these from `@/i18n`, so the name stays.
-export { locales, defaultLocale, type Locale };
+export { locales, defaultLocale, matchLocale, type Locale };
 
 type Messages = { [key: string]: string | Messages };
 
@@ -57,15 +57,27 @@ export function getLocaleLabel(locale: Locale): string {
     en: "English",
     pl: "Polski",
     de: "Deutsch",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文",
   };
   return labels[locale];
 }
 
-export function getLocaleFlag(locale: Locale): string {
-  const flags: Record<Locale, string> = {
-    en: "🇬🇧",
-    pl: "🇵🇱",
-    de: "🇩🇪",
+/**
+ * The one-character mark that stands beside a language's name.
+ *
+ * Not a flag. A flag names a country and a language is not a country - the two
+ * Chinese locales would have to share one, or be told apart by a flag that half
+ * their readers read as somebody else's, and the same is true of English. A
+ * character from the script says which locale it is without claiming a border.
+ */
+export function getLocaleBadge(locale: Locale): string {
+  const badges: Record<Locale, string> = {
+    en: "英",
+    pl: "波",
+    de: "德",
+    "zh-CN": "简",
+    "zh-TW": "繁",
   };
-  return flags[locale];
+  return badges[locale];
 }

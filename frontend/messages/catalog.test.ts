@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import de from "./de.json";
 import en from "./en.json";
 import pl from "./pl.json";
+import zhCN from "./zh-CN.json";
+import zhTW from "./zh-TW.json";
 
 /**
  * That the catalog holds copy, and only copy.
@@ -152,6 +154,8 @@ describe.each([
   ["en.json", en],
   ["pl.json", pl],
   ["de.json", de],
+  ["zh-CN.json", zhCN],
+  ["zh-TW.json", zhTW],
 ])("%s", (_name, catalog) => {
   const all = entries(catalog);
 

@@ -66,6 +66,10 @@ export const OG_LOCALE: Record<(typeof locales)[number], string> = {
   en: "en_US",
   pl: "pl_PL",
   de: "de_DE",
+  // The underscore form is Open Graph's, not BCP-47's: `og:locale` is `zh_CN`
+  // while `hreflang` stays `zh-CN`.
+  "zh-CN": "zh_CN",
+  "zh-TW": "zh_TW",
 };
 
 interface PageMetaInput {

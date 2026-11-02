@@ -15,7 +15,15 @@ from app.agents.prompt_variables import flattened
 from app.agents.spec import AgentSpec
 from app.schemas.user import WorkingHours
 
-LANGUAGE_NAMES = {"en": "English", "pl": "Polish", "de": "German"}
+LANGUAGE_NAMES = {
+    "en": "English",
+    "pl": "Polish",
+    "de": "German",
+    # Named in English because the model reads the instruction, and a model told
+    # "answer in 简体中文" answers in Chinese without being told which script.
+    "zh-CN": "Simplified Chinese",
+    "zh-TW": "Traditional Chinese",
+}
 """The console's languages - `ConsoleLocale` - by the name a model reads best."""
 
 _WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")

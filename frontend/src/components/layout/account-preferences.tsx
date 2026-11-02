@@ -18,7 +18,8 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
 import { LookPreview } from "@/components/settings/look-preview";
 import { isLook, LOOKS } from "@/lib/appearance";
-import { getLocaleFlag, getLocaleLabel, locales, type Locale } from "@/i18n";
+import { LocaleBadge } from "@/components/locale-badge";
+import { getLocaleLabel, locales, type Locale } from "@/i18n";
 import { getResolvedTheme, useThemeStore, type Theme } from "@/stores/theme-store";
 
 /**
@@ -40,7 +41,7 @@ import { getResolvedTheme, useThemeStore, type Theme } from "@/stores/theme-stor
  *
  * Submenus rather than a flat list of rows: the account menu's own entries are
  * the organization, the profile and signing out, and burying those under three
- * themes and three languages inverts what it is for.
+ * themes and five languages inverts what it is for.
  *
  * Each choice is a Radix `RadioItem`, not a `<button role="menuitemradio">`.
  * The hand-rolled version looked identical and was unreachable: Radix builds a
@@ -162,9 +163,7 @@ export function LanguageMenu() {
         >
           {locales.map((option) => (
             <DropdownMenuRadioItem key={option} value={option} className="gap-2.5">
-              <span aria-hidden className="text-base leading-none">
-                {getLocaleFlag(option)}
-              </span>
+              <LocaleBadge locale={option} />
               {getLocaleLabel(option)}
             </DropdownMenuRadioItem>
           ))}
