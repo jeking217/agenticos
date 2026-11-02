@@ -35,7 +35,8 @@ export type FileKind =
   | "json"
   | "code"
   | "text"
-  // Known, and not showable. An icon, a size, and a download.
+  // Office binaries: read in the browser by a document viewer rather than by the
+  // server, and opened as pages where the format has them.
   | "spreadsheet"
   | "document"
   | "archive"

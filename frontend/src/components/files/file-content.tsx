@@ -2,11 +2,13 @@
 
 import { useTranslations } from "next-intl";
 
+import { OfficePreview } from "./office-preview";
 import { FileBytesView, FileTextView, FileUnavailable } from "./file-render";
 import { Skeleton } from "@/components/ui";
 import { useFileActions, useFileBytes, useFileText } from "@/hooks";
 import type { FileAccess } from "@/lib/file-access";
 import { readsAsText, type FileKind } from "@/lib/file-kinds";
+import { officeFormatOf } from "@/lib/office-document";
 import { cn } from "@/lib/utils";
 
 interface FileContentProps {
@@ -16,6 +18,8 @@ interface FileContentProps {
   asSource?: boolean;
   /** Inside a pane that is its own frame: text fills it, with no box of its own. */
   bare?: boolean;
+  /** The page a document opens on, where the reader picked one before opening it. */
+  initialPage?: number;
 }
 
 /**
@@ -25,6 +29,10 @@ interface FileContentProps {
  * that is made of them, bytes for everything else. Whether what came back can be
  * displayed is the server's answer, read off the response's type - which is why the
  * two halves are separate components rather than one with a conditional hook.
+ *
+ * Office documents are the third answer: their bytes are not something a browser
+ * draws, and they are not characters either - so they are read here, by a reader
+ * chosen off the suffix, and the API's inline allowlist is left alone.
  */
 export function FileContent({
   access,
@@ -32,13 +40,23 @@ export function FileContent({
   name,
   asSource = false,
   bare = false,
+  initialPage = 0,
 }: FileContentProps) {
+  const office = officeFormatOf(name);
+  if (office !== null && !asSource)
+    return <OfficePreview access={access} name={name} format={office} initialPage={initialPage} />;
   if (readsAsText(kind))
     return <TextBody access={access} kind={kind} name={name} asSource={asSource} bare={bare} />;
   return <BytesBody access={access} name={name} />;
 }
 
-function TextBody({ access, kind, name, asSource, bare }: Required<FileContentProps>) {
+function TextBody({
+  access,
+  kind,
+  name,
+  asSource,
+  bare,
+}: Required<Omit<FileContentProps, "initialPage">>) {
   const t = useTranslations("files");
   const { file, isLoading, error } = useFileText(access);
   const { download, error: actionError } = useFileActions(access);

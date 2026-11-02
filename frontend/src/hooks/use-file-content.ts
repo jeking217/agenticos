@@ -95,6 +95,37 @@ export function useFileBytes(access: FileAccess): UseFileBytesResult {
   };
 }
 
+interface UseFileBlobResult {
+  /** The bytes themselves, for a reader that parses rather than displays them. */
+  blob: Blob | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+/**
+ * One file's bytes, handed over as bytes.
+ *
+ * `useFileBytes` answers with a URL because a browser draws an `<img>` or an
+ * `<iframe>` from one. A document viewer does not draw the file, it *parses* it - so
+ * it needs the blob, and asking for it under the same key means opening a `.pptx`
+ * fetches it once whether something on the way asked for a URL or not.
+ */
+export function useFileBlob(access: FileAccess): UseFileBlobResult {
+  const t = useTranslations("files");
+  const tErrors = useTranslations("errors");
+  const {
+    data: blob = null,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: access.bytesKey,
+    queryFn: () => access.readBytes(),
+    retry: false,
+  });
+
+  return { blob, isLoading, error: readFailure(error, tErrors, t("couldNotBeRead")) };
+}
+
 interface UseFileActionsResult {
   download: () => void;
   openInNewTab: () => void;

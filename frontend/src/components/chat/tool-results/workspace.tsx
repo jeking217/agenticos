@@ -1,16 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Download } from "lucide-react";
-
 import { CopyButton } from "../copy-button";
-import { FileIcon, FileViewer } from "@/components/files";
-import { Button } from "@/components/ui";
-import { useConversationWorkspace, useFileActions } from "@/hooks";
-import type { FileAccess } from "@/lib/file-access";
-import { resolveFileKind, suffixOf } from "@/lib/file-kinds";
-import { basename, contentArg, pathArg } from "@/lib/tool-steps";
-import { workspaceFileAccess, type FileSource } from "@/lib/workspace-files";
+import { DocumentCard } from "../document-card";
+import { officeNamedIn } from "@/lib/turn-documents";
+import { contentArg, pathArg } from "@/lib/tool-steps";
 import type { ToolCall } from "@/types";
 import { useTranslations } from "next-intl";
 
@@ -28,116 +21,6 @@ function lines(name: string, result: string): string[] | null {
     .map((line) => line.trim())
     .filter(Boolean);
   return found.length === 0 ? null : found;
-}
-
-/**
- * The file a call produced, as something to open rather than a sentence about it.
- *
- * `write_file` answers "Wrote 1 lines to /workspace/test1.md", which is true and is
- * not what somebody wants from a turn that just made them a document. The card is the
- * end of that turn: what it is called, what kind of thing it is, and the two things
- * anybody does next.
- *
- * **The path is preferred from the conversation's own listing, and the argument is
- * the fallback.** A tool is called with `test1.md` and answers about
- * `/workspace/test1.md`, while the workspace lists it under whichever of those its
- * backend stored - so matching the listing by name is what makes Open and Download
- * open the right thing.
- *
- * What it must not do is *withhold* the controls when the listing has not caught up.
- * It used to, and the listing is behind for the whole of the interesting case: a
- * workspace has no committed row until a turn flushes one, so a turn that writes a
- * file and then parks for approval showed a card with no way to open the file it had
- * just made - until a page reload, at which point both buttons appeared. The card is
- * drawn because the write *succeeded*; that is the same evidence the buttons need.
- * If the path turns out to be wrong the viewer says so in a sentence, which is a far
- * better answer than a control that was never offered.
- */
-function WorkspaceFileCard({
-  conversationId,
-  path,
-}: {
-  conversationId: string | undefined;
-  path: string;
-}) {
-  const t = useTranslations("files");
-  const { workspace } = useConversationWorkspace(conversationId ?? null);
-  const [opened, setOpened] = useState(false);
-  const name = basename(path);
-  const suffix = suffixOf(name);
-  const entry =
-    workspace?.items.find((file) => !file.is_dir && file.path === path) ??
-    workspace?.items.find((file) => !file.is_dir && basename(file.path) === name) ??
-    null;
-  const source: FileSource | null =
-    conversationId === undefined ? null : { kind: "conversation", id: conversationId };
-  // The listing's path when it has one, the tool's argument when it does not. Only
-  // the conversation is required, because that is what the file routes address.
-  const target = entry?.path ?? path;
-  const access = source === null ? null : workspaceFileAccess(source, target);
-
-  return (
-    <div className="border-foreground/12 flex items-center gap-3 rounded-xl border p-2.5">
-      <span className="bg-foreground/5 text-foreground/60 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-        <FileIcon name={path} className="h-4 w-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{name}</span>
-        <span className="text-muted-foreground text-xs">
-          {t(`kinds.${resolveFileKind(path)}`)}
-          {suffix !== "" && <> · {suffix.toUpperCase()}</>}
-        </span>
-      </span>
-      {access !== null && (
-        <FileCardActions access={access} name={name} onOpen={() => setOpened(true)} />
-      )}
-      {opened && access !== null && (
-        <FileViewer
-          file={{
-            name,
-            path: target,
-            size: entry?.size ?? null,
-            modifiedAt: entry?.modified_at ?? null,
-          }}
-          access={access}
-          onClose={() => setOpened(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-function FileCardActions({
-  access,
-  name,
-  onOpen,
-}: {
-  access: FileAccess;
-  name: string;
-  onOpen: () => void;
-}) {
-  const t = useTranslations("files");
-  const tc = useTranslations("common");
-  const { download, error } = useFileActions(access);
-
-  return (
-    <span className="flex shrink-0 items-center gap-1">
-      {error !== null && <span className="text-destructive mr-1 text-xs">{error}</span>}
-      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onOpen}>
-        {t("open")}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-7 text-xs"
-        aria-label={tc("downloadNamed", { name })}
-        onClick={download}
-      >
-        <Download className="h-3.5 w-3.5" />
-        {t("download")}
-      </Button>
-    </span>
-  );
 }
 
 /**
@@ -169,15 +52,35 @@ export function WorkspaceToolResult({
   const isError = toolCall.status === "error";
   const finished = !isRunning && toolCall.status !== "awaiting_approval";
   const isWrite = toolCall.name === "write_file" || toolCall.name === "edit_file";
-  const showsCard = isWrite && finished && !isError && path !== null;
+  /**
+   * The file this call left behind: the one it says it wrote, or the one a command
+   * says it produced. Nothing while the call is in flight or after it failed - a card
+   * offering to open a file that was never written is the one wrong thing this could
+   * do.
+   *
+   * A command's own text is searched even while the step is closed: `office.py deck
+   * spec.json /workspace/Q3.pptx` names its output, and the step draws the deck from
+   * the command alone rather than after someone opens it.
+   */
+  const produced =
+    finished && !isError
+      ? isWrite && path !== null
+        ? path
+        : officeNamedIn(`${command ?? ""}\n${resultText}`)
+      : null;
+  const showsCard = produced !== null;
 
   return (
     <div className="space-y-2">
       {/* The file itself, once there is one. Not while the call is in flight and not
           when it failed: a card offering to open a file that was never written is the
-          one wrong thing this could do. */}
-      {showsCard && path !== null && (
-        <WorkspaceFileCard conversationId={conversationId} path={path} />
+          one wrong thing this could do.
+          With its pages: while the turn runs, this step is the only place a deck being
+          built can be watched - the panel under the answer arrives with the answer.
+          The same file is drawn again there afterwards, and that is not a duplicate
+          but the two halves of it: the work folded above, the deliverable below. */}
+      {produced !== null && (
+        <DocumentCard conversationId={conversationId} path={produced} preview />
       )}
 
       {command !== null && (

@@ -16,6 +16,7 @@ than a refusal.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -433,6 +434,35 @@ def build_doc(spec: dict[str, Any], out: Path) -> None:
 
 _BUILDERS = {"deck": build_deck, "sheet": build_sheet, "doc": build_doc}
 
+# Where the person can actually reach the file: the conversation's file panel lists
+# this directory and the viewer reads from it, so a document written anywhere else is
+# one they cannot find and cannot open.
+WORKSPACE = Path(os.environ.get("AGENTICOS_WORKSPACE") or "/workspace")
+
+
+def deliverable(requested: Path) -> Path:
+    """Where the document is really written.
+
+    A deck built under ``/tmp`` builds perfectly and is unreachable: the panel beside
+    the chat lists the workspace, the viewer reads from the workspace, and an agent
+    that names ``/tmp/blue-shan-app.pptx`` therefore hands over a path nobody can
+    open. So the *name* is kept and the directory is moved into the workspace, and the
+    line printed back says where it went - the model repeats that line, which is what
+    keeps what it tells the person true.
+
+    Skipped where there is no workspace at all (a plain shell on somebody's machine),
+    because there is nothing to move it into.
+    """
+    if not WORKSPACE.is_dir():
+        return requested
+    try:
+        resolved = requested.resolve()
+    except OSError:
+        return requested
+    if resolved == WORKSPACE or WORKSPACE in resolved.parents:
+        return requested
+    return WORKSPACE / requested.name
+
 
 def main(argv: list[str]) -> int:
     if len(argv) != 4 or argv[1] not in _BUILDERS:
@@ -440,8 +470,14 @@ def main(argv: list[str]) -> int:
         return 2
     _, kind, spec_path, out_path = argv
     spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
-    out = Path(out_path)
+    requested = Path(out_path)
+    out = deliverable(requested)
     out.parent.mkdir(parents=True, exist_ok=True)
+    if out != requested:
+        print(
+            f"note: {requested} is outside the workspace, so it could not be opened "
+            f"from the chat; wrote {out} instead"
+        )
     _BUILDERS[kind](spec, out)
     print(f"{out} ({out.stat().st_size} bytes)")
     return 0

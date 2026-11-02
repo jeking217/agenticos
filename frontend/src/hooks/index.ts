@@ -137,7 +137,13 @@ export {
   type SharedWithMeCounts,
 } from "./use-dashboard-data";
 export { useAllWorkspaceFiles, useWorkspaceFiles } from "./use-sandbox-workspaces";
-export { useFileActions, useFileBytes, useFileText } from "./use-file-content";
+export {
+  useFileActions,
+  useFileBlob,
+  useFileBytes,
+  useFileText,
+} from "./use-file-content";
+export { useRenderedDocument, useWorkbook } from "./use-office-document";
 export { useSkillChanges } from "./use-skill-changes";
 export { useSkill, useSkillResource, useSkills } from "./use-skills";
 export { useSharing } from "./use-sharing";

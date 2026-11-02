@@ -20,4 +20,7 @@ export { FileEditor } from "./file-editor";
 export { FileIcon } from "./file-icon";
 export { FileBytesView, FileTextView, FileUnavailable } from "./file-render";
 export { FileViewer, type ViewerFile, type ViewerTab } from "./file-viewer";
+export { OfficePageGrid } from "./office-page-grid";
+export { OfficePreview } from "./office-preview";
+export { PagedDocument } from "./paged-document";
 export { PathTree, type PathTreeNode } from "./path-tree";

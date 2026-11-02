@@ -16,10 +16,17 @@ font handling and the table sizing are already decided, and a deck assembled by
 hand comes out inconsistent with the last one.
 
 ```bash
-python3 /workspace/skills/office-docs/office.py deck  spec.json  Q3-review.pptx
-python3 /workspace/skills/office-docs/office.py sheet spec.json  Q3-numbers.xlsx
-python3 /workspace/skills/office-docs/office.py doc   spec.json  Q3-minutes.docx
+python3 /workspace/skills/office-docs/office.py deck  /workspace/spec.json /workspace/Q3-review.pptx
+python3 /workspace/skills/office-docs/office.py sheet /workspace/spec.json /workspace/Q3-numbers.xlsx
+python3 /workspace/skills/office-docs/office.py doc   /workspace/spec.json /workspace/Q3-minutes.docx
 ```
+
+Both paths are spelled out, and both are under `/workspace`. `/tmp` is not part of
+the conversation's files: a deck written there builds perfectly and the person can
+neither find it in the file panel beside the chat nor open it, because that panel and
+its viewer only reach the workspace. Say the whole path every time — `office.py`
+moves an output that names somewhere else into `/workspace` and prints a note saying
+so, but the note is a repair, not a plan.
 
 Write the spec to a file with `write_file`, run the command, and read its one-line
 output — it prints the path and byte size, or the reason the spec was refused.
@@ -120,11 +127,16 @@ because there is no display.
 ## Where the files go, and what to say
 
 Write them under `/workspace`, with a name somebody can find next week:
-`2026-Q3-经营分析.pptx`, not `output.pptx`. They appear in **Documents** and in the
-conversation's file panel.
+`/workspace/2026-Q3-经营分析.pptx`, not `/workspace/output.pptx` and not
+`/tmp/2026-Q3-经营分析.pptx`. A file outside the workspace is a file the person cannot
+open from the chat: it is missing from the file panel and from **Documents**, and the
+preview they click says the file is not there. The name is part of the deliverable —
+`output.pptx` in a folder of forty of them is a file nobody can find next week.
 
 Then: one short message. What you made, how many slides or rows, and the one thing
-worth their attention — not a transcription of the content they can open.
+worth their attention — not a transcription of the content they can open. Give the
+path as the script printed it; do not shorten it to a bare name, and do not tell
+somebody to "double-click" a path inside the sandbox that only you can see.
 
 Never invent the numbers a deck is built on. If the data is not in the
 conversation, a file they attached or a tool you can call, ask for it: a

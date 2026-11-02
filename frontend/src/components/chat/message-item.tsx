@@ -49,6 +49,8 @@ import { FileCard, FileIcon } from "@/components/files";
 import { extractSources, toolCallsOf } from "@/lib/chat-sources";
 import type { DelegateRef } from "@/lib/delegations";
 import { publishedApps, PublishedArtifactResult } from "./tool-results/artifact";
+import { TurnDocuments } from "./turn-documents";
+import { producedDocuments } from "@/lib/turn-documents";
 import { TurnExtras } from "./turn-extras";
 
 interface MessageItemProps {
@@ -158,6 +160,10 @@ export const MessageItem = memo(function MessageItem({
   const sources = !isUser ? extractSources(message, t) : [];
   const hasSources = sources.length > 0 && !message.isStreaming;
   const apps = !isUser ? publishedApps(toolCallsOf(message)) : [];
+  // A deck or a document the turn made, drawn under the answer rather than inside
+  // the folded work above it: the file *is* what was asked for, and a fold is closed
+  // by default.
+  const documents = !isUser ? producedDocuments(toolCallsOf(message)) : [];
   const onCiteClick = hasSources ? (index: number) => openSources(sources, index) : undefined;
 
   const avatar = (
@@ -345,6 +351,13 @@ export const MessageItem = memo(function MessageItem({
               <PublishedArtifactResult key={app.artifactId} data={app} />
             ))}
           </div>
+        )}
+
+        {!isUser && !message.isStreaming && documents.length > 0 && (
+          // The deliverable, under what was said about it. A deck produced by a
+          // script is one line inside the work folded above the reply, and telling
+          // somebody a path on a machine they cannot see is not handing them a file.
+          <TurnDocuments conversationId={message.conversationId} documents={documents} />
         )}
 
         {!isUser && !message.isStreaming && endsTurn && (

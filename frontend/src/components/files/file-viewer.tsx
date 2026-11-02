@@ -78,6 +78,14 @@ interface FileViewerProps {
    * knows or should learn about.
    */
   extraTabs?: ViewerTab[];
+  /**
+   * The page to open a document on.
+   *
+   * A surface that showed a page before opening the file - a transcript's grid of
+   * them - knows which one somebody pointed at, and opening on page one after they
+   * picked the fourth is the preview disagreeing with the click.
+   */
+  initialPage?: number;
   onClose: () => void;
 }
 
@@ -97,7 +105,14 @@ interface FileViewerProps {
  * viewport; the width is the only thing the kind decides, because a PDF read in a
  * column as wide as a paragraph is a PDF nobody can read.
  */
-export function FileViewer({ file, access, navigation, extraTabs = [], onClose }: FileViewerProps) {
+export function FileViewer({
+  file,
+  access,
+  navigation,
+  extraTabs = [],
+  initialPage = 0,
+  onClose,
+}: FileViewerProps) {
   const t = useTranslations("files");
   const tTime = useTranslations("time");
   const locale = useLocale();
@@ -223,6 +238,7 @@ export function FileViewer({ file, access, navigation, extraTabs = [], onClose }
               kind={kind}
               name={file.name}
               asSource={view === "source"}
+              initialPage={initialPage}
             />
           )}
         </div>
