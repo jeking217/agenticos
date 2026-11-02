@@ -1,0 +1,18 @@
+# Local-only overrides for this machine, layered on top of
+# docker-compose.yml + docker-compose.override.yml. Not part of the repository.
+#
+# Why it exists: another stack on this host (vllm-postgres) already publishes
+# host port 5432, so AgenticOS's Postgres is published on 5433 instead. The
+# application containers reach the database over the compose network
+# (`POSTGRES_HOST=db`) and are unaffected; 5433 is only for psql/GUI access
+# from the host.
+#
+# Start with this file layered in:
+#   docker compose -f docker-compose.yml -f docker-compose.override.yml \
+#     -f docker-compose.local.yml --profile sandbox up -d
+#
+# The `!override` tag replaces the inherited list rather than appending to it.
+services:
+  db:
+    ports: !override
+      - "5433:5432"

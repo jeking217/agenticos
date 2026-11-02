@@ -187,6 +187,123 @@ For manual Docker Compose setup, pinned versions and troubleshooting, follow the
 
 </details>
 
+## 🧑‍💻 本地运行（源码开发）
+
+上面的一行脚本是"装起来用"。这一节是"拉下代码在本地跑"，两条路线，按你要不要改代码选：
+
+| 路线 | 适合 | 需要准备 |
+| --- | --- | --- |
+| **A. 全容器（推荐）** | 只想把系统跑起来看效果 | Docker Desktop / Engine，Compose **2.24+**；4 vCPU、8 GB 内存 |
+| **B. 应用跑本机** | 要改后端或前端代码 | 路线 A 的环境，加 `uv`、`bun`，以及 GNU Make（或直接用等价的 `docker compose` 命令） |
+
+> **Windows 提示**：`Makefile` 和部分脚本假设 bash。用 **WSL2** 或 **Git Bash** 执行；机器上没有 `make` 时，本节所有命令都给了等价的 `docker compose` 原生命令，可以直接复制。
+
+### 路线 A：全容器一键起（不需要本机 Python / Node）
+
+```bash
+git clone https://github.com/jeking217/agenticos.git
+cd agenticos
+
+cp backend/.env.example backend/.env      # 可选；不建也能起，变量都有默认值
+docker compose --profile sandbox up -d --build
+```
+
+- 首次构建 **5～15 分钟**：后端镜像里带 LibreOffice 和 Tesseract 做文档解析，前端是 Next.js 生产构建。之后有层缓存，约 1 分钟。
+- 启动链路：`migrate` 先跑数据库迁移（到位即空跑）→ `app`（API）→ `worker`（后台任务）+ `db`（pgvector）/ `redis`。数据持久化在 Docker volume 里。
+- Postgres `5432`、Redis `6379` 会映射到本机，方便用 psql / 客户端直连。**本机已有 Postgres 占着 5432 时**，写一个只作用于这台机器的覆盖文件把端口让开（应用容器走 compose 网络连 `db`，不受影响）：
+  ```yaml
+  # docker-compose.local.yml，启动时用 -f 追加上
+  services:
+    db:
+      ports: !override ["5433:5432"]
+  ```
+- **密钥要在 bootstrap 之前定好。** `SECRET_KEY` / `VAULT_MASTER_KEY` 留空时会用示例值兜底，而 `bootstrap` 是用**当时**的密钥把 sandbox 凭据封存进去的 —— 之后再换密钥就解不开，`doctor` 会报 `credential could not be unsealed`。本地图省事就让两者都留空，或先 `openssl rand -hex 32` 各生成一个再启动。
+
+**前端要单独起一次。** 在源码目录里 compose 把 console 放在 `console` profile 后面，`docker compose up` 故意不带它，避免和本机 `bun dev` 抢 3000 端口：
+
+```bash
+docker compose --profile console up -d --build frontend
+```
+
+**创建组织、管理员、模型和初始智能体**（空库不能用，必须先走这一步）：
+
+```bash
+docker compose exec -T -e BOOTSTRAP_API_KEY=sk-... app agenticos cmd bootstrap
+```
+
+可选参数：`--provider openai|anthropic|google|openrouter`、`--email`、`--password`、`--org`、`--model`。不传 `BOOTSTRAP_API_KEY` 也能跑完，两个初始智能体会存成**草稿**，之后在 **Settings → AI providers** 补 key 再发布。
+
+**访问地址**
+
+| 地址 | 内容 |
+| --- | --- |
+| <http://localhost:3000> | 控制台（登录用上面 bootstrap 的账号，默认 `admin@example.com` / `admin123`） |
+| <http://localhost:8000/docs> | API 文档（Swagger） |
+| <http://localhost:8000/admin> | 平台管理 |
+
+**自检**：`docker compose exec app agenticos cmd doctor` —— 逐项检查数据库是否到 head、vault 能否解密、有没有可用模型和 key、sandbox 是否在线、定时任务是否在跑。
+
+### 路线 B：应用跑在本机（改代码热重载）
+
+依赖（数据库、Redis）继续用容器，应用跑在宿主机上，改一行立刻生效：
+
+```bash
+# 1) 只起依赖
+docker compose up -d db redis
+
+# 2) 后端
+cp backend/.env.example backend/.env
+uv sync --directory backend --dev            # uv 会按 .python-version 备好 Python 3.15
+uv run --directory backend agenticos db upgrade
+uv run --directory backend agenticos server run --reload     # http://localhost:8000
+
+# 3) 前端（另开一个终端）
+cd frontend && bun install && bun dev                        # http://localhost:3000
+```
+
+`backend/.env.example` 里 `POSTGRES_HOST` / `REDIS_HOST` 默认就是 `localhost`，走这条路不用改；`SECRET_KEY` 建议换一个（`openssl rand -hex 32`）。
+
+国内网络下 `bun install` 直连 npm 官方源经常卡在几十个包上不动，加个源即可（`bun.lock` 只记版本和校验和、不记绝对下载地址，换源是安全的）：
+
+```bash
+cd frontend && bun install --registry https://registry.npmmirror.com && bun dev
+```
+
+### 关于 sandbox（可选）
+
+`sandboxd` 是唯一挂载 Docker socket 的服务，智能体在里面跑命令、跑代码。它需要一个 token，缺了会直接退出：
+
+```bash
+printf '\nSANDBOXD_TOKEN=%s\n' "$(openssl rand -hex 32)" >> backend/.env
+```
+
+`make dev` 会自动做这一步（已有值不覆盖 —— 重新生成会让正在用的 workspace 全部失联）。**不启动 sandbox 也能用**：聊天、知识库、MCP 都正常，只是智能体无法执行代码。
+
+### 常用命令对照
+
+| 目的 | Make | 等价 `docker compose` |
+| --- | --- | --- |
+| 起后端全栈 | `make dev` | `docker compose --profile sandbox up -d --build` |
+| 起容器里的前端 | `make dev-frontend` | `docker compose --profile console up -d --build frontend` |
+| 跟进日志 | `make dev-logs` | `docker compose --profile sandbox --profile console logs -f` |
+| 停服务（保留数据） | `make dev-down` | `docker compose --profile sandbox --profile console down` |
+| 清库重来（**删数据**） | `make docker-clean` | `docker compose --profile sandbox --profile console down -v` |
+| 跑后端测试 | `make test` | — |
+| 跑前端测试 | `make test-frontend` | `cd frontend && bun run test:run` |
+| 提交前全量检查 | `make check` | — |
+
+### 排错
+
+| 现象 | 先看什么 |
+| --- | --- |
+| 页面能开但每块都是空状态 | 多半是后端没起。前端把失败渲染成空态而不是报错 —— 先 `docker compose ps`、`docker compose logs -f app` |
+| API 起不来 | `docker compose logs migrate`：迁移失败时 API 不会启动 |
+| 端口被占（5432 / 6379 / 8000 / 3000） | 本机已有 Postgres/Redis 或另一份 compose 在跑；改 `docker-compose.override.yml` 的端口映射 |
+| 构建很慢或失败 | `docker compose build app --no-cache`；确认 Docker 能拉 `python:3.15-slim`、`ghcr.io/astral-sh/uv` |
+| 改了代码没生效 | 源码是 bind mount + reload 的，`app` 会热重载；`worker` 不会，改它用 `docker compose restart worker` |
+
+完整的部署、生产与版本固定说明见 [安装文档](https://vstorm-co.github.io/agenticos/install/) 和 [`docs/install.md`](docs/install.md)。
+
 ## 🔌 Connect the apps your team already uses
 
 AgenticOS connects agents to the models, chat tools, business apps and document stores a company already uses, so an agent can read a Notion brief, search SharePoint documents or answer in Slack under the same access rules and budget.
