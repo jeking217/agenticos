@@ -25,13 +25,13 @@ def _each_tick(sweep: Callable[[], Awaitable[object]]) -> Callable[[Tick], Await
 
 
 def ingest() -> Handlers:
-    """What an ingest child loads: its pool's three kinds, and nothing that runs an agent.
+    """What an ingest child loads: its pool's kinds, and nothing that runs an agent.
 
     A child holds its imports for its whole life, once per child, so loading
     only the parsing and embedding stack - not the agent runtime the other pools
     need - is a quarter of its memory and half its start-up (#2229).
     """
-    from app.worker.tasks import project_tasks, rag_tasks
+    from app.worker.tasks import dataset_tasks, project_tasks, rag_tasks
 
     return by_kind(
         [
@@ -39,6 +39,7 @@ def ingest() -> Handlers:
             Handler(jobs.INGEST_DOCUMENT, rag_tasks.ingest_document),
             Handler(jobs.SYNC_COLLECTION, rag_tasks.sync_collection),
             Handler(jobs.SYNC_SOURCE, rag_tasks.sync_source),
+            Handler(jobs.IMPORT_DATASET, dataset_tasks.run_import),
         ]
     )
 
@@ -48,6 +49,7 @@ def production() -> Handlers:
     from app.services.sandbox_workspace import retry_pending_destroys
     from app.worker.tasks import (
         approval_tasks,
+        dataset_tasks,
         diagnostics_tasks,
         generated_media_tasks,
         invitation_tasks,
@@ -112,6 +114,14 @@ def production() -> Handlers:
                 _each_tick(workflow_tasks.sweep_workflow_run_retention),
             ),
             Handler(
+                jobs.SWEEP_DATASET_VERSIONS,
+                _each_tick(dataset_tasks.sweep_dataset_versions),
+            ),
+            Handler(
+                jobs.SWEEP_DATASET_PARTITIONS,
+                _each_tick(dataset_tasks.sweep_dataset_partitions),
+            ),
+            Handler(
                 jobs.SWEEP_GENERATED_MEDIA,
                 _each_tick(generated_media_tasks.sweep_generated_media),
             ),
@@ -136,7 +146,7 @@ def _settler[P: Payload](task: Task[P], settle: Callable[[P, str], Awaitable[Non
 
 @cache
 def _settlers() -> dict[str, Settler]:
-    from app.worker.tasks import project_tasks, rag_tasks
+    from app.worker.tasks import dataset_tasks, project_tasks, rag_tasks
 
     return {
         jobs.MOVE_PROJECT_WORKSPACE.kind: _settler(
@@ -147,6 +157,7 @@ def _settlers() -> dict[str, Settler]:
             jobs.SYNC_COLLECTION, rag_tasks.settle_lost_collection_sync
         ),
         jobs.SYNC_SOURCE.kind: _settler(jobs.SYNC_SOURCE, rag_tasks.settle_lost_source_sync),
+        jobs.IMPORT_DATASET.kind: _settler(jobs.IMPORT_DATASET, dataset_tasks.settle_lost_import),
     }
 
 

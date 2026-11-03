@@ -13,6 +13,7 @@ import {
   Users,
   Search,
   Plug,
+  Table2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -257,6 +258,10 @@ function KBCard({ kb }: { kb: KnowledgeBase }) {
   const { can } = usePermissions();
   const canAdd = can(Perm.agentsEdit);
   const meta = SCOPE_META[kb.scope];
+  // Same row, same permissions, two products. A dataset base has no documents
+  // to list and no ingestion to configure, so the collection page would be a
+  // page of zeroes over controls that do not apply (#T17).
+  const isDataset = kb.kb_type === "dataset";
 
   // The class list below is a class list, not a message. It was in
   // `messages/en.json` as `groupBorderBorderBg2`, read through
@@ -271,7 +276,7 @@ function KBCard({ kb }: { kb: KnowledgeBase }) {
           argument this used to be. Deleting a collection now lives on the
           collection's own page, which is where you can see what it holds. */}
       <Link
-        href={ROUTES.RAG_DETAIL(kb.id)}
+        href={isDataset ? ROUTES.DATASET_BASE(kb.id) : ROUTES.RAG_DETAIL(kb.id)}
         className="focus-visible:ring-ring absolute inset-0 rounded-[inherit] focus-visible:ring-2 focus-visible:outline-none"
         aria-label={t("openCollection", { name: kb.name })}
       />
@@ -281,14 +286,21 @@ function KBCard({ kb }: { kb: KnowledgeBase }) {
           {/* The card's mark is what it is - a knowledge base, as the page's own
               icon says - and the scope is said once, in its footer. */}
           <span className="bg-muted text-foreground inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-            <Database className="h-4 w-4" />
+            {isDataset ? <Table2 className="h-4 w-4" /> : <Database className="h-4 w-4" />}
           </span>
 
-          {kb.is_default && (
-            <Badge variant="outline" className="border-border text-muted-foreground font-normal">
-              {t("default")}
-            </Badge>
-          )}
+          <div className="flex items-center gap-1.5">
+            {isDataset && (
+              <Badge variant="outline" className="border-border text-muted-foreground font-normal">
+                {t("datasetBadge")}
+              </Badge>
+            )}
+            {kb.is_default && (
+              <Badge variant="outline" className="border-border text-muted-foreground font-normal">
+                {t("default")}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 flex-1">

@@ -161,6 +161,33 @@ class WorkspaceCapacityError(AppException):
     status_code = 409
 
 
+class DatasetQuotaError(AppException):
+    """A dataset limit was reached - the base's datasets, or one version's rows (409).
+
+    Its own code rather than `BAD_REQUEST`: a client that retries a refusal has to
+    tell "this request is malformed" from "this account is full", and the caller's
+    next move differs - fix the body, or raise the limit.
+    """
+
+    message = "Dataset quota exceeded"
+    code = "DATASET_QUOTA_EXCEEDED"
+    status_code = 409
+
+
+class ImportValidationError(AppException):
+    """A sheet whose rows cannot be published as they stand (422).
+
+    Its own code rather than `BAD_REQUEST`: the request is well formed and the
+    file was readable, so retrying it unchanged fails identically. What the
+    caller needs is the row list in `details`, which is what a person fixes the
+    workbook from.
+    """
+
+    message = "The sheet has rows that cannot be published"
+    code = "DATASET_IMPORT_VALIDATION_FAILED"
+    status_code = 422
+
+
 class BadRequestError(AppException):
     """Bad request (400)."""
 

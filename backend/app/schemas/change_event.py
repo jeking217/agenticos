@@ -25,10 +25,13 @@ ChangeResource = Literal[
     "secret",
     "mcp_connection",
     "run",
+    "dataset",
 ]
 """What changed. A `trigger` event names the agent whose routines changed, since
 that is what a subscriber's access to them is decided by; a `run` event is a run
-moving through its states (started, parked, finished), which no request made."""
+moving through its states (started, parked, finished), which no request made. A
+`dataset` event is a row of an Excel-derived table - a write to it, a new
+version, a rename - and is read through the base that holds it."""
 ChangeAction = Literal["created", "updated", "deleted"]
 ChangeSurface = Literal["console", "api_key", "mcp", "assistant", "run"]
 """Where a change came from: a console session, an organization API key, an MCP

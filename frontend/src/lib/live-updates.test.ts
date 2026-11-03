@@ -59,6 +59,21 @@ describe("staleQueries", () => {
     expect(staleQueries(change("channel"))).toEqual([qk.channelBots.list(), qk.exposures.all()]);
   });
 
+  it("refreshes a dataset's rows and versions when one is written elsewhere", () => {
+    // A publish, a corrected cell, a renamed dataset: every one of them is a new
+    // answer for the rows, the versions and the log under one dataset id.
+    expect(staleQueries(change("dataset"))).toEqual([qk.datasets.all()]);
+  });
+
+  it("ignores a resource this build has never heard of instead of throwing", () => {
+    // The server can ship a resource before the console tab serving it does. An
+    // unknown one used to be a TypeError on every event, which took the whole
+    // handler down - including the announce every open draft listens to.
+    const unknown = { ...change("dataset"), resource: "future_thing" } as unknown as ChangeEvent;
+
+    expect(staleQueries(unknown)).toEqual([]);
+  });
+
   it("refreshes a member's groups and the reader's own permissions with the member list", () => {
     expect(staleQueries(change("member"))).toEqual([
       qk.organizations.members(ORG),

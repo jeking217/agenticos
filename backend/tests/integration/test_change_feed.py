@@ -23,6 +23,8 @@ from app.core.config import settings
 from app.core.permissions import AuthContext, OrgRoleName, Perm
 from app.core.security import create_access_token
 from app.db.models.agent import Agent
+from app.db.models.kb_dataset import Dataset
+from app.db.models.knowledge_base import KBScope, KnowledgeBase
 from app.db.models.organization import Organization, OrganizationMember
 from app.db.models.organization_secret import OrganizationSecret
 from app.db.models.resource_grant import GrantLevel, ResourceGrant, Visibility
@@ -429,6 +431,52 @@ class TestVisibility:
             assert await change_feed.visible(
                 db, _ctx(organization, owner, OrgRoleName.OWNER), private
             )
+
+    @pytest.mark.security
+    async def test_a_dataset_is_heard_through_the_base_that_holds_it(
+        self, db: AsyncSession
+    ) -> None:
+        """A dataset has no owner or visibility of its own: the base's answer is its."""
+        owner = await _person(db)
+        organization = await _organization(db, owner)
+        viewer = await _join(db, organization, OrgRoleName.VIEWER)
+        ctx = _ctx(organization, viewer, OrgRoleName.VIEWER)
+        heard: dict[str, uuid.UUID] = {}
+        for visibility in (Visibility.PRIVATE, Visibility.ORG):
+            base = KnowledgeBase(
+                id=uuid.uuid4(),
+                name=f"orders-{visibility.value}",
+                scope=KBScope.ORG.value,
+                collection_name=f"orders-{uuid.uuid4().hex[:8]}",
+                kb_type="dataset",
+                embedding_model="text-embedding-3-small",
+                embedding_dim=1536,
+                embedding_provider="openrouter",
+                organization_id=organization.id,
+                owner_user_id=owner.id,
+                visibility=visibility.value,
+            )
+            db.add(base)
+            await db.flush()
+            dataset = Dataset(
+                knowledge_base_id=base.id,
+                organization_id=organization.id,
+                name="订单明细",
+                primary_key_fields=["订单编号"],
+                current_version_no=1,
+                storage_partition_key=uuid.uuid4(),
+                row_count=0,
+            )
+            db.add(dataset)
+            await db.flush()
+            heard[visibility.value] = dataset.id
+
+        assert not await change_feed.visible(
+            db, ctx, _event(organization, owner, resource="dataset", id=heard["private"])
+        )
+        assert await change_feed.visible(
+            db, ctx, _event(organization, owner, resource="dataset", id=heard["org"])
+        )
 
     @pytest.mark.security
     async def test_invitations_reach_only_whoever_manages_members(self, db: AsyncSession) -> None:

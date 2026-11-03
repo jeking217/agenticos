@@ -196,6 +196,10 @@ async def _create_schema(url: str) -> None:
     engine = create_async_engine(url)
     try:
         async with engine.begin() as connection:
+            # Dataset storage lives in its own schema; `create_all` will not
+            # create a schema, and without this the whole run fails on the first
+            # `kb_data.datasets` with "schema does not exist".
+            await connection.execute(text("CREATE SCHEMA IF NOT EXISTS kb_data"))
             await connection.run_sync(Base.metadata.create_all)
             await connection.execute(text(_RAG_SAFE_TO_DATE_DDL))
     finally:
@@ -263,6 +267,9 @@ async def _reset(engine: AsyncEngine) -> None:
             text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
         )
         modelled = set(Base.metadata.tables)
+        public_tables = [
+            table for table in Base.metadata.sorted_tables if table.schema is None
+        ]
         # `name` is a live identifier from `pg_tables` and each table name below
         # comes from `Base.metadata` - both are developer-controlled identifiers,
         # not user input, and neither DROP nor TRUNCATE can bind them as
@@ -271,7 +278,7 @@ async def _reset(engine: AsyncEngine) -> None:
             await connection.execute(text(f'DROP TABLE IF EXISTS "{name}" CASCADE'))
         probes = " UNION ALL ".join(
             f"SELECT '{table.name}' WHERE EXISTS (SELECT 1 FROM \"{table.name}\")"  # noqa: S608 - model table names
-            for table in Base.metadata.sorted_tables
+            for table in public_tables
         )
         populated = [row[0] for row in await connection.execute(text(probes))]
         if populated:
@@ -279,6 +286,14 @@ async def _reset(engine: AsyncEngine) -> None:
             await connection.execute(text(f"TRUNCATE TABLE {tables} RESTART IDENTITY CASCADE"))
         # `last_value` is NULL until a sequence is first used, and `setval(..., false)`
         # leaves it NULL again, so this touches only the sequences that moved.
+        # The dataset tables are in `kb_data`, unqualified above; empty them here
+        # so a test cannot inherit another's rows.
+        dataset_tables = [
+            table for table in Base.metadata.sorted_tables if table.schema == "kb_data"
+        ]
+        if dataset_tables:
+            names = ", ".join(f"kb_data.\"{table.name}\"" for table in dataset_tables)
+            await connection.execute(text(f"TRUNCATE TABLE {names} RESTART IDENTITY CASCADE"))
         await connection.execute(
             text(
                 "SELECT setval(format('%I.%I', schemaname, sequencename)::regclass, "

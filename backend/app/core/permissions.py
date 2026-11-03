@@ -38,6 +38,18 @@ class Perm(StrEnum):
     AGENTS_RUN = "agents:run"
     COLLECTIONS_VIEW = "collections:view"
     COLLECTIONS_EDIT = "collections:edit"
+    # A dataset base is a knowledge base of a second kind - rows rather than
+    # passages - and these four are that base's own authorities rather than four
+    # more scopes on `collections:*`. The split that earns its keep is `import`
+    # and `maintain`: a role may reasonably be allowed to correct a figure in a
+    # published version (`datasets:maintain`) without being allowed to replace the
+    # whole version from a spreadsheet (`datasets:import`), and vice versa. `edit`
+    # covers the shape of the thing - its fields, metrics, relations, name - which
+    # changes what every later import is parsed against.
+    DATASETS_VIEW = "datasets:view"
+    DATASETS_EDIT = "datasets:edit"
+    DATASETS_IMPORT = "datasets:import"
+    DATASETS_MAINTAIN = "datasets:maintain"
     SKILLS_VIEW = "skills:view"
     SKILLS_EDIT = "skills:edit"
     # Context files are a shared resource shaped exactly like skills: an owner, a
@@ -131,6 +143,10 @@ RESOURCE_PERMS: frozenset[Perm] = frozenset(
         Perm.AGENTS_RUN,
         Perm.COLLECTIONS_VIEW,
         Perm.COLLECTIONS_EDIT,
+        Perm.DATASETS_VIEW,
+        Perm.DATASETS_EDIT,
+        Perm.DATASETS_IMPORT,
+        Perm.DATASETS_MAINTAIN,
         Perm.SKILLS_VIEW,
         Perm.SKILLS_EDIT,
         Perm.CONTEXT_VIEW,
@@ -246,6 +262,10 @@ ROLE_PERMS: dict[str, dict[Perm, Scope]] = {
         Perm.AGENTS_RUN: Scope.ALL,
         Perm.COLLECTIONS_VIEW: Scope.ALL,
         Perm.COLLECTIONS_EDIT: Scope.ALL,
+        Perm.DATASETS_VIEW: Scope.ALL,
+        Perm.DATASETS_EDIT: Scope.ALL,
+        Perm.DATASETS_IMPORT: Scope.ALL,
+        Perm.DATASETS_MAINTAIN: Scope.ALL,
         Perm.SKILLS_VIEW: Scope.ALL,
         Perm.SKILLS_EDIT: Scope.ALL,
         Perm.CONTEXT_VIEW: Scope.ALL,
@@ -273,6 +293,10 @@ ROLE_PERMS: dict[str, dict[Perm, Scope]] = {
         Perm.AGENTS_RUN: Scope.ALL,
         Perm.COLLECTIONS_VIEW: Scope.ALL,
         Perm.COLLECTIONS_EDIT: Scope.ALL,
+        Perm.DATASETS_VIEW: Scope.ALL,
+        Perm.DATASETS_EDIT: Scope.ALL,
+        Perm.DATASETS_IMPORT: Scope.ALL,
+        Perm.DATASETS_MAINTAIN: Scope.ALL,
         Perm.SKILLS_VIEW: Scope.ALL,
         Perm.SKILLS_EDIT: Scope.ALL,
         Perm.CONTEXT_VIEW: Scope.ALL,
@@ -298,6 +322,13 @@ ROLE_PERMS: dict[str, dict[Perm, Scope]] = {
         Perm.AGENTS_RUN: Scope.ALL,
         Perm.COLLECTIONS_VIEW: Scope.ALL,
         Perm.COLLECTIONS_EDIT: Scope.SHARED,
+        # A builder imports into what is theirs or was shared with them. The four
+        # mirror `collections:*` exactly: whoever may reshape a base may also fill
+        # it and correct it, and nobody else may.
+        Perm.DATASETS_VIEW: Scope.ALL,
+        Perm.DATASETS_EDIT: Scope.SHARED,
+        Perm.DATASETS_IMPORT: Scope.SHARED,
+        Perm.DATASETS_MAINTAIN: Scope.SHARED,
         Perm.SKILLS_VIEW: Scope.ALL,
         Perm.SKILLS_EDIT: Scope.SHARED,
         Perm.CONTEXT_VIEW: Scope.ALL,
@@ -341,6 +372,9 @@ ROLE_PERMS: dict[str, dict[Perm, Scope]] = {
         Perm.AGENTS_VIEW: Scope.ALL,
         Perm.AGENTS_RUN: Scope.ALL,
         Perm.COLLECTIONS_VIEW: Scope.ALL,
+        # Read only: an operator is paged about a run, not asked to correct a
+        # figure in somebody's spreadsheet.
+        Perm.DATASETS_VIEW: Scope.ALL,
         Perm.SKILLS_VIEW: Scope.ALL,
         Perm.CONTEXT_VIEW: Scope.ALL,
         Perm.TABLES_VIEW: Scope.ALL,
@@ -366,6 +400,10 @@ ROLE_PERMS: dict[str, dict[Perm, Scope]] = {
         Perm.AGENTS_RUN: Scope.SHARED,
         Perm.COLLECTIONS_VIEW: Scope.SHARED,
         Perm.COLLECTIONS_EDIT: Scope.OWN,
+        Perm.DATASETS_VIEW: Scope.SHARED,
+        Perm.DATASETS_EDIT: Scope.OWN,
+        Perm.DATASETS_IMPORT: Scope.OWN,
+        Perm.DATASETS_MAINTAIN: Scope.OWN,
         Perm.SKILLS_VIEW: Scope.SHARED,
         Perm.SKILLS_EDIT: Scope.OWN,
         Perm.CONTEXT_VIEW: Scope.SHARED,
@@ -391,6 +429,7 @@ ROLE_PERMS: dict[str, dict[Perm, Scope]] = {
     OrgRoleName.VIEWER: {
         Perm.AGENTS_VIEW: Scope.SHARED,
         Perm.COLLECTIONS_VIEW: Scope.SHARED,
+        Perm.DATASETS_VIEW: Scope.SHARED,
         Perm.SKILLS_VIEW: Scope.SHARED,
         Perm.CONTEXT_VIEW: Scope.SHARED,
         Perm.WORKFLOWS_VIEW: Scope.SHARED,

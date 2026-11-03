@@ -22,7 +22,7 @@ from app.api.deps import (
 )
 from app.api.public_api import PUBLIC
 from app.api.routes.v1._stored_bytes import stored_file_response
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import BadRequestError, NotFoundError
 from app.core.field_errors import refused_field
 from app.core.permissions import Perm
 from app.schemas.knowledge_base import (
@@ -223,6 +223,10 @@ async def upload_kb_document(
     added.
     """
     kb = await service.get_for_write(kb_id, ctx=ctx)
+    if kb.kb_type == "dataset":
+        raise BadRequestError(
+            message="This knowledge base holds datasets; import a workbook instead of a document"
+        )
     data = await file.read()
     return await rag_doc_service.dispatch_upload(
         ctx=ctx,

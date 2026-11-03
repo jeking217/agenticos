@@ -1,6 +1,6 @@
 ---
 name: rag-knowledge
-description: Work with the knowledge base — ingest documents, run semantic search, manage collections, add a sync connector (Google Drive, S3), change a parser or an ingestion setting. Use when populating or debugging retrieval, when a document upload fails or dies silently in a worker, or when "the agent cannot find something that is definitely in the collection". pgvector + per-organization embedding keys.
+description: Work with the knowledge base — ingest documents, run semantic search, manage collections, add a sync connector (Google Drive, S3), change a parser or an ingestion setting, or import and maintain an Excel dataset base (spreadsheet import, version history, as-of reads, record-level diffs). Use when populating or debugging retrieval, when a document upload fails or dies silently in a worker, when "the agent cannot find something that is definitely in the collection", or when a dataset import is slow, refuses a workbook, or reads a version that looks wrong. pgvector + per-organization embedding keys; datasets live in their own `kb_data` schema.
 ---
 
 # Knowledge base (pgvector)
@@ -86,6 +86,55 @@ registration shape.
 4. Same embedding model throughout? **Do not mix embeddings within a collection** —
    re-ingest if it changed.
 5. Did the document actually parse? See trap 4.
+
+## Excel datasets (`kb_type = 'dataset'`)
+
+A *dataset base* is the same `knowledge_bases` row with `kb_type='dataset'` and no
+vector collection behind it: it holds spreadsheets, not documents. The rows live in
+the `kb_data` schema — `dataset_rows` is **partitioned**, SCD-2 style (`valid_from`
+/ `valid_to`), so a version is a range of row versions rather than a snapshot.
+Read `docs/design/knowledge-datasets.md` before changing anything here; code is
+`app/services/kb_dataset/` (one module per concern: `excel` parse, `versions`
+publish, `query` compiler, `imports` wizard, `inspect` operator checks).
+
+```bash
+uv run agenticos cmd check-kb-datasets              # release gate: schema, partitions, grants
+uv run agenticos cmd verify-kb-datasets-backup dump.sql
+uv run agenticos cmd verify-kb-datasets-restore     # run against the restore target
+uv run agenticos cmd init-kb-datasets-roles         # local only: app_ro / app_rw
+bash scripts/kb_datasets_golive.sh --migrate        # the three above, in order
+bash scripts/kb_datasets_restore_drill.sh dump.sql  # dump → empty db → as-of read
+```
+
+**The four traps, and they are all silent:**
+
+**1. A row missing from a new workbook is not a deleted row.** The interval stays
+open and the record keeps reading. Only maintenance writes a tombstone. Anything
+that "cleans up" absent keys on import destroys the difference between "the export
+stopped listing it" and "we removed it", and only a person can say which happened.
+
+**2. `kb_data` is not in most backup configurations.** It is a second schema, and
+`pg_dump` without `-n kb_data` / a `--schema` allow-list produces a backup that
+restores a database listing datasets whose rows are gone. `verify-kb-datasets-backup`
+compares the dump's object list against `pg_class` — twelve objects, not ten,
+because the two pool partitions are tables too.
+
+**3. `app_ro` only exists if somebody made it.** The migration grants to it *if it
+already exists*, so a database that migrated first has a read-only role that reads
+nothing, and the grant check reports a warning rather than a failure. `init-kb-datasets-roles`
+is the fix.
+
+**4. The sheet cap counts Excel's row index, header included.** `MAX_ROWS_PER_SHEET`
+is 500 000, so a full sheet carries 499 999 data rows and is refused at 500 000
+("split the workbook"). A "million-row" workbook is therefore three sheets, and the
+import is a background job (`import-dataset`) for exactly that reason.
+
+Measured, not budgeted — a million rows through the real path, on a laptop-class
+machine (`loadtest/results/*-dataset-capacity.md`, reproducible with
+`tests/integration/test_kb_dataset_capacity.py`): the workbook is parsed twice per
+import (once to propose the model at upload, once to publish), and the re-import
+pays for the interval compare. If an import feels slow, that is where to look
+before sharding anything.
 
 ## Coverage
 

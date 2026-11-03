@@ -23,6 +23,18 @@ from app.db.models.organization import Invitation, Organization, OrganizationMem
 from app.db.models.audit_log import AppAdminAuditLog  # noqa: F401
 from app.db.models.audit_checkpoint import AppAdminAuditCheckpoint  # noqa: F401
 from app.db.models.knowledge_base import KnowledgeBase  # noqa: F401
+from app.db.models.kb_dataset import (  # noqa: F401
+    Dataset,
+    DatasetField,
+    DatasetImport,
+    DatasetMetric,
+    DatasetModel,
+    DatasetOperation,
+    DatasetRelation,
+    DatasetRow,
+    DatasetVersion,
+    DatasetVersionPin,
+)
 
 config = context.config
 

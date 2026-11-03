@@ -93,6 +93,21 @@ const SKIPPED_DIRS = ["/dev/"];
 const SKIPPED_NAMES = [".test.tsx", ".test.ts", ".spec.ts", ".stories.tsx", ".generated.ts"];
 
 /**
+ * Whether a source path sits somewhere nobody reads copy from.
+ *
+ * The separator is normalised because `join` returns `\` on Windows, where the
+ * `/dev/` entry never matched the components playground. That was not only a
+ * false positive: the hardcoded-copy phase returns before `missingKeys` runs, so
+ * one unexcluded playground file hid every missing key in the tree behind it -
+ * and `pages.kb.datasetBadge` was read by the knowledge-base list, absent from
+ * every locale, and reported by nobody.
+ */
+export function isSkippedSource(path: string): boolean {
+  const normalised = path.replace(/\\/g, "/");
+  return SKIPPED_DIRS.some((dir) => normalised.includes(dir));
+}
+
+/**
  * Props a component renders for a person to read.
  *
  * Still a fixed list, and still the weakness of the rule: copy passed through a name
@@ -1094,7 +1109,7 @@ function main(argv: string[]): number {
     path,
     text: readFileSync(path, "utf8"),
   }));
-  const product = sources.filter(({ path }) => !SKIPPED_DIRS.some((dir) => path.includes(dir)));
+  const product = sources.filter(({ path }) => !isSkippedSource(path));
 
   const failures: string[] = [];
   const absent: string[] = [];

@@ -101,6 +101,13 @@ export interface KnowledgeBase {
   id: string;
   organization_id: string | null;
   owner_user_id: string | null;
+  /**
+   * Documents or rows. The same row, the same permissions, two products: a
+   * document base is parsed and searched, a dataset base is imported and
+   * queried. Optional because a cached list from before the field existed is
+   * still a document base, which is what it was.
+   */
+  kb_type?: "document" | "dataset";
   name: string;
   description: string | null;
   scope: KBScope;

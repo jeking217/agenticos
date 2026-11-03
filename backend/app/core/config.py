@@ -774,6 +774,28 @@ class Settings(BaseSettings):
     # How long a record's history is kept, counted from the change, for a deleted
     # record as much as a live one.
     TABLES_HISTORY_RETENTION_DAYS: int = Field(default=365, gt=0)
+    # How many versions of one Excel dataset the daily sweep keeps, counted back
+    # from the current one. Pinned versions - the ones an answer was computed from -
+    # and the current version are kept whatever this says, so a dataset's history
+    # never loses the version somebody is still quoting. Two is the floor: one
+    # would leave the current version with nothing to compare against.
+    KB_DATASET_VERSIONS_KEPT: int = Field(default=20, ge=2)
+    # Whether dataset knowledge bases are offered at all. Off hides nothing that
+    # exists - the routes still answer - it refuses the *creation* and the agent
+    # tools, which is the switch a deployment flips while the feature is being
+    # rolled out to a few organizations.
+    KB_DATASETS_ENABLED: bool = True
+    # How many datasets one dataset base may hold. A base is one workbook's worth
+    # of sheets in the ordinary case; the cap is there so a client cannot turn a
+    # single base into a catalogue of ten thousand tables, each of which costs a
+    # partition decision, a model snapshot and its share of the version sweeps.
+    KB_DATASET_MAX_PER_BASE: int = Field(default=50, ge=1)
+    # Rows one version of one dataset may carry. The ceiling the plan measured
+    # capacity against, and the point past which a promotion is assumed: a sheet
+    # bigger than this is a file that should have been split, and refusing it at
+    # commit is cheaper than discovering it in the middle of a publish.
+    KB_DATASET_MAX_ROWS: int = Field(default=500_000, ge=1)
+
     # How many quota-refusal audit entries this process writes at once. Moving that
     # write off the request's own connection pool (so a burst of refusals cannot
     # drain it) left it otherwise unbounded, opening one live connection per

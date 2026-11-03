@@ -89,6 +89,40 @@ class IngestDocument(Payload):
     """Which dispatch of the document this is (#1598) - not the job's attempt."""
 
 
+class ImportSheet(Payload):
+    """One sheet's destination, as the wizard decided it.
+
+    A flat copy of the request's own sheet spec rather than that model: a job
+    payload outlives the release that queued it, so it is written in terms this
+    module can keep for as long as the queue holds it. The field list stays a
+    list of dicts for the same reason - the worker re-validates it into the
+    dataset's own field model, which is the only place that may change.
+    """
+
+    sheet_name: str
+    dataset_id: UUID | None = None
+    dataset_name: str | None = None
+    fields: list[dict[str, JsonValue]] | None = None
+    primary_key_fields: list[str] | None = None
+    on_invalid: Literal["block", "skip"] = "block"
+
+
+class ImportDataset(Payload):
+    """A workbook accepted for publishing, and every decision made about it.
+
+    Accepted rather than run: a 40 MB workbook takes long enough that holding an
+    HTTP connection for it is a timeout waiting to happen, and a deploy in the
+    middle of one used to lose the whole import (T09).
+    """
+
+    import_id: UUID
+    knowledge_base_id: UUID
+    organization_id: UUID
+    actor_user_id: UUID | None = None
+    sheets: list[ImportSheet]
+    note: str | None = None
+
+
 class SyncCollection(Payload):
     sync_log_id: UUID
     source: str
@@ -306,6 +340,20 @@ SYNC_SOURCE = Task(
     priority=Priority.BULK,
     cancellable=False,
 )
+# Two attempts, like the ingest kinds it shares a pool with: each sheet is its
+# own savepoint, so an attempt that died half-way left no half-written version
+# behind, and a sheet already published is a no-op when it runs again (identical
+# rows mint no version). Not cancellable: the import row would sit in `running`
+# with nothing left to finish it and no way to tell a person so.
+IMPORT_DATASET = Task(
+    kind="import-dataset",
+    payload_type=ImportDataset,
+    pool=Pool.INGEST,
+    max_attempts=2,
+    timeout=timedelta(hours=2),
+    priority=Priority.INTERACTIVE,
+    cancellable=False,
+)
 # One attempt, for the reason `RUN_AGENT` below has one: a fire is an agent run,
 # and a worker that died under it may already have paid for its model calls and
 # made its tools' side effects. The dead job waits on Admin -> Background jobs,
@@ -431,6 +479,15 @@ WORKFLOW_RECONCILE = _sweep("workflow-reconcile", timeout=timedelta(minutes=5))
 WORKFLOW_SCHEDULES_CHECK = _sweep("workflow-schedules-check", timeout=timedelta(minutes=5))
 WORKFLOW_TABLE_TRIGGERS = _sweep("workflow-table-triggers", timeout=timedelta(minutes=5))
 WORKFLOW_RUN_RETENTION = _sweep("workflow-run-retention", timeout=timedelta(hours=2))
+# Bounds how much history an Excel dataset keeps. Two hours, like the two retention
+# sweeps above: the work is a batched `DELETE` per dataset, and the bound is for a
+# deployment whose first pass has every dataset it ever created to catch up on.
+SWEEP_DATASET_VERSIONS = _sweep("sweep-dataset-versions", timeout=timedelta(hours=2))
+# Gives the datasets that have outgrown a shared pool a relation of their own.
+# Hours, not minutes: each promotion rewrites every row of one dataset, and the
+# sweep is bounded to a handful per pass precisely because of that.
+SWEEP_DATASET_PARTITIONS = _sweep("sweep-dataset-partitions", timeout=timedelta(hours=2))
+
 WORKFLOW_LOG_ALERTS = _sweep("workflow-log-alerts", timeout=timedelta(minutes=5))
 SWEEP_GENERATED_MEDIA = _sweep("sweep-generated-media")
 SEND_DIAGNOSTICS = _sweep("send-diagnostics", timeout=timedelta(seconds=60))
@@ -459,6 +516,7 @@ TASKS: dict[str, TaskKind] = {
         INGEST_DOCUMENT,
         SYNC_COLLECTION,
         SYNC_SOURCE,
+        IMPORT_DATASET,
         FIRE_TRIGGER,
         RUN_AGENT,
         WORKFLOW_DISPATCH_NODE,
@@ -488,6 +546,8 @@ TASKS: dict[str, TaskKind] = {
         WORKFLOW_SCHEDULES_CHECK,
         WORKFLOW_TABLE_TRIGGERS,
         WORKFLOW_RUN_RETENTION,
+        SWEEP_DATASET_VERSIONS,
+        SWEEP_DATASET_PARTITIONS,
         WORKFLOW_LOG_ALERTS,
         SWEEP_GENERATED_MEDIA,
         SEND_DIAGNOSTICS,

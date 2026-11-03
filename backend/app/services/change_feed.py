@@ -50,6 +50,7 @@ from app.db.session import get_db_context
 from app.repositories import agent as agent_repo
 from app.repositories import artifact as artifact_repo
 from app.repositories import context as context_repo
+from app.repositories import kb_dataset as kb_dataset_repo
 from app.repositories import knowledge_base as knowledge_base_repo
 from app.repositories import mcp_connection as mcp_connection_repo
 from app.repositories import member as member_repo
@@ -165,6 +166,18 @@ _FEEDS = (
     _Feed("/workflows", "workflow", "workflow_id"),
     _shared("/context", "context"),
     _Feed("/context", "context", "context_id"),
+    # Datasets sit under `/kb`, but a dataset is its own row with its own page,
+    # so these are matched before the base prefix claims them. `/query` is a read
+    # that happens to be a POST, and it is the busiest call there is - an event
+    # per query would flood the channel with news that nothing changed.
+    _Feed("/kb/datasets/{dataset_id}/query", None),
+    _Feed("/kb/datasets/bases", "dataset"),
+    _Feed("/kb/datasets/{dataset_id}", "dataset", "dataset_id"),
+    # The import routes name the base, not the dataset: committing one changes
+    # the base's contents, and the base is the row a subscriber can be checked
+    # against.
+    _Feed("/kb/{kb_id}/datasets/imports", "knowledge_base", "kb_id"),
+    _Feed("/kb/{kb_id}/datasets", "knowledge_base", "kb_id"),
     _shared("/kb", "knowledge_base"),
     _Feed("/kb", "knowledge_base", "kb_id"),
     _shared("/skills", "skill"),
@@ -192,6 +205,7 @@ _OWNED: dict[ChangeResource, ResourceType] = {
     "skill": SKILL,
     "context": CONTEXT,
     "knowledge_base": COLLECTION,
+    "dataset": COLLECTION,
     "artifact": ARTIFACT,
     "table": TABLE,
     "workflow": WORKFLOW,
@@ -423,6 +437,13 @@ async def _row(db: AsyncSession, event: ChangeEvent, row_id: UUID) -> OwnedResou
         return await virtual_table_repo.get_table(db, row_id, organization_id=organization_id)
     if event.resource == "workflow":
         return await workflow_repo.get(db, row_id, organization_id=organization_id)
+    if event.resource == "dataset":
+        # A dataset is read through the base that holds it: it has no sharing
+        # and no owner of its own, so the base's access is the dataset's.
+        dataset = await kb_dataset_repo.get_dataset(db, row_id)
+        if dataset is None:
+            return None
+        return await knowledge_base_repo.get_by_id(db, dataset.knowledge_base_id)
     return await knowledge_base_repo.get_by_id(db, row_id)
 
 

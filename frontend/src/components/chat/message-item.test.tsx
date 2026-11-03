@@ -19,6 +19,9 @@ vi.mock("@/components/artifacts/artifact-thumbnail", () => ({
   ArtifactThumbnail: ({ title }: { title: string }) => <span>thumbnail of {title}</span>,
 }));
 vi.mock("@/hooks/use-knowledge-bases", () => ({ useKnowledgeBaseFor: () => () => undefined }));
+// A dataset citation navigates to the data it was computed from; nothing here
+// clicks one, and the router needs the locale context this test does not build.
+vi.mock("@/lib/locale-navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("./markdown-content", () => ({
   MarkdownContent: ({
     content,

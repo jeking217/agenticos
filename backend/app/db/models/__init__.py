@@ -22,6 +22,18 @@ from app.db.models.organization import Invitation, Organization, OrganizationMem
 from app.db.models.audit_log import AppAdminAuditLog
 from app.db.models.audit_checkpoint import AppAdminAuditCheckpoint
 from app.db.models.knowledge_base import KnowledgeBase
+from app.db.models.kb_dataset import (
+    Dataset,
+    DatasetField,
+    DatasetImport,
+    DatasetMetric,
+    DatasetModel,
+    DatasetOperation,
+    DatasetRelation,
+    DatasetRow,
+    DatasetVersion,
+    DatasetVersionPin,
+)
 from app.db.models.local_service import LocalService
 from app.db.models.collection_teardown import CollectionTeardown
 from app.db.models.user_slash_command import UserSlashCommand
@@ -185,6 +197,16 @@ __all__ = [
     "AppAdminAuditLog",
     "AppAdminAuditCheckpoint",
     "KnowledgeBase",
+    "Dataset",
+    "DatasetField",
+    "DatasetImport",
+    "DatasetMetric",
+    "DatasetModel",
+    "DatasetOperation",
+    "DatasetRelation",
+    "DatasetRow",
+    "DatasetVersion",
+    "DatasetVersionPin",
     "CollectionTeardown",
     "UserSlashCommand",
     "DeploymentSettings",

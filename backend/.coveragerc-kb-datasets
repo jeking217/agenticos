@@ -1,0 +1,44 @@
+# The dataset feature's own coverage gate (T29).
+#
+# It is deliberately *not* the `[tool.coverage.run] include` list in
+# `pyproject.toml`. That list is a curated set of files held to 100%, and a package
+# added to it by the change that creates it either ships untested branches or an
+# unreviewable pile of mocks. This file measures the feature on its own and holds it
+# to the number it stands at today, so the gate can only ratchet up: raise
+# `fail_under` in the same commit that raises the coverage.
+#
+# Run it with `make test-cov-kb-datasets`.
+#
+# What is in scope and why:
+#   - `app/services/kb_dataset/*` is the feature: the version engine, the query
+#     compiler, the Excel parser, the import wizard, retention, relations.
+#   - the repository, schemas and route file are the parts a unit test cannot reach
+#     without a database, and they are where the SQL and the wire format live.
+#   - `dataset_tasks.py` and `commands/kb_datasets.py` are the two entry points that
+#     run outside a request: the worker's publish and the operator checks.
+#
+# What is *not*: the frontend, the migration, and the rest of `app/` - those have
+# their own gates, and pulling them in here would only hide this one's signal.
+
+[run]
+branch = True
+include =
+    */app/services/kb_dataset/*
+    */app/repositories/kb_dataset.py
+    */app/schemas/kb_dataset.py
+    */app/api/routes/v1/kb_datasets.py
+    */app/worker/tasks/dataset_tasks.py
+    */app/commands/kb_datasets.py
+
+[report]
+# 86.9% on 2026-11-03, branch coverage included (2 762 statements, 768
+# branches). The gate is the integer below it, so a refactor that removes a
+# branch does not fail the build on rounding - and raising it is a one-line
+# change in the commit that earns it.
+fail_under = 86
+show_missing = True
+skip_covered = True
+exclude_also =
+    if TYPE_CHECKING:
+    raise NotImplementedError
+    @overload

@@ -311,6 +311,15 @@ def get_knowledge_base_service(db: DBSession) -> KnowledgeBaseService:
 
 
 KnowledgeBaseSvc = Annotated[KnowledgeBaseService, Depends(get_knowledge_base_service)]
+from app.services.kb_dataset import DatasetService
+
+
+def get_dataset_service(db: DBSession) -> DatasetService:
+    """Datasets ride on their knowledge base's access rules, so they share its session."""
+    return DatasetService(db)
+
+
+DatasetSvc = Annotated[DatasetService, Depends(get_dataset_service)]
 from app.services.collection_access import CollectionAccessService
 
 

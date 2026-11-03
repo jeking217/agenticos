@@ -753,6 +753,26 @@ export const qk = {
     // so it never enters the query cache at all.
     notice: () => ["branding", "notice"] as const,
   },
+  // Excel datasets. Keyed under the dataset's own id, because everything a
+  // dataset page shows - rows, versions, relations, operations - is a view of
+  // that one dataset and a publish must refresh all of them together.
+  datasets: {
+    all: () => ["datasets"] as const,
+    bases: () => ["datasets", "bases"] as const,
+    list: (kbId: string) => ["datasets", "list", kbId] as const,
+    // The prefix every key below shares: invalidating it after a model change
+    // refetches the rows, the versions and the history of that one dataset, which
+    // is what a corrected type actually changes.
+    dataset: (id: string) => ["datasets", id] as const,
+    rows: (id: string, version: number | null, search: string, skip: number) =>
+      ["datasets", id, "rows", version, search, skip] as const,
+    versions: (id: string) => ["datasets", id, "versions"] as const,
+    compare: (id: string, from: number, to: number) =>
+      ["datasets", id, "compare", from, to] as const,
+    relations: (id: string) => ["datasets", id, "relations"] as const,
+    candidates: (id: string) => ["datasets", id, "candidates"] as const,
+    operations: (id: string) => ["datasets", id, "operations"] as const,
+  },
   tables: {
     all: () => ["tables"] as const,
     // The whole query object as the key, matching `skills.list`/`context.list`:

@@ -121,6 +121,12 @@ SCHEDULES: tuple[Schedule, ...] = (
     Schedule("sweep-notifications", jobs.SWEEP_NOTIFICATIONS, _DAY),
     Schedule("sweep-background-jobs", jobs.SWEEP_BACKGROUND_JOBS, _DAY),
     Schedule("workflow-run-retention", jobs.WORKFLOW_RUN_RETENTION, _DAY),
+    # The history an Excel dataset keeps, bounded by `KB_DATASET_VERSIONS_KEPT`.
+    Schedule("sweep-dataset-versions", jobs.SWEEP_DATASET_VERSIONS, _DAY),
+    # Storage tiering: a dataset past the row threshold, or one tenant holding most
+    # of a pool, gets a partition of its own. Daily rather than hourly because the
+    # input is a row count that changes at import time, not at query time.
+    Schedule("sweep-dataset-partitions", jobs.SWEEP_DATASET_PARTITIONS, _DAY),
     # Generated images, speech and video past `GENERATED_MEDIA_RETENTION_DAYS` (#2310).
     Schedule("sweep-generated-media", jobs.SWEEP_GENERATED_MEDIA, _DAY),
     # A report covers the period its occurrence names, so one that arrives while

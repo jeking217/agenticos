@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ExternalLink, FileSearch, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileSearch, Table2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { SourceViewer, type CitedFile } from "@/components/kb/source-viewer";
 import { useKnowledgeBaseFor } from "@/hooks/use-knowledge-bases";
 import { useSourcesPanelStore } from "@/stores/sources-panel-store";
 import {
+  datasetPath,
   sourceDocuments,
   sourceKey,
   type SourceDocument,
   type SourceItem,
 } from "@/lib/chat-sources";
+import { useRouter } from "@/lib/locale-navigation";
 import { cn } from "@/lib/utils";
 
 import { MarkdownContent } from "./markdown-content";
@@ -199,6 +201,51 @@ function WebSourceRow({ item, highlighted }: { item: SourceItem; highlighted: bo
 }
 
 /**
+ * A dataset an answer read, and the version it read.
+ *
+ * Not a passage: there is nothing to quote and nothing to unfold, so the card is
+ * a way into the data at that version - which is the only way to check an
+ * answer about numbers (#T22).
+ */
+function DatasetCard({ doc, highlighted }: { doc: SourceDocument; highlighted: boolean }) {
+  const t = useTranslations("chat");
+  const router = useRouter();
+  const path = datasetPath(doc);
+
+  return (
+    <section
+      data-highlighted={highlighted || undefined}
+      className={cn(
+        "border-foreground/10 flex items-start gap-2.5 rounded-xl border p-3 transition-colors",
+        highlighted && "border-foreground/30 bg-foreground/[0.04]",
+      )}
+    >
+      <SourceMark type="dataset" title={doc.title} />
+      <div className="min-w-0 flex-1">
+        <p className="text-foreground truncate text-[13px] font-medium" title={doc.title}>
+          {doc.title}
+        </p>
+        {doc.version !== undefined && (
+          <p className="text-muted-foreground text-xs">
+            {t("datasetReadAt", { version: doc.version })}
+          </p>
+        )}
+      </div>
+      {path && (
+        <button
+          type="button"
+          onClick={() => router.push(path)}
+          className="border-foreground/12 text-foreground/80 hover:bg-foreground/[0.05] inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium"
+        >
+          <Table2 className="h-3.5 w-3.5" aria-hidden />
+          {t("openDataset")}
+        </button>
+      )}
+    </section>
+  );
+}
+
+/**
  * The sources of an answer, over the side of the conversation they belong to.
  *
  * `contained` keeps it inside the conversation's own box - the Architect's
@@ -224,7 +271,13 @@ export function SourcesPanel({ contained = false }: { contained?: boolean }) {
 
   const ragSources = sources.filter((s) => s.type === "rag");
   const webSources = sources.filter((s) => s.type === "web");
+  const datasetSources = sources.filter((s) => s.type === "dataset");
   const files = sourceDocuments(ragSources);
+  const datasets = sourceDocuments(datasetSources);
+  // A heading over the only kind of source there is says nothing; over one of
+  // three it says which.
+  const groups = [files.length, datasets.length, webSources.length].filter((n) => n > 0).length;
+  const headed = groups > 1;
 
   return (
     <div
@@ -275,7 +328,7 @@ export function SourcesPanel({ contained = false }: { contained?: boolean }) {
       <div className="flex-1 scrollbar-thin space-y-5 overflow-y-auto px-4 py-4">
         {files.length > 0 && (
           <section className="space-y-2.5">
-            {webSources.length > 0 && (
+            {headed && (
               <h3 className="text-muted-foreground font-mono text-xs tracking-wider uppercase">
                 {t("knowledgeBase")}
               </h3>
@@ -298,9 +351,22 @@ export function SourcesPanel({ contained = false }: { contained?: boolean }) {
           </section>
         )}
 
+        {datasets.length > 0 && (
+          <section className="space-y-2">
+            {headed && (
+              <h3 className="text-muted-foreground font-mono text-xs tracking-wider uppercase">
+                {t("datasetsHeading")}
+              </h3>
+            )}
+            {datasets.map((doc) => (
+              <DatasetCard key={doc.key} doc={doc} highlighted={doc.index === highlightedIndex} />
+            ))}
+          </section>
+        )}
+
         {webSources.length > 0 && (
           <section className="space-y-2">
-            {files.length > 0 && (
+            {headed && (
               <h3 className="text-muted-foreground font-mono text-xs tracking-wider uppercase">
                 {t("web")}
               </h3>

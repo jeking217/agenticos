@@ -1,4 +1,4 @@
-.PHONY: docker-test-db docker-test-db-down docker-minio install format lint desktop-dev desktop-build desktop-check mobile-android mobile-ios mobile-check lint-backend lint-frontend check audit licenses licenses-check build-frontend test run clean help sandbox-token sandbox-runtimes deps-upgrade deps-upgrade-all db-init dev dev-down dev-logs dev-rebuild dev-frontend docker-clean dev-server dev-server-down dev-server-logs dev-server-frontend stage stage-down prod prod-down prod-frontend upgrade upgrade-dry-run upgrade-new-features upgrade-finalize docs docs-build docs-slug-check presentation audit-frontend sbom
+.PHONY: docker-test-db docker-test-db-down docker-minio install format lint desktop-dev desktop-build desktop-check mobile-android mobile-ios mobile-check lint-backend lint-frontend check audit licenses licenses-check build-frontend test run clean help sandbox-token sandbox-runtimes deps-upgrade deps-upgrade-all db-init dev dev-down dev-logs dev-rebuild dev-frontend docker-clean dev-server dev-server-down dev-server-logs dev-server-frontend stage stage-down prod prod-down prod-frontend upgrade upgrade-dry-run upgrade-new-features upgrade-finalize docs docs-build docs-slug-check presentation audit-frontend sbom test-cov-kb-datasets
 
 # === Environments ===========================================================
 # Three. The images are published to GHCR by `.github/workflows/images.yml`
@@ -481,6 +481,19 @@ test-security:
 	$(TEST_DB_START)
 	$(TEST_DB_ENV) uv run --directory backend pytest tests/ -m security -q --no-cov -p no:randomly
 
+# The Excel dataset feature's own coverage gate (T29). It is a separate rcfile on
+# purpose: `[tool.coverage.run] include` is the curated 100% list, and this package
+# is measured on its own with a threshold that may only be raised. See
+# backend/.coveragerc-kb-datasets for what is in scope and why.
+test-cov-kb-datasets:
+	$(TEST_DB_START)
+	$(TEST_DB_ENV) uv run --directory backend pytest \
+		tests/test_kb_dataset_*.py \
+		tests/integration/test_kb_dataset_*.py \
+		tests/test_kb_dataset_inspect_command.py \
+		-q -p no:randomly --cov --cov-config=.coveragerc-kb-datasets \
+		--cov-report=term-missing
+
 # The list of refusal tests written to backend/security-tests.txt, and appended to
 # the CI job summary when one is present. Collection only - no database, no run -
 # so it is the cheap step CI calls with `if: always()`. Informational: it lists,
@@ -869,6 +882,20 @@ db-current:
 db-history:
 	uv run --directory backend agenticos db history
 
+# The two roles the dataset migration only grants to if they already exist, so a
+# development machine starts without them and `check-kb-datasets` has nothing to
+# check. Run this after `make db-upgrade` (or before, to get 0248's own grants).
+kb-datasets-roles:
+	uv run --directory backend agenticos cmd init-kb-datasets-roles
+
+# The release gate (T48): schema shape, both pool partitions, the read-only grant,
+# the partition count. Exits non-zero on the first thing a deployment would fail.
+kb-datasets-check:
+	uv run --directory backend agenticos cmd check-kb-datasets
+
+kb-datasets-partitions:
+	uv run --directory backend agenticos cmd kb-datasets-partitions
+
 # === Server ===
 run:
 	uv run --directory backend agenticos server run --reload
@@ -1059,6 +1086,12 @@ help:
 	@echo "  make db-upgrade    Apply migrations"
 	@echo "  make db-downgrade  Rollback last migration"
 	@echo "  make db-current    Show current migration"
+	@echo ""
+	@echo "Excel datasets (T46/T48 - see docs/design/knowledge-datasets.md):"
+	@echo "  make kb-datasets-roles       Create app_ro / app_rw and grant them (local only)"
+	@echo "  make kb-datasets-check       Release gate: schema shape, partitions, grants"
+	@echo "  make kb-datasets-partitions  Attached partitions, bounds and row counts"
+	@echo "  make test-cov-kb-datasets    Coverage gate for the dataset package (T29)"
 	@echo ""
 	@echo "Users:"
 	@echo "  make create-admin  Create admin user (for SQLAdmin access)"

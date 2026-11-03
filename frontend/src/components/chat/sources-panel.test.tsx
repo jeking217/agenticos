@@ -7,6 +7,8 @@ import { useSourcesPanelStore } from "@/stores/sources-panel-store";
 import type { SourceItem } from "@/lib/chat-sources";
 
 const bases = [{ id: "kb-1", name: "Support handbook", collection_name: "support_aa" }];
+const push = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/locale-navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/hooks/use-knowledge-bases", () => ({
   useKnowledgeBaseFor: () => (collection: string | undefined) =>
     bases.find((kb) => kb.collection_name === collection),
@@ -55,6 +57,18 @@ function web(index: number, overrides: Partial<SourceItem> = {}): SourceItem {
 function open(sources: SourceItem[], highlightedIndex: number | null = null) {
   useSourcesPanelStore.getState().open(sources, highlightedIndex);
   return render(<SourcesPanel />);
+}
+
+function dataset(index: number, overrides: Partial<SourceItem> = {}): SourceItem {
+  return {
+    index,
+    type: "dataset",
+    title: "Sales",
+    datasetId: "ds-7",
+    baseId: "kb-2",
+    version: 5,
+    ...overrides,
+  };
 }
 
 beforeEach(() => {
@@ -142,6 +156,40 @@ describe("the sources panel", () => {
 
     expect(screen.queryByText("Web")).toBeNull();
     expect(screen.getByTitle("Consumer rights")).toBeInTheDocument();
+  });
+
+  it("shows a dataset at the version the answer read, and opens the data there", async () => {
+    push.mockClear();
+    open([dataset(1)]);
+
+    expect(screen.getByTitle("Sales")).toBeInTheDocument();
+    expect(screen.getByText("read at v5")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open the data" }));
+    expect(push).toHaveBeenCalledWith("/datasets/kb-2?dataset=ds-7&version=5");
+  });
+
+  it("heads datasets apart from files, and leaves the heading off a panel of datasets", () => {
+    const { unmount } = open([rag(1), dataset(2)]);
+    expect(screen.getByText("Datasets")).toBeInTheDocument();
+    expect(screen.getByText("Knowledge base")).toBeInTheDocument();
+    unmount();
+
+    open([dataset(1)]);
+    expect(screen.queryByText("Datasets")).toBeNull();
+  });
+
+  it("marks the dataset a citation pointed at, so the panel can scroll to it", () => {
+    const { container } = open([dataset(4)], 4);
+
+    expect(container.querySelectorAll("[data-highlighted]")).toHaveLength(1);
+  });
+
+  it("offers no way into a dataset recorded before citations carried ids", () => {
+    open([dataset(1, { datasetId: undefined, baseId: undefined, version: undefined })]);
+
+    expect(screen.getByTitle("Sales")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open the data" })).toBeNull();
   });
 
   it("marks the citation that was clicked, and scrolls it into view", () => {

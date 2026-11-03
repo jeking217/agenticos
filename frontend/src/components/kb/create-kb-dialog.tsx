@@ -7,6 +7,8 @@ import {
   type Audience,
 } from "@/components/sharing/audience-picker";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { FileText, Table2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +39,7 @@ import {
 import { IngestionSettings, ParserCards } from "@/components/kb/ingestion-settings";
 import { ProviderRow } from "@/components/vault/provider-row";
 import { useKnowledgeBases } from "@/hooks";
+import { useCreateDatasetBase } from "@/hooks/use-datasets";
 import { submitFailure } from "@/lib/api-error";
 import {
   DEFAULT_INGESTION_CONFIG,
@@ -44,10 +47,28 @@ import {
   ingestionProblems,
   sameIngestion,
 } from "@/lib/ingestion-config";
+import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { CreateKnowledgeBaseInput, IngestionConfig } from "@/types";
 import { useTranslations } from "next-intl";
 import { DIALOG_BODY, DIALOG_COLUMN, DIALOG_FORM } from "@/lib/dialog-sizes";
+
+/**
+ * What the base holds: the one decision that changes every step after it.
+ *
+ * A document base is a collection of passages - parsed, chunked, embedded,
+ * searched by meaning. A dataset base is rows - imported, modelled by field,
+ * versioned on every publish - and has no embedding model, no collection and
+ * nothing to parse. Asking a spreadsheet base for an embedding model is asking
+ * for something a dataset never uses, so the choice comes first and the rest of
+ * the form follows from it (#T17).
+ */
+const KINDS = [
+  { value: "document", icon: FileText, label: "kindDocument", hint: "kindDocumentHint" },
+  { value: "dataset", icon: Table2, label: "kindDataset", hint: "kindDatasetHint" },
+] as const;
+
+type Kind = (typeof KINDS)[number]["value"];
 
 /** What the backend accepts, so an over-long value is refused before it is sent. */
 const MAX_NAME = 128;
@@ -62,6 +83,8 @@ interface CreateKBDialogProps {
 export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialogProps) {
   const tErrors = useTranslations("errors");
   const t = useTranslations("kb");
+  const router = useRouter();
+  const [kind, setKind] = useState<Kind>("document");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   // The organization by default (#2072). "Only me" is a personal collection; the
@@ -76,6 +99,8 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Readonly<Record<string, string>>>({});
   const { createKB } = useKnowledgeBases();
+  const createDatasetBase = useCreateDatasetBase();
+  const isDataset = kind === "dataset";
   const { models: embeddingModels, unreadable: modelsUnreadable } = useEmbeddingProviders();
   // Whose endpoint the models on offer belong to. The provider decides both the
   // model list and which vault keys can pay, so it is resolved before either -
@@ -106,7 +131,8 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
   // form's starting values would quietly overrule that.
   const chosen = !sameIngestion(ingestion, DEFAULT_INGESTION_CONFIG);
   const localProblems = chosen ? ingestionProblems(ingestion, t) : {};
-  const canSubmit = name.trim().length > 0 && Object.keys(localProblems).length === 0;
+  const canSubmit =
+    name.trim().length > 0 && (isDataset || Object.keys(localProblems).length === 0);
   // The parsing details open themselves when they hold something required -
   // LlamaParse's key - or something refused, and never close themselves: a
   // fold shutting the moment its last problem is fixed takes the field being
@@ -119,6 +145,7 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
   if (parsingNeedsAttention && !detailsOpen) setDetailsOpen(true);
 
   const reset = () => {
+    setKind("document");
     setName("");
     setDescription("");
     setAudience(EVERYONE);
@@ -137,6 +164,19 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
     if (!canSubmit) return;
     setIsSubmitting(true);
     try {
+      if (isDataset) {
+        // Its own route, and its own screen: what happens next is an import and
+        // a data model, neither of which the document page can offer.
+        const base = await createDatasetBase.mutateAsync({
+          name: name.trim(),
+          description: description.trim() || null,
+          scope: audience.mode === "private" ? "personal" : "org",
+        });
+        reset();
+        onOpenChange(false);
+        router.push(ROUTES.DATASET_BASE(base.id));
+        return;
+      }
       const input: CreateKnowledgeBaseInput = {
         name: name.trim(),
         description: description.trim() || undefined,
@@ -204,6 +244,44 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4">
           <div className={cn(DIALOG_BODY, "scrollbar-thin space-y-6")}>
+            {/* First, because every step below it is different depending on it. */}
+            <div className="space-y-2" role="radiogroup" aria-label={t("whatWillItHold")}>
+              <Label>{t("whatWillItHold")}</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {KINDS.map((entry) => (
+                  <button
+                    key={entry.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={kind === entry.value}
+                    onClick={() => setKind(entry.value)}
+                    className={cn(
+                      "rounded-card flex items-start gap-3 border p-3 text-left transition-colors",
+                      kind === entry.value
+                        ? "border-brand bg-brand/5"
+                        : "border-border hover:border-foreground/30",
+                    )}
+                  >
+                    <entry.icon
+                      className={cn(
+                        "mt-0.5 size-4 shrink-0",
+                        kind === entry.value ? "text-brand" : "text-muted-foreground",
+                      )}
+                      aria-hidden
+                    />
+                    <span className="min-w-0">
+                      <span className="text-foreground block text-sm font-medium">
+                        {t(entry.label)}
+                      </span>
+                      <span className="text-muted-foreground block text-xs leading-relaxed">
+                        {t(entry.hint)}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div data-tour="kb-dialog-name">
               <FormField label={t("name")} htmlFor="kb-name" error={errors.name}>
                 <Input
@@ -221,55 +299,66 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
               <AudiencePicker value={audience} onChange={setAudience} />
             </div>
 
+            {isDataset && (
+              <p className="rounded-card border-border bg-muted/40 text-muted-foreground border p-3 text-xs leading-relaxed">
+                {t("datasetNextStep")}
+              </p>
+            )}
+
             {/*
               Open, not folded: the model is frozen at creation (the vector
               column is made at its width) and the key decides whose account
               pays, so these are choices somebody has to see to make - and a
               collection without a key is refused.
+
+              Not rendered at all for a spreadsheet base: there is no vector
+              column to make and nothing to embed, and showing it would be
+              showing a control that changes nothing.
             */}
-            <section className="space-y-3" data-tour="kb-dialog-embeddings">
-              <div className="space-y-1">
-                <h3 className="text-foreground text-sm font-semibold">{t("embeddings")}</h3>
-                <p className="text-muted-foreground text-xs">{t("frozenAtCreationCollection")}</p>
-              </div>
-              {embeddingModels === undefined ? (
-                // In flight and refused are not the same sentence. With no list
-                // there is no provider, model or key to name, so the collection
-                // will be refused - which is what the message says rather than
-                // leaving somebody to find out on submit.
-                modelsUnreadable ? (
-                  <p className="text-destructive text-sm">{t("modelsUnreadable")}</p>
+            {!isDataset && (
+              <section className="space-y-3" data-tour="kb-dialog-embeddings">
+                <div className="space-y-1">
+                  <h3 className="text-foreground text-sm font-semibold">{t("embeddings")}</h3>
+                  <p className="text-muted-foreground text-xs">{t("frozenAtCreationCollection")}</p>
+                </div>
+                {embeddingModels === undefined ? (
+                  // In flight and refused are not the same sentence. With no list
+                  // there is no provider, model or key to name, so the collection
+                  // will be refused - which is what the message says rather than
+                  // leaving somebody to find out on submit.
+                  modelsUnreadable ? (
+                    <p className="text-destructive text-sm">{t("modelsUnreadable")}</p>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">{t("loadingModels")}</p>
+                  )
                 ) : (
-                  <p className="text-muted-foreground text-sm">{t("loadingModels")}</p>
-                )
-              ) : (
-                <>
-                  <EmbeddingProviderFields
-                    models={embeddingModels}
-                    provider={provider}
-                    secretId={embeddingSecretId}
-                    endpointId={embeddingEndpointId}
-                    baseUrl={embeddingBaseUrl}
-                    onBaseUrl={setEmbeddingBaseUrl}
-                    onProvider={setEmbeddingProvider}
-                    onSecretId={setEmbeddingSecretId}
-                    onEndpointId={setEmbeddingEndpointId}
-                    idPrefix="kb-new-embedding"
-                  />
-                  {(errors.embedding_provider ??
-                    errors.embedding_secret_id ??
-                    errors.embedding_endpoint_id ??
-                    errors.embedding_base_url) !== undefined && (
-                    <p className="text-destructive text-xs">
-                      {errors.embedding_provider ??
-                        errors.embedding_secret_id ??
-                        errors.embedding_endpoint_id ??
-                        errors.embedding_base_url}
-                    </p>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="kb-embedding-model">{t("model")}</Label>
-                    {/*
+                  <>
+                    <EmbeddingProviderFields
+                      models={embeddingModels}
+                      provider={provider}
+                      secretId={embeddingSecretId}
+                      endpointId={embeddingEndpointId}
+                      baseUrl={embeddingBaseUrl}
+                      onBaseUrl={setEmbeddingBaseUrl}
+                      onProvider={setEmbeddingProvider}
+                      onSecretId={setEmbeddingSecretId}
+                      onEndpointId={setEmbeddingEndpointId}
+                      idPrefix="kb-new-embedding"
+                    />
+                    {(errors.embedding_provider ??
+                      errors.embedding_secret_id ??
+                      errors.embedding_endpoint_id ??
+                      errors.embedding_base_url) !== undefined && (
+                      <p className="text-destructive text-xs">
+                        {errors.embedding_provider ??
+                          errors.embedding_secret_id ??
+                          errors.embedding_endpoint_id ??
+                          errors.embedding_base_url}
+                      </p>
+                    )}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="kb-embedding-model">{t("model")}</Label>
+                      {/*
                       Mounted only once the list is, never mounted empty. A Radix
                       select inside a form keeps a hidden native `<select>` in step
                       with its value: the `<option>` elements are registered by the
@@ -277,52 +366,55 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
                       options is assigned to a `<select>` that has none, reads back
                       as `""`, and clobbers the state it was about to display.
                     */}
-                    <Select value={model} onValueChange={setEmbeddingModel}>
-                      <SelectTrigger id="kb-embedding-model">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {offered.map((entry) => (
-                          <SelectItem
-                            key={entry.model}
-                            value={entry.model}
-                            // Without this every row answers to the provider's
-                            // name - the mark's title is part of the item's text -
-                            // and typing a model id finds nothing.
-                            textValue={entry.model}
-                            // In the list rather than in the row: the trigger draws
-                            // whatever the row draws, and the width is a comparison
-                            // against the other options.
-                            trailing={
-                              <span className="text-muted-foreground ml-auto shrink-0 pl-2 text-xs">
-                                {t("dimensions", { count: entry.dim })}
-                              </span>
-                            }
-                          >
-                            <ProviderRow provider={provider} name={entry.model} />
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-muted-foreground text-xs">{t("widthIsFixed")}</p>
-                    {checkingEndpoint ? (
-                      <p className="text-muted-foreground text-xs">{t("checkingEndpointModels")}</p>
-                    ) : endpointModels?.source === "curated" ? (
-                      <p className="text-muted-foreground text-xs">
-                        {t("endpointModelsUnconfirmed")}
-                      </p>
-                    ) : endpointModels !== undefined && offered.length === 0 ? (
-                      <p className="text-destructive text-xs">{t("endpointServesNoModel")}</p>
-                    ) : endpointModels !== undefined ? (
-                      <p className="text-muted-foreground text-xs">{t("endpointModelsListed")}</p>
-                    ) : null}
-                    {errors.embedding_model !== undefined && (
-                      <p className="text-destructive text-xs">{errors.embedding_model}</p>
-                    )}
-                  </div>
-                </>
-              )}
-            </section>
+                      <Select value={model} onValueChange={setEmbeddingModel}>
+                        <SelectTrigger id="kb-embedding-model">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {offered.map((entry) => (
+                            <SelectItem
+                              key={entry.model}
+                              value={entry.model}
+                              // Without this every row answers to the provider's
+                              // name - the mark's title is part of the item's text -
+                              // and typing a model id finds nothing.
+                              textValue={entry.model}
+                              // In the list rather than in the row: the trigger draws
+                              // whatever the row draws, and the width is a comparison
+                              // against the other options.
+                              trailing={
+                                <span className="text-muted-foreground ml-auto shrink-0 pl-2 text-xs">
+                                  {t("dimensions", { count: entry.dim })}
+                                </span>
+                              }
+                            >
+                              <ProviderRow provider={provider} name={entry.model} />
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-muted-foreground text-xs">{t("widthIsFixed")}</p>
+                      {checkingEndpoint ? (
+                        <p className="text-muted-foreground text-xs">
+                          {t("checkingEndpointModels")}
+                        </p>
+                      ) : endpointModels?.source === "curated" ? (
+                        <p className="text-muted-foreground text-xs">
+                          {t("endpointModelsUnconfirmed")}
+                        </p>
+                      ) : endpointModels !== undefined && offered.length === 0 ? (
+                        <p className="text-destructive text-xs">{t("endpointServesNoModel")}</p>
+                      ) : endpointModels !== undefined ? (
+                        <p className="text-muted-foreground text-xs">{t("endpointModelsListed")}</p>
+                      ) : null}
+                      {errors.embedding_model !== undefined && (
+                        <p className="text-destructive text-xs">{errors.embedding_model}</p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
 
             {/*
               The parser is the one parsing decision most people make, so it is
@@ -330,32 +422,36 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
               wait folded. The fold opens itself when it holds something
               required - LlamaParse's key - or something refused.
             */}
-            <section className="space-y-3">
-              <h3 className="text-foreground text-sm font-semibold">
-                {t("howDocumentsAreParsed")}
-              </h3>
-              <ParserCards
-                value={ingestion}
-                onChange={setIngestion}
-                disabled={isSubmitting}
-                error={errors.pdf_parser}
-              />
-              <MoreOptions
-                label={t("parsingDetails")}
-                open={detailsOpen}
-                onOpenChange={setDetailsOpen}
-              >
-                <p className="text-muted-foreground text-xs">{t("leftAloneCollectionInherits")}</p>
-                <IngestionSettings
-                  idPrefix="kb-new"
+            {!isDataset && (
+              <section className="space-y-3">
+                <h3 className="text-foreground text-sm font-semibold">
+                  {t("howDocumentsAreParsed")}
+                </h3>
+                <ParserCards
                   value={ingestion}
                   onChange={setIngestion}
-                  errors={{ ...localProblems, ...errors }}
                   disabled={isSubmitting}
-                  withoutParser
+                  error={errors.pdf_parser}
                 />
-              </MoreOptions>
-            </section>
+                <MoreOptions
+                  label={t("parsingDetails")}
+                  open={detailsOpen}
+                  onOpenChange={setDetailsOpen}
+                >
+                  <p className="text-muted-foreground text-xs">
+                    {t("leftAloneCollectionInherits")}
+                  </p>
+                  <IngestionSettings
+                    idPrefix="kb-new"
+                    value={ingestion}
+                    onChange={setIngestion}
+                    errors={{ ...localProblems, ...errors }}
+                    disabled={isSubmitting}
+                    withoutParser
+                  />
+                </MoreOptions>
+              </section>
+            )}
 
             <MoreOptions label={t("moreOptions")}>
               <FormField
@@ -381,7 +477,7 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
             </Button>
             <Button
               type="submit"
-              disabled={!canSubmit || isSubmitting || checkingEndpoint}
+              disabled={!canSubmit || isSubmitting || (!isDataset && checkingEndpoint)}
               data-tour="kb-dialog-create"
             >
               {isSubmitting ? t("creating") : t("create")}

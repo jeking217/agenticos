@@ -36,6 +36,11 @@ const STALE: Record<ChangeResource, (orgId: string) => QueryKey[]> = {
   notification: () => [qk.notifications.all()],
   secret: () => [qk.secrets.all(), qk.sharing.all()],
   mcp_connection: () => [qk.mcpConnections.all(), qk.sharing.all()],
+  // One dataset's rows, versions, relations and log, all keyed under its id - a
+  // publish or a corrected cell is a new answer for every one of them. The base
+  // it lives in is a knowledge base and hears about itself as one, so a rename
+  // reaches the list through `knowledge_base` rather than through here.
+  dataset: () => [qk.datasets.all()],
   // Run history, the approvals inbox and spend all live under `runs`; the chat
   // list reads its running, unread and order state off runs too - a run started
   // by the API, a routine or another tab would otherwise leave it stale. The
@@ -44,7 +49,12 @@ const STALE: Record<ChangeResource, (orgId: string) => QueryKey[]> = {
 };
 
 export function staleQueries(event: ChangeEvent): QueryKey[] {
-  return STALE[event.resource](event.organization_id);
+  // A resource this build has never heard of is a server that shipped ahead of
+  // the tab serving it. Nothing cached can be named for it, but it must not
+  // throw either: the same handler announces the change to every open draft,
+  // and a TypeError in here took the whole feed down with it.
+  const stale = STALE[event.resource] as ((orgId: string) => QueryKey[]) | undefined;
+  return stale ? stale(event.organization_id) : [];
 }
 
 type Listener = (event: ChangeEvent) => void;

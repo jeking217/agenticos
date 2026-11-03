@@ -67,6 +67,11 @@ export const ROUTES = {
   CONTEXT: "/context",
   TABLES: "/tables",
   TABLE_DETAIL: (id: string) => `/tables/${id}`,
+  // Dataset bases: knowledge bases whose content is rows, not documents. Their
+  // own page because nothing on the document list applies - no PDF to upload,
+  // no ingestion, and the buttons would fit half the rows.
+  DATASETS: "/datasets",
+  DATASET_BASE: (id: string) => `/datasets/${id}`,
   PROJECTS: "/projects",
   PROJECT_DETAIL: (id: string) => `/projects/${id}`,
   /** A new chat in a project, starting with its default agent. */

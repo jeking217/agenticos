@@ -143,6 +143,9 @@ class KnowledgeBaseRead(BaseSchema, TimestampSchema):
     description: str | None = None
     scope: KBScopeLiteral
     collection_name: str
+    # Documents or rows. The console uses it to send a base to the dataset view
+    # rather than the document view; nothing in the RAG path reads it.
+    kb_type: Literal["document", "dataset"] = "document"
     is_default: bool = False
     visibility: VisibilityLiteral = "private"
     ingestion_config: IngestionConfig

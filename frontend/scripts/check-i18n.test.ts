@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   READABLE_ATTRS,
   duplicatedInSource,
+  isSkippedSource,
   isTemplateCopy,
   missingKeys,
   offences,
@@ -797,5 +798,26 @@ describe("the catalog, read the other way round", () => {
     );
 
     expect(duplicatedInSource(catalog, files)).toEqual([]);
+  });
+});
+
+describe("the playground exclusion", () => {
+  it("matches a Windows path, where `join` hands back backslashes", () => {
+    // `/dev/` never matched `src\app\...\dev\...`, so the playground's own copy failed
+    // the sweep - and because that phase returns before `missingKeys`, it also hid every
+    // key missing from the catalog. `pages.kb.datasetBadge` shipped that way (#T17).
+    expect(
+      isSkippedSource(
+        "C://repo//frontend//src//app//[locale]//(dashboard)//dev//components//page.tsx",
+      ),
+    ).toBe(true);
+  });
+
+  it("matches a POSIX path", () => {
+    expect(isSkippedSource("/repo/frontend/src/app/[locale]/(dashboard)/dev/page.tsx")).toBe(true);
+  });
+
+  it("keeps a product file that only starts with the same letters", () => {
+    expect(isSkippedSource("C://repo//frontend//src//components//develop//panel.tsx")).toBe(false);
   });
 });

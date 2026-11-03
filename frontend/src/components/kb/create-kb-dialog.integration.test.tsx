@@ -26,6 +26,9 @@ vi.mock("@/lib/api-client", () => ({
   apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+// The dialog can create a spreadsheet base too and sends the browser to it. The
+// navigation is not what any assertion here is about.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const SECRETS = {
   items: [

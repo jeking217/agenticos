@@ -12,6 +12,8 @@ import { DEFAULT_INGESTION_CONFIG } from "@/lib/ingestion-config";
 vi.mock("@/lib/api-client", () => ({
   apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
+const push = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -215,5 +217,38 @@ describe("CreateKBDialog", () => {
     await waitFor(() => expect(apiClient.post).toHaveBeenCalled());
     expect(screen.getByLabelText("Name")).toHaveValue("Handbook");
     expect(screen.getByLabelText("Chunk size")).toHaveValue(1024);
+  });
+
+  // -- what the base holds (#T17) -----------------------------------------
+
+  it("asks a spreadsheet base for no embedding model and no parser", async () => {
+    // A dataset base has no chunks to vectorise and nothing to parse, so the two
+    // sections the API would refuse to accept are not shown rather than shown
+    // and ignored. Asking for an embedding model here is asking for something a
+    // dataset never uses.
+    await userEvent.click(screen.getByRole("radio", { name: /Spreadsheets/ }));
+
+    expect(screen.queryByText("Embeddings")).toBeNull();
+    expect(screen.queryByText("How documents are parsed")).toBeNull();
+  });
+
+  it("creates a dataset base through its own route and opens it", async () => {
+    await userEvent.click(screen.getByRole("radio", { name: /Spreadsheets/ }));
+    vi.mocked(apiClient.post).mockResolvedValueOnce({ id: "kb-9", name: "2026 Sales" });
+    await userEvent.type(screen.getByLabelText("Name"), "2026 Sales");
+
+    await userEvent.click(create());
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/datasets/kb-9"));
+    const call = vi.mocked(apiClient.post).mock.calls.at(-1);
+    expect(call?.[0]).toBe("/kb/datasets/bases");
+    expect(call?.[1]).toMatchObject({ name: "2026 Sales" });
+  });
+
+  it("keeps the document form as the one it opens on", async () => {
+    // The form existed for documents before datasets did; a shape nobody chose
+    // is the shape that was always there.
+    expect(screen.getByText("Embeddings")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Documents/ })).toBeChecked();
   });
 });

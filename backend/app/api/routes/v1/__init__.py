@@ -79,6 +79,7 @@ from app.api.routes.v1.invitations import (
     token_router as invitations_token_router,
 )
 from app.api.routes.v1 import knowledge_bases
+from app.api.routes.v1 import kb_datasets
 from app.api.routes.v1 import me_slash_commands
 from app.api.routes.v1 import me_dashboard_layout
 from app.api.routes.v1 import me_personal_data
@@ -283,6 +284,11 @@ v1_router.include_router(invitations_org_router, prefix="/orgs", tags=["invitati
 v1_router.include_router(invitations_token_router, tags=["invitations"])
 
 v1_router.include_router(knowledge_bases.router, prefix="/kb", tags=["knowledge-bases"])
+# No `prefix` here: every route in the module already carries its own `/kb`
+# section - a dataset is addressed at `/kb/{kb_id}/datasets/{dataset_id}` -
+# so including it under `/kb` as well published all 19 of them at
+# `/kb/kb/...`, and the console's `/api/v1/kb/datasets/bases` was a 404.
+v1_router.include_router(kb_datasets.router, tags=["knowledge-bases:datasets"])
 v1_router.include_router(
     me_slash_commands.router, prefix="/me/slash-commands", tags=["me:slash-commands"]
 )

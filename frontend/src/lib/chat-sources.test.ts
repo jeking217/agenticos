@@ -2,7 +2,7 @@ import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 
 import en from "../../messages/en.json";
-import { extractSources, sourceDocuments } from "./chat-sources";
+import { datasetPath, extractSources, sourceDocuments } from "./chat-sources";
 import type { Translate } from "@/lib/agent-step-captions";
 import type { ChatMessage, ToolCall } from "@/types";
 
@@ -196,6 +196,173 @@ describe("a passage found twice", () => {
     );
 
     expect(sources).toHaveLength(4);
+  });
+});
+
+/** What the dataset tools write back, verbatim in shape (#T22). */
+const QUERY_RESULT = JSON.stringify({
+  dataset_id: "ds-7",
+  kb_id: "kb-2",
+  dataset: "销售明细",
+  version_vector: { 销售明细: 5 },
+  columns: ["region", "revenue"],
+  rows: [{ region: "华东", revenue: 12 }],
+  row_count: 1,
+  truncated: false,
+  warnings: [],
+});
+
+const COMPARE_RESULT = JSON.stringify({
+  dataset_id: "ds-7",
+  kb_id: "kb-2",
+  dataset: "销售明细",
+  from_version: 3,
+  to_version: 5,
+  added: 2,
+  changed: 1,
+  removed: 0,
+  missing: 0,
+  unchanged: 40,
+  rows: [],
+  truncated: false,
+});
+
+/**
+ * A dataset citation.
+ *
+ * The tool answers in JSON and names the dataset by id and the version it read,
+ * which is what a citation needs: the console opens the data the answer was
+ * computed from, not the data as it stands today.
+ */
+describe("a dataset an answer read", () => {
+  it("is cited by name, at the version the query read", () => {
+    const sources = extractSources(
+      message({ toolCalls: [toolCall({ name: "query_dataset", result: QUERY_RESULT })] }),
+      t,
+    );
+
+    expect(sources).toHaveLength(1);
+    expect(sources[0]).toMatchObject({
+      type: "dataset",
+      title: "销售明细",
+      subtitle: "v5",
+      datasetId: "ds-7",
+      baseId: "kb-2",
+      version: 5,
+      // The columns read are what a dataset citation says instead of a passage.
+      content: "region · revenue",
+    });
+  });
+
+  it("is cited at the version a comparison compared to", () => {
+    const sources = extractSources(
+      message({
+        toolCalls: [toolCall({ name: "compare_dataset_versions", result: COMPARE_RESULT })],
+      }),
+      t,
+    );
+
+    expect(sources[0]).toMatchObject({ title: "销售明细", version: 5, subtitle: "v5" });
+  });
+
+  it("reads the version of its own dataset out of a joined query's vector", () => {
+    // A query may join another dataset in, and the vector names the version of
+    // each - the answer still belongs to the dataset that was asked.
+    const joined = JSON.stringify({
+      dataset_id: "ds-7",
+      kb_id: "kb-2",
+      dataset: "销售明细",
+      version_vector: { 客户: 9, 销售明细: 4 },
+      columns: [],
+      rows: [],
+      row_count: 0,
+    });
+    const sources = extractSources(
+      message({ toolCalls: [toolCall({ name: "query_dataset", result: joined })] }),
+      t,
+    );
+
+    expect(sources[0]?.version).toBe(4);
+  });
+
+  it("cites nothing for a dataset tool that refused the query", () => {
+    // Which it does in prose, on the same tool.
+    const sources = extractSources(
+      message({
+        toolCalls: [
+          toolCall({
+            name: "query_dataset",
+            result: "The dataset refused that query: no such field",
+          }),
+        ],
+      }),
+      t,
+    );
+
+    expect(sources).toEqual([]);
+  });
+
+  it("is cited again when the same dataset is read at another version", () => {
+    const later = JSON.stringify({
+      dataset_id: "ds-7",
+      kb_id: "kb-2",
+      dataset: "销售明细",
+      version_vector: { 销售明细: 6 },
+      columns: ["region", "revenue"],
+      rows: [],
+      row_count: 0,
+    });
+    const sources = extractSources(
+      message({
+        toolCalls: [
+          toolCall({ id: "a", name: "query_dataset", result: QUERY_RESULT }),
+          toolCall({ id: "b", name: "query_dataset", result: later }),
+        ],
+      }),
+      t,
+    );
+
+    // Two answers from two versions of the data are two citations; the card the
+    // stack draws still counts one dataset, at the newer version.
+    expect(sources).toHaveLength(2);
+    expect(sourceDocuments(sources).map((doc) => [doc.title, doc.version])).toEqual([
+      ["销售明细", 6],
+    ]);
+  });
+
+  it("is one document however many times it was queried at that version", () => {
+    const docs = sourceDocuments(
+      extractSources(
+        message({
+          toolCalls: [
+            toolCall({ id: "a", name: "query_dataset", result: QUERY_RESULT }),
+            toolCall({ id: "b", name: "query_dataset", result: QUERY_RESULT }),
+          ],
+        }),
+        t,
+      ),
+    );
+
+    expect(docs).toHaveLength(1);
+  });
+});
+
+describe("datasetPath", () => {
+  it("opens the dataset in its base, as of the version read", () => {
+    expect(datasetPath({ baseId: "kb-2", datasetId: "ds-7", version: 5 })).toBe(
+      "/datasets/kb-2?dataset=ds-7&version=5",
+    );
+  });
+
+  it("leaves the version out when the read was of whatever was current", () => {
+    expect(datasetPath({ baseId: "kb-2", datasetId: "ds-7" })).toBe("/datasets/kb-2?dataset=ds-7");
+  });
+
+  it("has nowhere to open for a citation recorded before ids were carried", () => {
+    // A conversation from before #T22 holds only the dataset's name.
+    expect(datasetPath({})).toBeNull();
+    expect(datasetPath({ baseId: "kb-2" })).toBeNull();
+    expect(datasetPath({ datasetId: "ds-7" })).toBeNull();
   });
 });
 

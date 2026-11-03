@@ -1,11 +1,33 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SourceItem } from "@/lib/chat-sources";
+import type { Dataset, DatasetOperation, DatasetVersion } from "@/types/datasets";
 
 import { MessageSources } from "./message-sources";
 
+const push = vi.hoisted(() => vi.fn());
+
+/** What the dataset endpoints answer with, which decides the notices (#T23). */
+const server = vi.hoisted(() => ({
+  datasets: [] as Dataset[],
+  datasetsLoaded: true,
+  versions: [] as DatasetVersion[],
+  total: 0,
+  operations: [] as DatasetOperation[],
+}));
+
+vi.mock("@/lib/locale-navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("@/hooks/use-datasets", () => ({
+  useDatasets: () => ({ datasets: server.datasets, isSuccess: server.datasetsLoaded }),
+  useDatasetVersions: () => ({
+    versions: server.versions,
+    total: server.total,
+    isSuccess: true,
+  }),
+  useOperations: () => ({ operations: server.operations }),
+}));
 vi.mock("@/hooks/use-knowledge-bases", () => ({
   useKnowledgeBaseFor: () => (collection: string | undefined) =>
     collection === "support_aa" ? { id: "kb-1", name: "Support handbook" } : undefined,
@@ -30,6 +52,49 @@ const page = (index: number, url: string, title = "A page"): SourceItem => ({
   type: "web",
   title,
   url,
+});
+
+const dataset = (index: number, overrides: Partial<SourceItem> = {}): SourceItem => ({
+  index,
+  type: "dataset",
+  title: "Sales",
+  datasetId: "ds-7",
+  baseId: "kb-2",
+  version: 5,
+  ...overrides,
+});
+
+const sales = (overrides: Partial<Dataset> = {}): Dataset =>
+  ({
+    id: "ds-7",
+    name: "Sales",
+    current_version_no: 5,
+    fields: [],
+    ...overrides,
+  }) as Dataset;
+
+const version = (no: number, at = "2026-10-15T09:00:00Z"): DatasetVersion =>
+  ({ id: `v-${no}`, version_no: no, published_at: at }) as DatasetVersion;
+
+const deletion = (versionNo: number): DatasetOperation =>
+  ({ id: `op-${versionNo}`, operation: "delete", version_no: versionNo }) as DatasetOperation;
+
+/** What the dataset endpoints say, before each test says otherwise. */
+function datasetMovedOn() {
+  server.datasets = [sales()];
+  server.datasetsLoaded = true;
+  server.versions = [version(5), version(3)];
+  server.total = 2;
+  server.operations = [];
+}
+
+beforeEach(() => {
+  push.mockClear();
+  server.datasets = [sales()];
+  server.datasetsLoaded = true;
+  server.versions = [version(5)];
+  server.total = 1;
+  server.operations = [];
 });
 
 async function expand(sources: SourceItem[], onOpen = vi.fn()) {
@@ -127,5 +192,126 @@ describe("the sources under an answer", () => {
     await userEvent.click(screen.getByRole("button", { expanded: true }));
 
     expect(screen.queryByRole("list")).toBeNull();
+  });
+});
+
+/**
+ * A dataset among the sources of an answer (#T22), and what its version is worth
+ * now (#T23).
+ *
+ * An answer about numbers has to be checkable against the numbers it used, so a
+ * dataset citation carries the version it was computed from and opens the data
+ * at that version - not whatever the data says by the time somebody clicks. When
+ * the data has moved on, the message says so and offers the way to the current
+ * numbers; the answer itself is replayed, never recomputed.
+ */
+describe("a dataset citation", () => {
+  it("names the dataset, the version it read, and that it is still current", async () => {
+    await expand([dataset(1)]);
+
+    expect(screen.getByText("Sales")).toBeInTheDocument();
+    expect(screen.getByText("v5 · latest")).toBeInTheDocument();
+  });
+
+  it("opens the data at that version, rather than the current one", async () => {
+    datasetMovedOn();
+    await expand([dataset(1, { version: 3 })]);
+
+    await userEvent.click(screen.getByRole("button", { name: "Open Sales's data" }));
+
+    expect(push).toHaveBeenCalledWith("/datasets/kb-2?dataset=ds-7&version=3");
+  });
+
+  it("opens the data from the row itself, for a reader who does not aim", async () => {
+    datasetMovedOn();
+    await expand([dataset(1, { version: 3 })]);
+
+    await userEvent.click(screen.getByRole("button", { name: /^Sales/ }));
+
+    expect(push).toHaveBeenCalledWith("/datasets/kb-2?dataset=ds-7&version=3");
+  });
+
+  it("marks it as a table, not as a file", () => {
+    const { container } = render(<MessageSources sources={[dataset(1)]} onOpen={vi.fn()} />);
+
+    expect(container.querySelectorAll(".lucide-table-2")).toHaveLength(1);
+    expect(container.querySelectorAll("[class*=lucide-file]")).toHaveLength(0);
+  });
+
+  it("still shows one recorded before citations carried ids, and opens nothing", async () => {
+    // A conversation from before datasets were linkable holds only the name.
+    await expand([dataset(1, { datasetId: undefined, baseId: undefined })]);
+
+    expect(screen.getByText("Sales")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Open Sales/ })).toBeNull();
+    expect(screen.queryByTestId(/dataset-notice/)).toBeNull();
+  });
+});
+
+describe("an answer whose data has moved on", () => {
+  it("says nothing when the version it read is still current", () => {
+    render(<MessageSources sources={[dataset(1)]} onOpen={vi.fn()} />);
+
+    expect(screen.queryByTestId(/dataset-notice/)).toBeNull();
+  });
+
+  it("warns, naming both versions, rather than rewriting the answer", () => {
+    datasetMovedOn();
+    render(<MessageSources sources={[dataset(1, { version: 3 })]} onOpen={vi.fn()} />);
+
+    const notice = screen.getByTestId("dataset-notice-moved");
+    expect(notice).toHaveTextContent(/moved on to v5/);
+    expect(notice).toHaveTextContent(/read v3/);
+  });
+
+  it("points the citation at the latest data on request, and back again", async () => {
+    datasetMovedOn();
+    render(<MessageSources sources={[dataset(1, { version: 3 })]} onOpen={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+
+    await userEvent.click(screen.getByRole("button", { name: "View the latest" }));
+
+    // A view state: the citation now reads the current version, the message does
+    // not.
+    expect(screen.getByText("v5 · latest")).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Back to v3" }));
+    expect(screen.getByText("v3")).toBeInTheDocument();
+  });
+
+  it("turns red when records were deleted after the answer was computed", () => {
+    datasetMovedOn();
+    server.operations = [deletion(4), deletion(2)];
+    render(<MessageSources sources={[dataset(1, { version: 3 })]} onOpen={vi.fn()} />);
+
+    const notice = screen.getByTestId("dataset-notice-deleted");
+    expect(notice).toHaveTextContent(/1 record deleted after v3/);
+  });
+
+  it("calls a version that is no longer kept archived", () => {
+    server.datasets = [sales()];
+    server.versions = [version(5), version(4)];
+    server.total = 2;
+    render(<MessageSources sources={[dataset(1, { version: 3 })]} onOpen={vi.fn()} />);
+
+    expect(screen.getByTestId("dataset-notice-archived")).toHaveTextContent(/v3 is archived/);
+  });
+
+  it("says the dataset is gone, and keeps the answer readable", async () => {
+    server.datasets = [];
+    await expand([dataset(1, { version: 3 })]);
+
+    expect(screen.getByTestId("dataset-notice-gone")).toHaveTextContent(/is gone/);
+    expect(screen.getByText("Sales")).toBeInTheDocument();
+  });
+
+  it("holds its tongue once the reader has said they know", async () => {
+    datasetMovedOn();
+    render(<MessageSources sources={[dataset(1, { version: 3 })]} onOpen={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Keep v3" }));
+
+    expect(screen.queryByTestId(/dataset-notice/)).toBeNull();
   });
 });

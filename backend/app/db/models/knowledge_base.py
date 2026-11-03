@@ -19,6 +19,19 @@ class KBScope(enum.StrEnum):
     APP = "app"
 
 
+class KBType(enum.StrEnum):
+    """What kind of thing is stored.
+
+    A document base holds passages and is searched by meaning; a dataset base
+    holds rows and is queried by field. They share a name, an owner and a
+    permission - which is why they share this table - and nothing else: a
+    dataset base has no chunks, no embedding, and no ingestion pipeline.
+    """
+
+    DOCUMENT = "document"
+    DATASET = "dataset"
+
+
 class KnowledgeBase(TimestampMixin, Base):
     """Named, scoped wrapper around a vector-store collection."""
 
@@ -33,6 +46,12 @@ class KnowledgeBase(TimestampMixin, Base):
         String(16), nullable=False, default=KBScope.PERSONAL.value, index=True
     )
     collection_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    # Documents or rows. Written once, at creation: a base that changed kind
+    # would keep its name and lose its contents, since neither side can read
+    # the other's storage.
+    kb_type: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=KBType.DOCUMENT.value, server_default="document"
+    )
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # How documents put into this collection are parsed, chunked and described.
     # Validated as `app.services.ingestion_config.IngestionConfig`; stored as
@@ -139,6 +158,9 @@ class KnowledgeBase(TimestampMixin, Base):
     __table_args__ = (
         CheckConstraint(
             "visibility IN ('private', 'team', 'org')", name="ck_knowledge_bases_visibility"
+        ),
+        CheckConstraint(
+            "kb_type IN ('document', 'dataset')", name="ck_knowledge_bases_kb_type"
         ),
         CheckConstraint(
             "scope <> 'org' OR organization_id IS NOT NULL",

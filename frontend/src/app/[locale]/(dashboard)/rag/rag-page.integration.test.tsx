@@ -368,3 +368,26 @@ describe("the three tabs each show only their own section (#939)", () => {
   // `vitest.setup.ts` answers empty and wins: a test written that way passed
   // while the page rendered its default, which is worse than not having it.
 });
+describe("a base that holds rows opens where rows live (#T17)", () => {
+  it("sends a spreadsheet base to its dataset screen, not the document one", async () => {
+    // Both are knowledge bases and both are in this list - an agent may be
+    // given either - but a dataset base has no documents, no ingestion and no
+    // search by meaning, so its own screen is the only one that can show it.
+    mockApi([{ ...kb("kb-2", "2026 Sales", "ds-abc123"), kb_type: "dataset" }]);
+
+    render(<RAGPage />, { wrapper });
+
+    const link = await screen.findByRole("link", { name: "pages.kb.openCollection" });
+    expect(link).toHaveAttribute("href", "/datasets/kb-2");
+    expect(screen.getByText("pages.kb.datasetBadge")).toBeInTheDocument();
+  });
+
+  it("leaves a document base on its collection page", async () => {
+    mockApi([kb("kb-1", "Handbook", "handbook")]);
+
+    render(<RAGPage />, { wrapper });
+
+    const link = await screen.findByRole("link", { name: "pages.kb.openCollection" });
+    expect(link).toHaveAttribute("href", "/rag/kb-1");
+  });
+});

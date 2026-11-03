@@ -474,6 +474,10 @@ ignore = [
 # its output is redirected into a results file afterwards. It is not imported by
 # the application - nothing under `app/` may import it - and it carries no gate.
 "../loadtest/**" = ["T201"]
+# The capacity measurement's output *is* its report: a run prints the table that
+# `loadtest/results/` then keeps, and `-s` is how it is read. Same reasoning as
+# the harness above - it measures and reports, it does not gate anything.
+"tests/integration/test_kb_dataset_capacity.py" = ["T201"]
 # Never run in the API: a sandbox runs its source with `python3 -c` and the
 # computerd image copies it in, as the desktop's own account. Its answer is its
 # output (T201), and it runs the desktop's `xdotool` and `exo-open` by name with
@@ -484,6 +488,20 @@ ignore = [
 # [a-zA-Z0-9_] before it reaches a query, and every *value* is bound. This is
 # the correct pattern, not an exception to it.
 "app/services/rag/vectorstore.py" = ["S608"]
+# Same shape, three more places, all in the Excel dataset subsystem. Postgres
+# cannot parameterise an identifier, so these four modules interpolate table and
+# column names - and only those. `partitions._checked` refuses anything that is
+# not a plain `[a-z_][a-z0-9_]*` identifier before it reaches the DDL, the query
+# compiler emits only field names from the dataset's own model snapshot, and every
+# *value* travels as a bound parameter. The integration tests in the last entry
+# interpolate one module-level scratch table name so the assertions can name a
+# child partition, which is the only way to tell routed rows from relocated ones.
+"app/services/kb_dataset/partitions.py" = ["S608"]
+"app/services/kb_dataset/query.py" = ["S608"]
+"app/services/kb_dataset/relations.py" = ["S608"]
+"app/repositories/kb_dataset.py" = ["S608"]
+"tests/integration/test_kb_dataset_partitions.py" = ["S608"]
+"tests/integration/test_kb_dataset_subquery.py" = ["S608"]
 # The memory facts recall is the same shape: the interpolated pieces are the
 # halfvec cast (built from an int dimension) and a fixed `IS NULL` / `= :scope`
 # choice, and every value is bound. The vector column has no SQLAlchemy type, so
@@ -521,6 +539,10 @@ ignore = [
     "PLR2004",
     "SLF001",
 ]
+# These datetimes are cell *inputs*, not timestamps: openpyxl refuses a tz-aware
+# value because an Excel cell has no timezone, so the fixtures are naive by
+# definition and the reader is what attaches UTC on the way in.
+"tests/test_kb_dataset_excel.py" = ["DTZ001"]
 # The RAG pipeline came with the generator. `filter` as a parameter name, md5
 # as a cache key (not a security primitive) and two blocking reads inside
 # third-party SDK calls are its debt, tracked rather than silently accepted:

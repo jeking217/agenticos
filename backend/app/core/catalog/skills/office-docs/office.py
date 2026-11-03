@@ -358,7 +358,8 @@ _HEADINGS = {"h1": 18, "h2": 15, "h3": 13}
 def build_doc(spec: dict[str, Any], out: Path) -> None:
     from docx import Document
     from docx.oxml.ns import qn as docx_qn
-    from docx.shared import Cm, Pt as DocxPt
+    from docx.shared import Cm
+    from docx.shared import Pt as DocxPt
 
     document = Document()
 

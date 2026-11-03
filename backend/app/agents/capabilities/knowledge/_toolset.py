@@ -19,6 +19,7 @@ from app.agents.capabilities._ambient import run_model_settings
 from app.agents.capabilities._failures import steer
 from app.agents.capabilities._metered import MeteredModel
 from app.agents.capabilities.budget import BudgetExceeded
+from app.agents.capabilities.knowledge._datasets import build_dataset_tools
 from app.agents.capabilities.knowledge._search import (
     organizational_units_in_scope,
     search_knowledge_base,
@@ -273,4 +274,10 @@ def build_knowledge_toolset(
 
     toolset: FunctionToolset[AgentDeps] = FunctionToolset()
     toolset.add_function(search_documents, takes_ctx=True)
+    # A dataset base is a knowledge base too, so the same binding resolves it and
+    # the same capability may read it. The tools answer "none bound" cheaply when
+    # this agent has only document bases, which is why they are not conditioned
+    # on a configuration flag the capability cannot see at build time.
+    for tool in build_dataset_tools():
+        toolset.add_function(tool, takes_ctx=True)
     return toolset

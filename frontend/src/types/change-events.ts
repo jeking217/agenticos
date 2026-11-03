@@ -17,6 +17,7 @@ export type ChangeResource =
   | "notification"
   | "secret"
   | "mcp_connection"
+  | "dataset"
   | "run";
 
 export type ChangeAction = "created" | "updated" | "deleted";

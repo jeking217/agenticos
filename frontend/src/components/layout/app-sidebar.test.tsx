@@ -301,6 +301,15 @@ describe("the navigation definition", () => {
     expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 
+  it("keeps datasets out of the column", () => {
+    // A dataset base is a knowledge base, and the knowledge-base list already
+    // names it with a badge and links to its page. A second door to the same
+    // list was two answers to "where do I make one".
+    const hrefs = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.href));
+
+    expect(hrefs).not.toContain("/datasets");
+  });
+
   it("gives every platform destination a permission to hide behind", () => {
     // Dashboard, Chat and Organizations are open to any member by design, and so
     // is Documents: it lists the files an agent kept *for the person looking*,

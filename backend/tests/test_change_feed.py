@@ -144,6 +144,75 @@ class TestWhatIsAChange:
         assert changed is not None
         assert (changed.resource, changed.action) == ("organization", "updated")
 
+    def test_a_dataset_is_announced_by_its_own_row_not_by_its_base(self) -> None:
+        """A dataset sits under `/kb`, but its page is the dataset's own."""
+        dataset = uuid.uuid4()
+
+        made = _change("POST", "/kb/datasets/bases", {}, f'{{"id": "{dataset}"}}'.encode())
+        renamed = _change("PATCH", f"/kb/datasets/{dataset}", {"dataset_id": str(dataset)})
+        archived = _change("DELETE", f"/kb/datasets/{dataset}", {"dataset_id": str(dataset)})
+
+        assert made is not None and renamed is not None and archived is not None
+        assert (made.resource, made.id, made.action) == ("dataset", dataset, "created")
+        assert (renamed.resource, renamed.id, renamed.action) == ("dataset", dataset, "updated")
+        assert (archived.resource, archived.id, archived.action) == ("dataset", dataset, "deleted")
+
+    def test_a_row_written_by_hand_is_a_change_to_its_dataset(self) -> None:
+        dataset, record = str(uuid.uuid4()), str(uuid.uuid4())
+        params = {"dataset_id": dataset, "record_key": record}
+
+        edited = _change("PATCH", f"/kb/datasets/{dataset}/rows/{record}", params)
+        restored = _change("POST", f"/kb/datasets/{dataset}/rows/{record}/restore", params)
+        modelled = _change("PUT", f"/kb/datasets/{dataset}/model", {"dataset_id": dataset})
+
+        assert edited is not None and restored is not None and modelled is not None
+        for change in (edited, restored, modelled):
+            assert (change.resource, str(change.id), change.action) == (
+                "dataset",
+                dataset,
+                "updated",
+            )
+
+    def test_asking_a_dataset_a_question_changes_nothing(self) -> None:
+        """The busiest call there is: an event per query would drown the channel."""
+        dataset = str(uuid.uuid4())
+
+        assert (
+            _change(
+                "POST",
+                f"/kb/datasets/{dataset}/query",
+                {"dataset_id": dataset},
+                b'{"dataset": "orders"}',
+            )
+            is None
+        )
+
+    def test_an_import_is_a_change_to_the_base_it_feeds(self) -> None:
+        """The import routes name the base, so the base is the row it is told by."""
+        kb_id, import_id, dataset = (
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+        )
+
+        staged = _change("POST", f"/kb/{kb_id}/datasets/imports", {"kb_id": kb_id})
+        committed = _change(
+            "POST",
+            f"/kb/{kb_id}/datasets/imports/{import_id}/commit",
+            {"kb_id": kb_id, "import_id": import_id},
+        )
+        created = _change(
+            "POST", f"/kb/{kb_id}/datasets", {"kb_id": kb_id}, f'{{"id": "{dataset}"}}'.encode()
+        )
+
+        for change in (staged, committed, created):
+            assert change is not None
+            assert (change.resource, str(change.id), change.action) == (
+                "knowledge_base",
+                kb_id,
+                "updated",
+            )
+
     def test_a_member_and_the_organization_are_told_apart(self) -> None:
         org_id, user_id = str(uuid.uuid4()), str(uuid.uuid4())
 

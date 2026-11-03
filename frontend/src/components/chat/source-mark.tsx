@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe } from "lucide-react";
+import { Globe, Table2 } from "lucide-react";
 
 import { FileIcon } from "@/components/files";
 import { BrandIcon } from "@/components/icons/brand-icon";
@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * What a source is, as one round mark: the file's kind for a knowledge base
- * passage, the service's own logo for a page on Notion or GitHub, a globe for
- * the rest of the web.
+ * passage, a table for a dataset row set, the service's own logo for a page on
+ * Notion or GitHub, a globe for the rest of the web.
  *
  * Round and ringed like an agent's face, so a row of them stacks the way the
  * faces in the conversation list do.
@@ -21,7 +21,7 @@ export function SourceMark({
   url,
   className,
 }: {
-  type: "rag" | "web";
+  type: "rag" | "web" | "dataset";
   title: string;
   url?: string;
   className?: string;
@@ -37,6 +37,8 @@ export function SourceMark({
     >
       {type === "rag" ? (
         <FileIcon name={title} className="h-3.5 w-3.5" />
+      ) : type === "dataset" ? (
+        <Table2 className="text-muted-foreground h-3.5 w-3.5" />
       ) : brand ? (
         <BrandIcon name={brand} className="h-3.5 w-3.5" />
       ) : (
