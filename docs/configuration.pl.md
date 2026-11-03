@@ -1,5 +1,5 @@
 ---
-source_sha: "d7e885bf14a4"
+source_sha: "70c5c771ebed"
 ---
 
 # Konfiguracja { #configuration }
@@ -251,6 +251,47 @@ SAML i SCIM nie są zaimplementowane. Większość dostawców tożsamości, któ
 używa średniej wielkości firma, mówi po OIDC, a te ustawienia to całość tego,
 czego potrzebują. Katalogu, przed którym nie stoi żaden dostawca tożsamości, można
 użyć bezpośrednio — zobacz niżej.
+
+### Logowanie przez platformę Unione { #sign-in-through-the-unione-platform }
+
+Gdy to wdrożenie jest jednym z produktów na platformie Unione, konta trzyma
+platforma, a ten serwis nie porównuje własnych haseł. Portal platformy przekazuje
+przeglądarce jednorazowy bilet `tk-`, który strona logowania wymienia, a następnie
+usuwa z paska adresu — kto jest tam już zalogowany, trafia tu zalogowany. Bez
+biletu strona przyjmuje konto i hasło, opieczętowuje hasło kluczem SM2 platformy i
+przekazuje je dalej, albo przyjmuje kod, który platforma wysłała na telefon konta.
+
+| Zmienna | Domyślnie | Opis |
+|----------|---------|-------------|
+| `UNIONE_AUTH_ENABLED` | `false` | Oferuje platformę. Przy pustym `UNIONE_BASE_URL` route'y odpowiadają 404, jak nieskonfigurowany wystawca OIDC |
+| `UNIONE_BASE_URL` | (puste) | Sam portal, `http://10.0.0.7:8080/portal` — nie brama. Końcowy ukośnik jest usuwany; dane logowania, query albo fragment odrzucane przy starcie |
+| `UNIONE_TICKET_PATH` | `/api/session/access` | Gdzie bilet jest wymieniany, na powyższym bazowym URL-u |
+| `UNIONE_SM2_PUB_KEY` | klucz dostarczany z Unione | Do czego opieczętowuje się hasło, zanim opuści przeglądarkę: 128 znaków hex, prefiks `04` opcjonalny. Wdrożenie, które zrotowało parę platformy, ustawia własny |
+| `UNIONE_CAPTCHA_ENABLED` | `true` | Pytać o obrazkową captcha platformy. Musi zgadzać się z `login.captchaEnabled` tam, czego platforma nie publikuje |
+| `UNIONE_TIMEOUT_SECONDS` | `10` | Timeout połączenia i odczytu dla każdego żądania do platformy |
+| `UNIONE_AUTO_PROVISION` | `true` | Zakłada konto przy pierwszym logowaniu. Wyłączone, to wdrożenie wpuszcza tylko tych, których już ma |
+| `UNIONE_ALLOW_LOCAL_LOGIN` | `false` | Zostawia własny formularz tego serwisu — e-mail i hasło, magic link, przyciski OAuth — o jedno kliknięcie, na dzień, w którym platforma nie odpowiada |
+
+Konto jest kluczowane tożsamością platformy, a nie jej adresem: parą dzierżawcy i
+identyfikatora użytkownika, którą platforma podaje, więc zmieniony adres to wciąż
+ta sama osoba. Adres służy tylko do założenia konta — własny platformy, gdy go
+podaje, w przeciwnym razie `{username}@unione.internal`, albo `{id}@unione.internal`,
+gdy nazwa konta jest zbyt długa, by być częścią lokalną. To uchwyt tożsamości, nie
+skrzynka: `.internal` jest zarezerwowana do użytku prywatnego i, inaczej niż
+`.local`, nie należy do nazw z RFC 6761, których walidacja adresów tego serwisu
+odmawia.
+
+Adres, który to wdrożenie już ma, z konta założonego inaczej, jest odmową z gotowym
+rozwiązaniem, a nie scaleniem — sam adres nie odróżni właściciela konta od kogoś,
+kto zarejestrował tę nazwę pierwszy. Pierwsze logowanie nadal przechodzi przez
+politykę rejestracji wdrożenia, więc most nie otwiera zamkniętego wdrożenia:
+`invite_only` odmawia obcemu, którego platforma zna.
+
+Każde z trzech logowań wystawia własną sesję tego wdrożenia i trafia do dziennika
+audytu jako `unione.login`, `unione.login-sms` albo `unione.once`, z podmiotem
+platformy obok. Token platformy jest wydany na tożsamość, którą nazwał, i nigdy nie
+jest zapisywany; wystawiana jest zwykła lokalna sesja — dlatego parowanie, klucze
+API i serwer OAuth działają bez zmian.
 
 ### Logowanie katalogowe (LDAP) { #directory-sign-in-ldap }
 

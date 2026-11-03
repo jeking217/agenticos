@@ -101,6 +101,7 @@ from app.services.ml import MLService
 from app.services.sandbox_connection import SandboxConnectionService
 from app.services.sandbox_workspace import SandboxWorkspaceService
 from app.services.conversation_share import ConversationShareService
+from app.services.unione import UnioneClient, UnioneSignInService
 
 
 def get_user_service(db: DBSession) -> UserService:
@@ -139,6 +140,24 @@ SessionSvc = Annotated[SessionService, Depends(get_session_service)]
 ImpersonationSvc = Annotated[ImpersonationService, Depends(get_impersonation_service)]
 OAuthExchangeSvc = Annotated[OAuthExchangeService, Depends(get_oauth_exchange_service)]
 DevicePairingSvc = Annotated[DevicePairingService, Depends(get_device_pairing_service)]
+
+
+def get_unione_client() -> UnioneClient:
+    """The bridge to the Unione platform's login endpoints, from deployment settings.
+
+    A dependency rather than a module-level instance so a test can stand a fake
+    platform in front of the routes without reaching for the network.
+    """
+    return UnioneClient()
+
+
+def get_unione_sign_in_service(db: DBSession) -> UnioneSignInService:
+    """Create UnioneSignInService with the request's database session."""
+    return UnioneSignInService(db)
+
+
+UnioneApi = Annotated[UnioneClient, Depends(get_unione_client)]
+UnioneSignInSvc = Annotated[UnioneSignInService, Depends(get_unione_sign_in_service)]
 
 
 def get_web_push_service(db: DBSession) -> WebPushService:

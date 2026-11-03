@@ -1,5 +1,5 @@
 ---
-source_sha: "d7e885bf14a4"
+source_sha: "70c5c771ebed"
 ---
 
 # Configuración { #configuration }
@@ -257,6 +257,52 @@ SAML y SCIM no están implementados. La mayoría de los proveedores de identidad
 que usa una empresa mediana hablan OIDC, y estos ajustes son todo lo que
 necesitan. Un directorio sin ningún proveedor de identidad delante se puede usar
 directamente - véase abajo.
+
+### Inicio de sesión con la plataforma Unione { #sign-in-through-the-unione-platform }
+
+Cuando este despliegue es un producto dentro de una plataforma Unione, las cuentas
+están en la plataforma y este servicio no compara contraseñas propias. El portal
+de la plataforma entrega al navegador un ticket `tk-` de un solo uso, que la página
+de acceso canjea y luego borra de la barra de direcciones, de modo que quien ya
+había iniciado sesión allí llega aquí con la sesión iniciada. Sin ticket, la página
+toma una cuenta y una contraseña, sella la contraseña con la clave SM2 de la
+plataforma y la reenvía, o toma un código que la plataforma envió al teléfono de la
+cuenta.
+
+| Variable | Por defecto | Descripción |
+|----------|---------|-------------|
+| `UNIONE_AUTH_ENABLED` | `false` | Ofrece la plataforma. Con `UNIONE_BASE_URL` vacío las rutas responden 404, como un emisor OIDC sin configurar |
+| `UNIONE_BASE_URL` | (vacío) | El portal mismo, `http://10.0.0.7:8080/portal` - no la pasarela. Una barra final se elimina; credenciales, una query o un fragmento se rechazan al arrancar |
+| `UNIONE_TICKET_PATH` | `/api/session/access` | Dónde se canjea un ticket, sobre la URL base de arriba |
+| `UNIONE_SM2_PUB_KEY` | la clave que Unione incluye | A qué se sella una contraseña antes de salir del navegador: 128 dígitos hex, prefijo `04` opcional. Un despliegue que rotó el par de la plataforma pone la suya |
+| `UNIONE_CAPTCHA_ENABLED` | `true` | Pedir el captcha de imagen de la plataforma. Tiene que coincidir con `login.captchaEnabled` allí, que la plataforma no publica |
+| `UNIONE_TIMEOUT_SECONDS` | `10` | Timeout de conexión y de lectura para cada petición a la plataforma |
+| `UNIONE_AUTO_PROVISION` | `true` | Crea la cuenta en el primer inicio de sesión. Apagado, este despliegue solo deja entrar a quien ya tiene |
+| `UNIONE_ALLOW_LOCAL_LOGIN` | `false` | Deja el formulario propio de este servicio - correo y contraseña, enlace mágico, los botones OAuth - a un clic, para el día en que la plataforma no responda |
+
+Una cuenta se indexa por la identidad de la plataforma y no por su dirección: el
+par de inquilino e id de usuario que la plataforma informa, así que una dirección
+que cambia sigue siendo la misma persona aquí. La dirección es solo con lo que se
+crea la cuenta - la de la plataforma cuando informa alguna, si no
+`{username}@unione.internal`, o `{id}@unione.internal` cuando el nombre de cuenta
+es demasiado largo para ser parte local. Es un identificador, no un buzón:
+`.internal` está reservado para uso privado y, a diferencia de `.local`, no es uno
+de los nombres de la RFC 6761 que rechaza la validación de direcciones de este
+servicio.
+
+Una dirección que este despliegue ya tiene, de una cuenta creada de otra forma, es
+un rechazo con la solución incluida en lugar de una fusión - una dirección por sí
+sola no distingue al dueño de la cuenta de quien registró ese nombre primero. El
+primer inicio de sesión sigue pasando por la política de registro del despliegue,
+así que un puente no abre un despliegue cerrado: `invite_only` rechaza a un
+desconocido que la plataforma conoce.
+
+Cada uno de los tres inicios de sesión emite una sesión propia de este despliegue y
+queda en el registro de auditoría como `unione.login`, `unione.login-sms` o
+`unione.once`, con el sujeto de la plataforma al lado. El token de la plataforma se
+gasta en la identidad que nombró y nunca se guarda, y lo que se emite es una sesión
+local corriente - por eso el emparejamiento, las claves de API y el servidor OAuth
+funcionan sin cambios.
 
 ### Inicio de sesión con el directorio (LDAP) { #directory-sign-in-ldap }
 

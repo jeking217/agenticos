@@ -242,8 +242,8 @@ echo 'export COMPOSE_FILE="docker-compose.yml:docker-compose.override.yml:docker
 不想设变量的话，每条命令都写全三层：
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.override.yml \
-  -f docker-compose.local.yml --profile console up -d --build frontend
+docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.local.yml --profile console up -d --build frontend
+
 ```
 
 端口不冲突（本机 5432 空着）时可以跳过整节，下面所有命令照原样用。

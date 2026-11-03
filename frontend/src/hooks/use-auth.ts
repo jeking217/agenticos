@@ -8,7 +8,14 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { resetSessionState, useAuthStore } from "@/stores";
 import { apiClient, ApiError } from "@/lib/api-client";
-import type { DirectoryLoginRequest, User, LoginRequest, RegisterRequest } from "@/types";
+import type {
+  DirectoryLoginRequest,
+  User,
+  LoginRequest,
+  RegisterRequest,
+  UnioneLoginRequest,
+  UnioneSmsLoginRequest,
+} from "@/types";
 import { goToDestination, postSignInDestination } from "@/lib/auth-landing";
 import { ROUTES } from "@/lib/constants";
 import { INVITATION_FLOW_PARAM } from "@/lib/invitation-links";
@@ -327,6 +334,43 @@ export function useAuth() {
     [signIn],
   );
 
+  // The platform's own account and phone sign-ins (#2101). Both end where the
+  // local one does - a user and a token - because the backend bridges them into
+  // an ordinary local session; what differs is who checked the credential.
+  const signInThroughUnione = useCallback(
+    (path: string, credentials: unknown, returnTo?: string | null) =>
+      signIn(
+        () =>
+          apiClient.post<SignInResponse>(path, credentials, {
+            signal: AbortSignal.timeout(SIGN_IN_TIMEOUT_MS),
+          }),
+        returnTo,
+      ),
+    [signIn],
+  );
+
+  const loginWithUnione = useCallback(
+    (credentials: UnioneLoginRequest, returnTo?: string | null) =>
+      signInThroughUnione("/auth/unione/login", credentials, returnTo),
+    [signInThroughUnione],
+  );
+
+  const loginWithUnioneSms = useCallback(
+    (credentials: UnioneSmsLoginRequest, returnTo?: string | null) =>
+      signInThroughUnione("/auth/unione/login-sms", credentials, returnTo),
+    [signInThroughUnione],
+  );
+
+  /**
+   * The silent path: the platform's portal redirected here with a one-time
+   * ticket, and it is spent on this call whether or not it was still valid.
+   */
+  const loginWithUnioneTicket = useCallback(
+    (ticket: string, returnTo?: string | null) =>
+      signInThroughUnione("/auth/unione/once", { accessToken: ticket }, returnTo),
+    [signInThroughUnione],
+  );
+
   // The flow names which staged invitation's cookie the register proxy forwards for
   // the sign-up admission (#1414); a registration reached with none forwards none.
   const register = useCallback(async (data: RegisterRequest, invitationFlow?: string | null) => {
@@ -390,6 +434,9 @@ export function useAuth() {
     isLoading,
     login,
     loginWithDirectory,
+    loginWithUnione,
+    loginWithUnioneSms,
+    loginWithUnioneTicket,
     register,
     logout: handleLogout,
     refreshToken,

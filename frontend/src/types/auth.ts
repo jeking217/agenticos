@@ -99,6 +99,45 @@ export interface DirectoryLoginRequest {
   password: string;
 }
 
+/**
+ * A sign-in with the Unione platform's own account and password, relayed (#2101).
+ *
+ * `captcha_id` is the id the platform filed the captcha answer under; it travels
+ * with the answer because the platform reads it from a header, and the cookie it
+ * also sets belongs to a browser that is not the one making the call.
+ */
+export interface UnioneLoginRequest {
+  username: string;
+  password: string;
+  captcha?: string;
+  captcha_id?: string;
+}
+
+/** A sign-in with the code the Unione platform texted to the account's phone. */
+export interface UnioneSmsLoginRequest {
+  phone: string;
+  captcha: string;
+}
+
+/** What the login page asks this deployment before drawing a form. */
+export interface UnioneConfig {
+  enabled: boolean;
+  captcha_enabled: boolean;
+  local_login_visible: boolean;
+  /**
+   * The platform's SM2 public key, hex, that the form encrypts the password with.
+   * Empty when the bridge is off. Not a secret: the private half never leaves the
+   * platform, which is what makes encrypting here worth doing at all.
+   */
+  sm2_public_key: string;
+}
+
+/** A captcha image, as a `data:` URL, and the id its answer has to quote. */
+export interface UnioneCaptcha {
+  captcha_id: string;
+  image: string;
+}
+
 export interface LoginResponse {
   access_token: string;
   refresh_token: string;

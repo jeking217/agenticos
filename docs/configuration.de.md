@@ -1,5 +1,5 @@
 ---
-source_sha: "d7e885bf14a4"
+source_sha: "70c5c771ebed"
 ---
 
 # Konfiguration { #configuration }
@@ -260,6 +260,51 @@ SAML und SCIM sind nicht implementiert. Die meisten Identitätsanbieter, die ein
 mittelständisches Unternehmen betreibt, sprechen OIDC, und diese Einstellungen
 sind alles, was sie brauchen. Ein Verzeichnis ohne vorgeschalteten
 Identitätsanbieter lässt sich direkt nutzen — siehe unten.
+
+### Anmeldung über die Unione-Plattform { #sign-in-through-the-unione-platform }
+
+Ist dieses Deployment ein Produkt auf einer Unione-Plattform, liegen die Konten
+dort, und dieser Dienst vergleicht keine eigenen Passwörter. Das Portal der
+Plattform übergibt dem Browser ein einmaliges `tk-`-Ticket, das die Anmeldeseite
+einlöst und dann aus der Adresszeile entfernt — wer dort schon angemeldet ist,
+kommt hier angemeldet an. Ohne Ticket nimmt die Seite Konto und Passwort,
+versiegelt das Passwort mit dem SM2-Schlüssel der Plattform und reicht es weiter,
+oder nimmt einen Code, den die Plattform an das Telefon des Kontos geschickt hat.
+
+| Variable | Standard | Beschreibung |
+|----------|---------|-------------|
+| `UNIONE_AUTH_ENABLED` | `false` | Die Plattform anbieten. Mit leerem `UNIONE_BASE_URL` antworten die Routen mit 404, wie ein nicht konfigurierter OIDC-Aussteller |
+| `UNIONE_BASE_URL` | (leer) | Das Portal selbst, `http://10.0.0.7:8080/portal` — nicht das Gateway. Ein abschließender Schrägstrich wird entfernt; Zugangsdaten, Query oder Fragment beim Start abgewiesen |
+| `UNIONE_TICKET_PATH` | `/api/session/access` | Wo ein Ticket eingelöst wird, auf der Basis-URL oben |
+| `UNIONE_SM2_PUB_KEY` | der Schlüssel, den Unione mitliefert | Woran ein Passwort versiegelt wird, bevor es den Browser verlässt: 128 Hex-Zeichen, `04`-Präfix optional. Ein Deployment, das das Schlüsselpaar der Plattform rotiert hat, setzt sein eigenes |
+| `UNIONE_CAPTCHA_ENABLED` | `true` | Das Bild-Captcha der Plattform abfragen. Muss mit `login.captchaEnabled` dort übereinstimmen, was die Plattform nicht veröffentlicht |
+| `UNIONE_TIMEOUT_SECONDS` | `10` | Verbindungs- und Lese-Timeout für jede Anfrage an die Plattform |
+| `UNIONE_AUTO_PROVISION` | `true` | Das Konto bei der ersten Anmeldung anlegen. Aus, meldet dieses Deployment nur Menschen an, die es schon führt |
+| `UNIONE_ALLOW_LOCAL_LOGIN` | `false` | Das eigene Formular dieses Dienstes — E-Mail und Passwort, Magic Link, die OAuth-Schaltflächen — einen Klick entfernt lassen, für den Tag, an dem die Plattform nicht erreichbar ist |
+
+Ein Konto hängt an der Identität der Plattform, nicht an ihrer Adresse: an dem
+Paar aus Mandant und Benutzer-ID, das die Plattform meldet, sodass eine geänderte
+Adresse hier dieselbe Person bleibt. Die Adresse ist nur das, womit das Konto
+angelegt wird — die der Plattform, wo sie eine meldet, sonst
+`{username}@unione.internal`, oder `{id}@unione.internal`, wenn der Kontoname zu
+lang für einen lokalen Teil ist. Sie ist eine Kennung, kein Postfach: `.internal`
+ist für den privaten Gebrauch reserviert und im Gegensatz zu `.local` keiner der
+RFC-6761-Namen, die die Adressprüfung dieses Dienstes ablehnt.
+
+Eine Adresse, die dieses Deployment schon führt, aus einem anders angelegten
+Konto, wird abgewiesen statt zusammengeführt — eine Adresse allein kann den
+Inhaber des Kontos nicht von jemandem unterscheiden, der den Namen zuerst
+registriert hat. Die erste Anmeldung durchläuft weiterhin die
+Registrierungsrichtlinie des Deployments, eine Brücke öffnet also kein
+geschlossenes Deployment: `invite_only` weist einen Fremden ab, den die Plattform
+kennt.
+
+Jede der drei Anmeldungen stellt eine eigene Sitzung dieses Deployments aus und
+landet im Audit-Trail als `unione.login`, `unione.login-sms` oder `unione.once`,
+mit dem Subjekt der Plattform daneben. Das Token der Plattform ist für die
+Identität ausgegeben, die es nannte, und wird nie gespeichert; ausgestellt wird
+eine gewöhnliche lokale Sitzung — weshalb Pairing, API-Schlüssel und der
+OAuth-Server unverändert funktionieren.
 
 ### Verzeichnisanmeldung (LDAP) { #directory-sign-in-ldap }
 

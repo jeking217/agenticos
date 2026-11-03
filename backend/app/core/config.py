@@ -458,6 +458,90 @@ class Settings(BaseSettings):
     # empty list mean by it.
     OIDC_GROUPS_CLAIM: str = ""
 
+    # Signing in through the Unione platform rather than with a password minted
+    # here (#2101). Unione owns the accounts; this deployment is one more thing a
+    # person reaches from it, and asking them to keep a second password - or to
+    # be created twice by an administrator - is the duplication the bridge exists
+    # to avoid. Two ways in, both ending at the same local session: the platform
+    # hands over a one-time ticket for a silent sign-in, or the person types the
+    # platform's own account and password into our form and we forward them.
+    #
+    # `UNIONE_AUTH_ENABLED` with an empty base URL is off, exactly as an empty
+    # `OIDC_ISSUER` is: a half-configured bridge is a sign-in form that cannot
+    # work, and the login page asks this deployment rather than guessing.
+    UNIONE_AUTH_ENABLED: bool = False
+    # The portal itself - `http://10.0.0.7:8080/portal`, not the gateway. Its
+    # login, captcha and session endpoints are the portal's own, and going
+    # straight there is one hop fewer and one gateway allow-list fewer.
+    UNIONE_BASE_URL: str = ""
+    # Where a `tk-` ticket is exchanged for the platform session it stands for:
+    # `SessionController#access`, which consumes the ticket whether or not it is
+    # still valid.
+    UNIONE_TICKET_PATH: str = "/api/session/access"
+    # The platform's SM2 public key, hex, `04`-prefixed. The default is the key
+    # pair Unione ships for `secret.soft.sm2keys`, so a stock deployment works
+    # without copying anything; a deployment that rotated its pair sets its own.
+    UNIONE_SM2_PUB_KEY: str = (
+        "04a684d7140aebfc83515a2312dac7ab836f3adc484627971b6936ad7d5575048c"
+        "aecf9c7eb07ed4dcee9d04cb3a7b1c514477b646b1ebe8245de215733baa5133"
+    )
+    # Whether the platform's login form asks for a graphical captcha. The
+    # platform decides this in its own settings and does not publish it, so this
+    # has to agree with `login.captchaEnabled` there. Sending a captcha the
+    # platform ignores is harmless; withholding one it demands is a login that
+    # can never succeed, which is why this defaults to on.
+    UNIONE_CAPTCHA_ENABLED: bool = True
+    UNIONE_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0)
+    # Whether a person the platform knows but this deployment has not seen before
+    # gets an account here on their first sign-in. Off, they are told to ask an
+    # administrator - the right answer for a deployment that curates its members.
+    UNIONE_AUTO_PROVISION: bool = True
+    # Whether the local email-and-password form stays on the login page beside the
+    # platform one. Off by default: two ways to sign in to the same account is a
+    # question every person has to answer, and the platform is the answer.
+    UNIONE_ALLOW_LOCAL_LOGIN: bool = False
+
+    @property
+    def unione_sign_in_enabled(self) -> bool:
+        """Whether the Unione sign-in is usable here: switched on *and* pointed somewhere."""
+        return self.UNIONE_AUTH_ENABLED and bool(self.UNIONE_BASE_URL)
+
+    @field_validator("UNIONE_BASE_URL")
+    @classmethod
+    def unione_base_url(cls, value: str) -> str:
+        """The portal's origin, refused if it would send a password somewhere odd.
+
+        The base URL is deployment configuration, not caller input, so this is not
+        an SSRF guard - it is the check that catches `http://` where `https://` was
+        meant, a trailing slash that would double into `//api`, and a URL with
+        credentials baked in that would then be logged on every request.
+        """
+        url = value.strip().rstrip("/")
+        if not url:
+            return ""
+        parsed = urlsplit(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            raise ValueError("Unione base URL must be an http(s) origin, e.g. http://host:8080/portal")
+        if parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError("Unione base URL must not carry credentials, a query or a fragment")
+        return url
+
+    @field_validator("UNIONE_SM2_PUB_KEY")
+    @classmethod
+    def unione_public_key(cls, value: str) -> str:
+        """A 64-byte point, optionally `04`-prefixed: refused here rather than at the login form."""
+        key = value.strip().lower().replace(" ", "")
+        if not key:
+            return ""
+        body = key[2:] if key.startswith("04") else key
+        if len(body) != 128:
+            raise ValueError("Unione SM2 public key must be 64 bytes of hex, optionally 04-prefixed")
+        try:
+            int(body, 16)
+        except ValueError as exc:
+            raise ValueError("Unione SM2 public key must be hex") from exc
+        return key
+
     # Signing in with a directory account - Active Directory, OpenLDAP, FreeIPA -
     # by binding as it (#1773). Empty `LDAP_URL` switches it off and the sign-in
     # route answers 404, as an unconfigured OIDC issuer does. `ldaps://` is TLS

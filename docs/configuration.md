@@ -247,6 +247,48 @@ SAML and SCIM are not implemented. Most identity providers a mid-size company
 runs speak OIDC, and these settings are the whole of what they need. A directory
 with no identity provider in front of it can be used directly - see below.
 
+### Sign-in through the Unione platform
+
+Where this deployment is one product on a Unione platform, the platform holds the
+accounts and this service compares no passwords of its own. The platform's portal
+hands the browser a single-use `tk-` ticket, which the login page redeems and then
+strips from the address bar, so somebody already signed in there arrives here
+signed in. Without a ticket the page takes an account and password, seals the
+password to the platform's SM2 key and relays it, or takes a code the platform
+texted to the account's phone.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `UNIONE_AUTH_ENABLED` | `false` | Offer the platform. With `UNIONE_BASE_URL` empty the routes answer 404, as an unconfigured OIDC issuer does |
+| `UNIONE_BASE_URL` | (empty) | The portal itself, `http://10.0.0.7:8080/portal` - not the gateway. A trailing slash is dropped; credentials, a query or a fragment are refused at startup |
+| `UNIONE_TICKET_PATH` | `/api/session/access` | Where a ticket is redeemed, on the base URL above |
+| `UNIONE_SM2_PUB_KEY` | the key Unione ships | What a password is sealed to before it leaves the browser: 128 hex digits, `04` prefix optional. A deployment that rotated the platform's pair sets its own |
+| `UNIONE_CAPTCHA_ENABLED` | `true` | Ask for the platform's image captcha. It has to agree with `login.captchaEnabled` there, which the platform does not publish |
+| `UNIONE_TIMEOUT_SECONDS` | `10` | Connect and read timeout for each platform request |
+| `UNIONE_AUTO_PROVISION` | `true` | Create the account on a first sign-in. Off, this deployment signs in only the people it already holds |
+| `UNIONE_ALLOW_LOCAL_LOGIN` | `false` | Keep this service's own form - email and password, magic link, the OAuth buttons - one click away, for the day the platform is unreachable |
+
+An account is keyed on the platform's identity rather than on its address: the
+tenant and user id the platform reports, so an address that changes is still the
+same person here. The address is only what the account is created with - the
+platform's own where it reports one, otherwise `{username}@unione.internal`, or
+`{id}@unione.internal` when the account name is too long to be a local part. It is
+an identity handle, not a mailbox: `.internal` is reserved for private use, and
+unlike `.local` it is not one of the RFC 6761 names this service's own address
+validation refuses.
+
+An address this deployment already holds, from an account created another way, is
+a refusal with the fix in it rather than a merge - an address alone cannot tell
+the account's owner from somebody who registered that name first. The first
+sign-in still passes the deployment's sign-up policy, so a bridge does not open a
+closed deployment: `invite_only` refuses a stranger the platform knows.
+
+Each of the three sign-ins mints this deployment's own session and lands in the
+audit trail as `unione.login`, `unione.login-sms` or `unione.once`, with the
+platform's subject beside it. The platform's token is spent on the identity it
+named and is never stored, and what is issued is an ordinary local session -
+which is why pairing, API keys and the OAuth server work unchanged.
+
 ### Directory sign-in (LDAP)
 
 Signing in with an Active Directory, OpenLDAP or FreeIPA account, by binding as
