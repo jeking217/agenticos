@@ -2295,6 +2295,7 @@
       "createKnowledgeBase": "Utwórz bazę wiedzy",
       "createOneGiveYour": "Utwórz ją, aby dać asystentowi dostęp do dokumentów z Twoich kolekcji.",
       "datasetBadge": "Arkusze",
+      "documentBadge": "Dokumenty",
       "default": "Domyślne",
       "delete": "Usuń",
       "deleteCollectionTitle": "Usunąć {name}?",

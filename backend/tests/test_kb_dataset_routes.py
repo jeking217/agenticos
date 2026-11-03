@@ -101,7 +101,15 @@ async def test_a_created_relation_answers_with_both_halves() -> None:
 async def test_a_dataset_base_answers_with_the_fields_the_picker_needs() -> None:
     # `name` is MagicMock's own argument, so the row is a namespace, not a mock.
     base = SimpleNamespace(
-        id=uuid.uuid4(), name="销售", description=None, scope="org", kb_type="dataset"
+        id=uuid.uuid4(),
+        name="销售",
+        description=None,
+        scope="org",
+        kb_type="dataset",
+        reasoning_provider=None,
+        reasoning_model=None,
+        reasoning_base_url=None,
+        reasoning_secret_id=None,
     )
     service = _service(create_base=base)
 
@@ -113,7 +121,45 @@ async def test_a_dataset_base_answers_with_the_fields_the_picker_needs() -> None
         "description": None,
         "scope": "org",
         "kb_type": "dataset",
+        "reasoning_provider": None,
+        "reasoning_model": None,
+        "reasoning_base_url": None,
+        "has_reasoning_key": False,
     }
+
+
+async def test_a_dataset_base_names_the_model_that_reads_its_workbooks() -> None:
+    """Whose model it is, and whether a key was stored - never the key itself."""
+    base = SimpleNamespace(
+        id=uuid.uuid4(),
+        name="报价",
+        description=None,
+        scope="org",
+        kb_type="dataset",
+        reasoning_provider="ollama",
+        reasoning_model="qwen3:32b",
+        reasoning_base_url="http://10.0.0.9:11434/v1",
+        reasoning_secret_id=uuid.uuid4(),
+    )
+    service = _service(create_base=base)
+
+    answer = await routes.create_dataset_base(MagicMock(), service, CTX)
+
+    assert answer["reasoning_provider"] == "ollama"
+    assert answer["reasoning_model"] == "qwen3:32b"
+    assert answer["reasoning_base_url"] == "http://10.0.0.9:11434/v1"
+    assert answer["has_reasoning_key"] is True
+    assert "reasoning_secret_id" not in answer
+
+
+async def test_the_advice_route_asks_again_only_when_told_to() -> None:
+    service = _service(analyze_import={"ran": False, "reason": "no_model"})
+    kb_id, import_id = uuid.uuid4(), uuid.uuid4()
+
+    answer = await routes.analyze_import(kb_id, import_id, service, CTX, force=True)
+
+    assert answer == {"ran": False, "reason": "no_model"}
+    service.analyze_import.assert_awaited_once_with(kb_id, import_id, CTX, force=True)
 
 
 async def test_a_dataset_is_created_in_the_base_the_path_names() -> None:
@@ -285,6 +331,8 @@ def test_every_dataset_route_is_reachable_where_the_console_calls_it() -> None:
 
     assert paths, "no dataset route is mounted at all"
     assert [path for path in paths if "/kb/kb/" in path] == []
-    # The two shapes the console opens: a base, and a dataset in one.
+    # The three shapes the console opens: a base, a dataset in one, and the
+    # model's reading of a workbook.
     assert "/api/v1/kb/datasets/bases" in paths
     assert "/api/v1/kb/{kb_id}/datasets" in paths
+    assert "/api/v1/kb/{kb_id}/datasets/imports/{import_id}/analyze" in paths

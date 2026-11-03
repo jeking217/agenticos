@@ -55,6 +55,13 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
+/** The same provider over a client the test holds, so its calls can be spied on. */
+function withClient(client: QueryClient) {
+  return function ClientWrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  };
+}
+
 beforeEach(() => {
   useOnboardingStore.setState({ isOpen: false, flowId: null, flowAgentId: null, index: 0 });
 });
@@ -1209,5 +1216,36 @@ describe("useAddToAgent", () => {
       result.current.mutateAsync({ agentId: "a1", resource: { kind: "skill", id: "s1" } }),
     ).rejects.toThrow();
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
+  });
+
+  it("refreshes the base's own list entry when the resource is a knowledge base", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ id: "a1", draft_spec: SPEC });
+    vi.mocked(apiClient.put).mockResolvedValue({ id: "a1" });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const { result } = renderHook(() => useAddToAgent(), { wrapper: withClient(client) });
+
+    await result.current.mutateAsync({
+      agentId: "a1",
+      resource: { kind: "collection", id: "kb-1" },
+    });
+
+    // The card's "used by" row reads `used_by` off `/kb`: invalidating only the
+    // agent left it saying "no agents" until the page was reloaded (#2075).
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: qk.agents.all() });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: qk.kb.all() });
+  });
+
+  it("does not refetch the knowledge bases for a skill or an MCP server", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ id: "a1", draft_spec: SPEC });
+    vi.mocked(apiClient.put).mockResolvedValue({ id: "a1" });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const { result } = renderHook(() => useAddToAgent(), { wrapper: withClient(client) });
+
+    await result.current.mutateAsync({ agentId: "a1", resource: { kind: "skill", id: "s1" } });
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: qk.agents.all() });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: qk.kb.all() });
   });
 });

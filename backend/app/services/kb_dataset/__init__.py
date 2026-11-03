@@ -14,12 +14,14 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.model_resolver import get_provider
 from app.core.audit import record_audit
 from app.core.config import settings
 from app.core.exceptions import BadRequestError, NotFoundError
 from app.db.models.kb_dataset import Dataset
 from app.db.models.knowledge_base import KBType, KnowledgeBase
 from app.repositories import kb_dataset as repo
+from app.repositories import organization_secret as organization_secret_repo
 from app.schemas.kb_dataset import (
     DatasetCompareResult,
     DatasetCreate,
@@ -154,11 +156,19 @@ class DatasetService:
         there is no collection, nothing is vectorised, and `ingestion` routes
         refuse a dataset base before they could read them. Leaving them empty is
         not an option - the columns are NOT NULL for every other base.
+
+        The `reasoning_*` columns are the opposite: a real chat model, and
+        optional. It is what the import reads a workbook with, so it is checked
+        here rather than at the first import - a provider this build does not
+        offer, or a key this organization does not hold, is a refusal on the
+        form that named it rather than a base whose analysis silently never
+        runs.
         """
         _require_enabled()
         org_id = ctx.organization_id
         if data.scope == "personal" and ctx.organization_id is None:
             raise BadRequestError(message="A personal base needs an organization context")
+        reasoning = await self._reasoning_settings(data, organization_id=org_id)
         base = KnowledgeBase(
             name=data.name,
             description=data.description,
@@ -170,6 +180,7 @@ class DatasetService:
             embedding_provider="none",
             owner_user_id=ctx.subject_id,
             organization_id=org_id,
+            **reasoning,
         )
         self.db.add(base)
         await self.db.flush()
@@ -185,6 +196,76 @@ class DatasetService:
             details={"name": base.name, "scope": base.scope, "kind": "dataset"},
         )
         return base
+
+    async def _reasoning_settings(self, data: Any, *, organization_id: Any) -> dict[str, Any]:
+        """The four columns a base's chat model is stored in, checked as they are read.
+
+        Nothing chosen is all four empty - the normal case, and not a refusal:
+        the import then runs on the parser's rules and says so. What *is* refused
+        is half a model: a provider with no model id, a model id with no provider,
+        a key this organization does not hold, and a self-hosted provider with
+        nowhere to send the request. Each is a sentence on the field that caused
+        it rather than a base whose analysis quietly never runs.
+        """
+        provider = getattr(data, "reasoning_provider", None)
+        model = getattr(data, "reasoning_model", None)
+        secret_id = getattr(data, "reasoning_secret_id", None)
+        base_url = getattr(data, "reasoning_base_url", None)
+        if provider is None and model is None and secret_id is None and base_url is None:
+            return {
+                "reasoning_provider": None,
+                "reasoning_model": None,
+                "reasoning_secret_id": None,
+                "reasoning_base_url": None,
+            }
+
+        if not provider or not model:
+            raise BadRequestError(message="A reasoning model needs both a provider and a model id")
+        try:
+            spec = get_provider(provider)
+        except BadRequestError as exc:
+            raise BadRequestError(
+                message=f"`{provider}` is not a provider this deployment offers",
+                details={"field": "reasoning_provider"},
+            ) from exc
+        if spec.keyless and not base_url:
+            raise BadRequestError(
+                message=(
+                    f"`{spec.name}` runs on a server of its own: give it the address "
+                    "the bases should send their workbooks' questions to"
+                ),
+                details={"field": "reasoning_base_url"},
+            )
+        if secret_id is not None:
+            secret = await organization_secret_repo.get(
+                self.db, secret_id, organization_id=organization_id
+            )
+            if secret is None:
+                raise BadRequestError(
+                    message="That key is not in this organization's vault",
+                    details={"field": "reasoning_secret_id"},
+                )
+            # A key's purpose is the provider it answers for. Narrowing here is
+            # what stops an OpenRouter key being sent to OpenAI's address.
+            if secret.purpose != provider and not spec.keyless:
+                raise BadRequestError(
+                    message=(
+                        f"That key was stored for `{secret.purpose}`, not `{provider}`; "
+                        "choose a key for this provider or add one"
+                    ),
+                    details={"field": "reasoning_secret_id"},
+                )
+        elif not spec.keyless:
+            raise BadRequestError(
+                message=f"`{spec.name}` needs a key; choose one from the vault",
+                details={"field": "reasoning_secret_id"},
+            )
+        return {
+            "reasoning_provider": provider,
+            "reasoning_model": model,
+            "reasoning_secret_id": secret_id,
+            "reasoning_base_url": base_url,
+        }
 
     # -- datasets -----------------------------------------------------------
 
@@ -834,6 +915,22 @@ class DatasetService:
             actor_user_id=ctx.user_id,
         )
 
+    async def analyze_import(
+        self, kb_id: uuid.UUID, import_id: uuid.UUID, ctx: Any, *, force: bool = False
+    ) -> dict[str, Any]:
+        """Have this base's model read the workbook: types, keys and joins.
+
+        A suggestion, not a decision - the wizard shows it as one and every value
+        can be changed before the publish. `force` buys a second look; without
+        it, the answer kept on the import is returned and no model is called.
+        """
+        _require_enabled()
+        kb = await self.kb(kb_id, ctx, write=True)
+        record = await repo.get_import(self.db, import_id)
+        if record is None or record.knowledge_base_id != kb.id:
+            raise NotFoundError(message="No such import")
+        return await imports_service.analyze(self.db, record=record, kb=kb, force=force)
+
     async def commit_import(
         self, kb_id: uuid.UUID, import_id: uuid.UUID, ctx: Any, payload: DatasetImportCommit
     ) -> dict[str, Any]:
@@ -928,6 +1025,10 @@ class DatasetService:
             "sheet_count": record.sheet_count,
             "progress": imports_service.progress_of(record),
             "sheets": (record.summary or {}).get("sheets") or [],
+            # The joins the publish created, and the ones it refused. Reported
+            # after the sheets because it is a consequence of them: a suggestion
+            # whose sheet failed has nothing to join to.
+            "relations": (record.summary or {}).get("relations") or [],
             "plan": imports_service.plan_of(record),
             "error": record.error,
             "committed_at": record.committed_at,

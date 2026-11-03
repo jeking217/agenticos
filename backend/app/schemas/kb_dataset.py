@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from app.schemas.base import BaseSchema, TimestampSchema
 
@@ -403,11 +403,48 @@ class DatasetBaseCreate(BaseSchema):
     It is the same row in `knowledge_bases` as a document base - same owner,
     visibility, grants and permissions - with `kb_type='dataset'` and no vector
     collection behind it.
+
+    `reasoning_*` is the chat model this base reads workbooks with. All four are
+    optional and are stored together: a base with none of them imports on the
+    parser's rules and never calls a model. `reasoning_model` is free text
+    because a provider's catalog is not the list of models that exist.
     """
 
     name: str = Field(min_length=1, max_length=128)
     description: str | None = Field(default=None, max_length=500)
     scope: Literal["personal", "org"] = "personal"
+    reasoning_provider: str | None = Field(default=None, max_length=32)
+    reasoning_model: str | None = Field(default=None, max_length=128)
+    reasoning_secret_id: UUID | None = None
+    reasoning_base_url: str | None = Field(default=None, max_length=2048)
+
+    @model_validator(mode="after")
+    def _a_model_needs_a_provider(self) -> DatasetBaseCreate:
+        if (self.reasoning_model or self.reasoning_secret_id) and not self.reasoning_provider:
+            raise ValueError("A reasoning model needs the provider that serves it")
+        return self
+
+    @field_validator("reasoning_provider", "reasoning_model", "reasoning_base_url")
+    @classmethod
+    def _blank_is_absent(cls, value: str | None) -> str | None:
+        """An empty field is a field nobody filled in, not a provider called ""."""
+        if value is None:
+            return None
+        return value.strip() or None
+
+
+class DatasetBaseRead(BaseSchema):
+    """What creating a base answers with, reasoning model and all."""
+
+    id: UUID
+    name: str
+    description: str | None = None
+    scope: str
+    kb_type: str
+    reasoning_provider: str | None = None
+    reasoning_model: str | None = None
+    reasoning_base_url: str | None = None
+    has_reasoning_key: bool = False
 
 
 # --- versions and comparison ----------------------------------------------
@@ -485,6 +522,8 @@ class SheetFieldProposal(BaseSchema):
     is_primary_key: bool = False
     distinct_ratio: float = 0.0
     samples: list[str] = Field(default_factory=list)
+    advised: bool = False
+    """True when the reasoning model, rather than the parser, decided this type."""
 
 
 class SheetProposal(BaseSchema):
@@ -497,6 +536,8 @@ class SheetProposal(BaseSchema):
     preview: list[dict[str, Any]] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     merged_cells: int = 0
+    advised: bool = False
+    """True when the model had something to say about this sheet at all."""
     quality: dict[str, Any] | None = Field(
         default=None,
         description=(
@@ -552,6 +593,8 @@ class DatasetImportStatus(BaseSchema):
     sheet_count: int = 0
     progress: ImportProgress
     sheets: list[dict[str, Any]] = Field(default_factory=list)
+    relations: list[dict[str, Any]] = Field(default_factory=list)
+    """The joins the publish created, and any it refused, with the reason."""
     plan: DatasetImportPlan
     """The parsed workbook and the decisions saved against it: where to resume."""
     error: str | None = None
@@ -576,9 +619,34 @@ class DatasetImportSheet(BaseSchema):
     )
 
 
+class DatasetImportRelation(BaseSchema):
+    """A join the wizard accepted, created once the sheets are published.
+
+    Both sides are named rather than identified: at the moment the wizard shows
+    them, the datasets a sheet becomes do not exist yet. `from_sheet`/`to_sheet`
+    take a sheet name of this workbook or the name of a dataset already in the
+    base, and the commit resolves whichever it is.
+    """
+
+    from_sheet: str = Field(min_length=1, max_length=255)
+    from_fields: list[str] = Field(min_length=1, max_length=8)
+    to_sheet: str = Field(min_length=1, max_length=255)
+    to_fields: list[str] = Field(min_length=1, max_length=8)
+    cardinality: Cardinality = "n:1"
+    name: str | None = Field(default=None, max_length=64)
+
+    @model_validator(mode="after")
+    def _same_width(self) -> DatasetImportRelation:
+        if len(self.from_fields) != len(self.to_fields):
+            raise ValueError("Both sides of a relation need the same number of fields")
+        return self
+
+
 class DatasetImportCommit(BaseSchema):
     sheets: list[DatasetImportSheet] = Field(min_length=1, max_length=30)
     note: str | None = Field(default=None, max_length=500)
+    relations: list[DatasetImportRelation] = Field(default_factory=list, max_length=50)
+    """Joins to create after publishing; each failure is reported, not raised."""
 
 
 DraftStep = Literal["sheets", "model", "validate"]
@@ -607,4 +675,22 @@ class DatasetImportPlan(BaseSchema):
     sheets: list[dict[str, Any]] = Field(default_factory=list)
     """The parsed proposals, as `preview` returned them - one per sheet."""
     choices: DatasetImportDraft | None = None
+
+
+class DatasetImportAdvice(BaseSchema):
+    """What the base's reasoning model made of the workbook.
+
+    `ran: false` is not an error: no model is configured, or it did not answer,
+    and `reason` says which. `sheets` is the proposal either way - the model's
+    corrections when it ran, the parser's own when it did not - so the wizard
+    always has something to show.
+    """
+
+    ran: bool = False
+    reason: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    sheets: list[dict[str, Any]] = Field(default_factory=list)
+    relations: list[DatasetImportRelation] = Field(default_factory=list)
+    cached: bool = False
     """The decisions saved at `step`, or `None` if none were saved yet."""

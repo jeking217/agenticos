@@ -7,6 +7,7 @@ import {
   isTemplateCopy,
   missingKeys,
   offences,
+  unresolvedTemplates,
   unreadKeys,
 } from "./check-i18n";
 
@@ -819,5 +820,65 @@ describe("the playground exclusion", () => {
 
   it("keeps a product file that only starts with the same letters", () => {
     expect(isSkippedSource("C://repo//frontend//src//components//develop//panel.tsx")).toBe(false);
+  });
+});
+
+describe("a template key read under the wrong namespace", () => {
+  const keys = ["datasets.fieldType.text", "datasets.fieldType.numeric"];
+
+  it("reports the key path a scoped translator would print on screen", () => {
+    // `fieldType.*` is filed under `datasets`; the dataset page reads it with a
+    // `pages.datasets` translator, so the page rendered
+    // `pages.datasets.fieldType.text` and next-intl logged MISSING_MESSAGE. Every
+    // literal key in that file was fine, which is why `missingKeys` said nothing.
+    const source = [
+      'const t = useTranslations("pages.datasets");',
+      "export function Fields({ type }) {",
+      "  return <span>{t(`fieldType.${type}`)}</span>;",
+      "}",
+      "",
+    ].join("\n");
+
+    expect(unresolvedTemplates("page.tsx", source, keys)).toEqual([
+      { line: 3, what: "pages.datasets.fieldType.${…} - no key under pages.datasets matches" },
+    ]);
+  });
+
+  it("accepts the same call under the namespace the keys are filed in", () => {
+    const source = [
+      'const t = useTranslations("datasets");',
+      "export function Fields({ type }) {",
+      "  return <span>{t(`fieldType.${type}`)}</span>;",
+      "}",
+      "",
+    ].join("\n");
+
+    expect(unresolvedTemplates("page.tsx", source, keys)).toEqual([]);
+  });
+
+  it("says nothing about a template whose hole is in the middle", () => {
+    // `offer.${id}.title` names an id the catalog cannot hold, so the pattern
+    // matching nothing is a runtime question, not a namespace mistake.
+    const source = [
+      'const t = useTranslations("onboarding");',
+      "export function Offer({ id }) {",
+      "  return <p>{t(`offer.${id}.title`)}</p>;",
+      "}",
+      "",
+    ].join("\n");
+
+    expect(unresolvedTemplates("offer.tsx", source, ["onboarding.offer.x.title"])).toEqual([]);
+  });
+
+  it("says nothing about a template with no fixed prefix at all", () => {
+    const source = [
+      'const t = useTranslations("datasets");',
+      "export function Label({ kind }) {",
+      "  return <p>{t(`${kind}Label`)}</p>;",
+      "}",
+      "",
+    ].join("\n");
+
+    expect(unresolvedTemplates("label.tsx", source, keys)).toEqual([]);
   });
 });

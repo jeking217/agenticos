@@ -5411,6 +5411,7 @@
       "createKnowledgeBase": "Wissensdatenbank erstellen",
       "createOneGiveYour": "Erstellen Sie eine, um Ihrem Assistenten Zugriff auf Dokumente aus Ihren Collections zu geben.",
       "datasetBadge": "Tabellen",
+      "documentBadge": "Dokumente",
       "default": "Standard",
       "delete": "Löschen",
       "deleteCollectionTitle": "{name} löschen?",

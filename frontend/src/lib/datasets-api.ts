@@ -20,6 +20,7 @@ import type {
   DatasetRowList,
   DatasetVersionList,
   ImportAccepted,
+  ImportAdvice,
   ImportDraft,
   ImportPlan,
   ImportProgress,
@@ -33,6 +34,11 @@ export function createDatasetBase(input: {
   name: string;
   description?: string | null;
   scope?: "personal" | "org";
+  /** The chat model that reads this base's workbooks; all four or none. */
+  reasoning_provider?: string | null;
+  reasoning_model?: string | null;
+  reasoning_secret_id?: string | null;
+  reasoning_base_url?: string | null;
 }): Promise<DatasetBase> {
   return apiClient.post<DatasetBase>("/kb/datasets/bases", input);
 }
@@ -179,10 +185,39 @@ export function uploadWorkbook(
   return apiClient.upload<WorkbookImport>(`/kb/${kbId}/datasets/imports`, file, options);
 }
 
+/**
+ * Ask the base's model what the workbook means.
+ *
+ * Its own request rather than part of the upload: the parse answers in a second,
+ * a model reading six sheets takes several, and `ran: false` is an answer (no
+ * model, a key that is gone) rather than a failure of the import.
+ */
+export function analyzeImport(
+  kbId: string,
+  importId: string,
+  options?: { force?: boolean },
+): Promise<ImportAdvice> {
+  return apiClient.post<ImportAdvice>(
+    `/kb/${kbId}/datasets/imports/${importId}/analyze${options?.force ? "?force=true" : ""}`,
+    {},
+  );
+}
+
 export function commitImport(
   kbId: string,
   importId: string,
-  input: { sheets: CommitSheet[]; note?: string | null },
+  input: {
+    sheets: CommitSheet[];
+    note?: string | null;
+    /** Joins accepted in the wizard, created once the sheets are published. */
+    relations?: Array<{
+      from_sheet: string;
+      from_fields: string[];
+      to_sheet: string;
+      to_fields: string[];
+      cardinality?: string;
+    }>;
+  },
 ): Promise<ImportAccepted> {
   return apiClient.post<ImportAccepted>(`/kb/${kbId}/datasets/imports/${importId}/commit`, input);
 }
@@ -244,6 +279,7 @@ export async function waitForImport(
         status: record.status as ImportResult["status"],
         sheets: record.sheets,
         failures: record.progress.failed,
+        relations: record.relations ?? [],
       };
     }
     // i18n-exempt: same - the hook owns the sentence the person reads.

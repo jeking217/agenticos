@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 
 import { apiClient } from "@/lib/api-client";
 import {
+  analyzeImport,
   archiveDataset,
   commitImport,
   compareVersions,
@@ -36,7 +37,13 @@ import {
   waitForImport,
 } from "@/lib/datasets-api";
 import { qk } from "@/lib/query-keys";
-import type { CommitSheet, DatasetBase, DatasetFieldInput, ImportProgress } from "@/types/datasets";
+import type {
+  CommitSheet,
+  DatasetBase,
+  DatasetFieldInput,
+  ImportProgress,
+  ImportRelation,
+} from "@/types/datasets";
 
 export interface DatasetBaseSummary {
   id: string;
@@ -166,6 +173,20 @@ export function useUploadWorkbook(kbId: string) {
   });
 }
 
+/**
+ * The base's model reading the workbook: types, keys and joins.
+ *
+ * Not part of the upload and not able to fail one: the mutation resolves with
+ * `ran: false` and a reason when the base has no model or the provider did not
+ * answer, and the wizard carries on with the parser's proposal.
+ */
+export function useAnalyzeImport(kbId: string) {
+  return useMutation({
+    mutationFn: (input: { importId: string; force?: boolean }) =>
+      analyzeImport(kbId, input.importId, { force: input.force }),
+  });
+}
+
 export function useCommitImport(kbId: string) {
   const queryClient = useQueryClient();
   const t = useTranslations("datasets");
@@ -176,11 +197,14 @@ export function useCommitImport(kbId: string) {
       importId: string;
       sheets: CommitSheet[];
       note?: string;
+      /** The joins accepted in the wizard, created after the sheets publish. */
+      relations?: ImportRelation[];
       onProgress?: (progress: ImportProgress) => void;
     }) => {
       const accepted = await commitImport(kbId, input.importId, {
         sheets: input.sheets,
         note: input.note,
+        relations: input.relations,
       });
       return waitForImport(kbId, accepted.import_id, { onProgress: input.onProgress });
     },

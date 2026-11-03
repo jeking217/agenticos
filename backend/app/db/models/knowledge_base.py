@@ -103,6 +103,29 @@ class KnowledgeBase(TimestampMixin, Base):
         nullable=True,
         index=True,
     )
+    # The chat model a *dataset* base uses to read the workbooks put into it:
+    # which provider, which model id, and the key or address that reaches it.
+    #
+    # A separate choice from the embedding columns above, because it answers a
+    # different question - "what do these columns mean, which one identifies a
+    # row, how do these sheets join" - and runs on a different set of providers.
+    # Optional in every column: a base with no model imports on the parser's
+    # rules alone, and the wizard says so rather than refusing.
+    reasoning_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Free text, not a catalog id: providers ship model ids weekly, and naming
+    # one this build has not heard of is the point of a typed field.
+    reasoning_model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    # The organization vault key the analysis runs on. SET NULL on delete, so a
+    # deleted secret reads as "none chosen" rather than as one that vanished.
+    reasoning_secret_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("organization_secrets.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # Where a self-hosted provider answers - an Ollama or a vLLM on this
+    # network - also the address an OpenAI-compatible gateway is reached at.
+    reasoning_base_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+
     # How widely the collection is exposed inside its org; combines with the
     # member's role scope and any explicit grant (app.services.access).
     visibility: Mapped[str] = mapped_column(
@@ -159,9 +182,7 @@ class KnowledgeBase(TimestampMixin, Base):
         CheckConstraint(
             "visibility IN ('private', 'team', 'org')", name="ck_knowledge_bases_visibility"
         ),
-        CheckConstraint(
-            "kb_type IN ('document', 'dataset')", name="ck_knowledge_bases_kb_type"
-        ),
+        CheckConstraint("kb_type IN ('document', 'dataset')", name="ck_knowledge_bases_kb_type"),
         CheckConstraint(
             "scope <> 'org' OR organization_id IS NOT NULL",
             name="ck_knowledge_bases_org_scope_has_org",

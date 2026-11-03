@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  absorbAdvice,
+  acceptedRelations,
   allReadyToPublish,
   checkedSheets,
   commitPayload,
@@ -10,10 +12,11 @@ import {
   keptColumns,
   mergeColumn,
   mergeSheet,
+  relationKey,
   WIZARD_STEPS,
 } from "./import-wizard";
 import type { SheetChoices, SheetChoice } from "./import-wizard";
-import type { SheetProposal } from "@/types/datasets";
+import type { ImportRelation, SheetProposal } from "@/types/datasets";
 
 /**
  * The wizard's rules, asserted without rendering it.
@@ -207,5 +210,120 @@ describe("where a draft is saved", () => {
       null,
       null,
     ]);
+  });
+});
+
+/**
+ * The model's reading arrives seconds after the parser's, which is long enough
+ * for somebody to have started deciding. These are the rules that keep the two
+ * from fighting: advice fills in what nobody touched, and steps aside for what
+ * somebody did.
+ */
+const LINE: SheetProposal = {
+  ...ORDERS,
+  sheet_name: "订单明细",
+  fields: [
+    {
+      name: "订单编号",
+      display_name: "订单编号",
+      data_type: "text",
+      is_nullable: false,
+      is_primary_key: false,
+      distinct_ratio: 0.4,
+      samples: ["SO-1", "SO-1"],
+    },
+  ],
+};
+
+/** What the model said: the money column is an integer, and 订单明细 joins 订单. */
+const ADVISED_ORDERS: SheetProposal = {
+  ...ORDERS,
+  advised: true,
+  fields: ORDERS.fields.map((field) => ({
+    ...field,
+    data_type: field.name === "金额" ? "numeric" : field.data_type,
+    advised: field.name === "金额",
+  })),
+};
+
+const ADVISED_LINE: SheetProposal = {
+  ...LINE,
+  advised: true,
+  fields: LINE.fields.map((field) => ({ ...field, advised: true })),
+};
+
+const JOIN: ImportRelation = {
+  from_sheet: "订单明细",
+  from_fields: ["订单编号"],
+  to_sheet: "订单",
+  to_fields: ["订单编号"],
+  cardinality: "n:1",
+  confidence: 0.9,
+  reason: "同一个订单号",
+};
+
+describe("folding the model's advice into the choices", () => {
+  it("takes the suggested type for a sheet nobody has touched", () => {
+    const choices = absorbAdvice(
+      initialChoices([ORDERS, LINE]),
+      [ORDERS, LINE],
+      [ADVISED_ORDERS, ADVISED_LINE],
+    );
+
+    expect(choices["订单"]?.columns[1]?.type).toBe("numeric");
+  });
+
+  it("leaves a sheet somebody has edited exactly as they left it", () => {
+    const edited = mergeSheet(initialChoices([ORDERS, LINE]), "订单", { checked: false });
+
+    const choices = absorbAdvice(edited, [ORDERS, LINE], [ADVISED_ORDERS, ADVISED_LINE]);
+
+    expect(choices["订单"]?.checked).toBe(false);
+    // Not half-applied: the untouched column keeps what the person had, too.
+    expect(choices["订单"]?.columns[1]?.type).toBe("integer");
+    // The sheet they did not touch still benefits.
+    expect(choices["订单明细"]?.columns[0]?.type).toBe("text");
+  });
+
+  it("keeps the sheet's own name when the person typed one", () => {
+    const named = mergeSheet(initialChoices([ORDERS]), "订单", { name: "销售订单" });
+
+    const choices = absorbAdvice(named, [ORDERS], [ADVISED_ORDERS]);
+
+    expect(choices["订单"]?.name).toBe("销售订单");
+  });
+});
+
+describe("which joins get created", () => {
+  const key = relationKey(JOIN);
+
+  it("identifies a join by both sides, not by its position", () => {
+    expect(key).toBe("订单明细|订单编号|订单|订单编号");
+  });
+
+  it("keeps the ones still ticked", () => {
+    const choices = initialChoices([ORDERS, LINE]);
+
+    expect(acceptedRelations([JOIN], { [key]: true }, choices)).toEqual([JOIN]);
+  });
+
+  it("drops one somebody unticked", () => {
+    const choices = initialChoices([ORDERS, LINE]);
+
+    expect(acceptedRelations([JOIN], { [key]: false }, choices)).toEqual([]);
+  });
+
+  it("drops one whose sheet is not being published", () => {
+    const choices = mergeSheet(initialChoices([ORDERS, LINE]), "订单", { checked: false });
+
+    expect(acceptedRelations([JOIN], { [key]: true }, choices)).toEqual([]);
+  });
+
+  it("keeps a join to a dataset that already exists", () => {
+    // A name that is not one of this workbook's sheets is an existing dataset,
+    // which is published already - unticking nothing can remove it.
+    const choices = initialChoices([LINE]);
+
+    expect(acceptedRelations([JOIN], { [key]: true }, choices)).toEqual([JOIN]);
   });
 });

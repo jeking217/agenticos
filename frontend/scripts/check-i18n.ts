@@ -766,6 +766,23 @@ interface Reads {
   built: RegExp[];
   /** Key names read as a literal: the key, the namespaces in scope, and the line. */
   calls: { key: string; namespaces: string[]; line: number }[];
+  /**
+   * The same template calls, kept whole.
+   *
+   * `built` answers "could any key be built this way", which is the direction
+   * `unreadKeys` needs. This is the other direction: does the pattern this call
+   * builds match *anything* the catalog holds? A template under the wrong
+   * namespace builds a perfectly good pattern that matches no key at all, which
+   * is how `t(\`fieldType.${type}\`)` inside a `pages.datasets` translator
+   * printed `MISSING_MESSAGE` on the dataset page while every literal key in the
+   * same file was fine.
+   */
+  builtCalls: {
+    key: string;
+    pattern: RegExp;
+    namespaces: string[];
+    line: number;
+  }[];
 }
 
 /** A translator binding: what it is called, what it is scoped to, and where it lives. */
@@ -840,6 +857,7 @@ function keyReads(fileName: string, text: string): Reads {
 
   const named = new Set<string>();
   const built: RegExp[] = [];
+  const builtCalls: Reads["builtCalls"] = [];
   const calls: { key: string; namespaces: string[]; line: number }[] = [];
   const dotted = (namespace: string, key: string): string =>
     namespace ? `${namespace}.${key}` : key;
@@ -867,7 +885,20 @@ function keyReads(fileName: string, text: string): Reads {
         } else if (ts.isTemplateExpression(argument)) {
           for (const namespace of namespaces) {
             const key = dotted(namespace, templateBody(argument));
-            built.push(new RegExp(`^${key.split(HOLE).map(escaped).join("\\w*")}$`));
+            const pattern = new RegExp(`^${key.split(HOLE).map(escaped).join("\\w*")}$`);
+            built.push(pattern);
+            // Only a template whose one hole is the last segment is checkable.
+            // `offer.${id}.title` says "some key under offer with this suffix",
+            // and the catalog may well not hold that id - that is a runtime
+            // question, not a namespace one.
+            if (templateBody(argument).endsWith(HOLE)) {
+              builtCalls.push({
+                key,
+                pattern,
+                namespaces,
+                line: lineOf(file, argument.getStart(file)),
+              });
+            }
           }
         }
       }
@@ -876,7 +907,34 @@ function keyReads(fileName: string, text: string): Reads {
   };
   if (bound.length) reads(file);
 
-  return { named, built, calls };
+  return { named, built, calls, builtCalls };
+}
+
+/**
+ * Templates that build a key the catalog has nothing under.
+ *
+ * The hole in `missingKeys`, and the reason this rule exists: a literal key can be
+ * checked against its namespace, but `` t(`fieldType.${field.data_type}`) `` only
+ * says `fieldType.` and a suffix. Under the right namespace that is
+ * `datasets.fieldType.text` and it resolves; under the wrong one it is
+ * `pages.datasets.fieldType.text`, which is not a key and not a typo - it is a
+ * translator scoped to one namespace reading a key filed under another, and on
+ * screen it renders the key path itself.
+ *
+ * A pattern with no dot in its fixed part is skipped: `` t(`${something}Label`) ``
+ * says nothing about where the key lives.
+ */
+export function unresolvedTemplates(fileName: string, text: string, keys: string[]): Offence[] {
+  return keyReads(fileName, text)
+    .builtCalls.filter(
+      ({ key, pattern }) => key.includes(".") && !keys.some((candidate) => pattern.test(candidate)),
+    )
+    .map(({ key, namespaces, line }) => ({
+      line,
+      // The hole is `\u0000` in the parsed body; a reader needs to see where the
+      // variable is, not a blank.
+      what: `${key.split(HOLE).join("${…}")} - no key under ${namespaces.filter(Boolean).join(", ") || "the root"} matches`,
+    }));
 }
 
 /**
@@ -1113,10 +1171,14 @@ function main(argv: string[]): number {
 
   const failures: string[] = [];
   const absent: string[] = [];
+  const keys = [...catalogKeys(catalog)];
   for (const { path, text } of product) {
     const shown = relative(ROOT, path);
     for (const { line, what } of offences(path, text)) failures.push(`${shown}:${line}: ${what}`);
     for (const { line, what } of missingKeys(path, text, catalog)) {
+      absent.push(`${shown}:${line}: ${what}`);
+    }
+    for (const { line, what } of unresolvedTemplates(path, text, keys)) {
       absent.push(`${shown}:${line}: ${what}`);
     }
   }
@@ -1133,7 +1195,13 @@ function main(argv: string[]): number {
   }
 
   if (absent.length) {
-    print("message(s) read but not in messages/en.json:", absent, all);
+    print(
+      "message(s) read but not in messages/en.json:",
+      absent,
+      all,
+      "Either the key is missing, or the translator reading it is scoped to another\n" +
+        "namespace than the one the key was filed under.",
+    );
     return 1;
   }
 

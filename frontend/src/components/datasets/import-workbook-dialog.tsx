@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, FileSpreadsheet, Upload } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, FileSpreadsheet, Sparkles, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -23,10 +23,17 @@ import {
   SelectValue,
 } from "@/components/ui";
 import { DIALOG_BODY, DIALOG_BROAD, DIALOG_COLUMN } from "@/lib/dialog-sizes";
-import { useCommitImport, useDatasets, useUploadWorkbook } from "@/hooks/use-datasets";
+import {
+  useAnalyzeImport,
+  useCommitImport,
+  useDatasets,
+  useUploadWorkbook,
+} from "@/hooks/use-datasets";
 import { saveImportDraft } from "@/lib/datasets-api";
 import { cn } from "@/lib/utils";
 import {
+  absorbAdvice,
+  acceptedRelations,
   allReadyToPublish,
   checkedSheets,
   commitPayload,
@@ -36,6 +43,7 @@ import {
   keptColumns,
   mergeColumn,
   mergeSheet,
+  relationKey,
   WIZARD_STEPS,
   type ColumnChoice,
   type SheetChoice,
@@ -45,8 +53,10 @@ import {
 import type {
   Dataset,
   DatasetFieldType,
+  ImportAdvice,
   ImportProgress,
   ImportSheetResult,
+  ImportRelationResult,
   SheetProposal,
 } from "@/types/datasets";
 
@@ -85,6 +95,7 @@ export function ImportWorkbookDialog({
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useUploadWorkbook(kbId);
   const commit = useCommitImport(kbId);
+  const analyze = useAnalyzeImport(kbId);
   const { datasets: known } = useDatasets(kbId);
   const targets = datasets.length > 0 ? datasets : known;
 
@@ -97,6 +108,15 @@ export function ImportWorkbookDialog({
   const [choices, setChoices] = useState<SheetChoices>({});
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [results, setResults] = useState<ImportSheetResult[] | null>(null);
+  // What the base's model made of the workbook, and which of its joins the
+  // person kept. `advice` is null until the first answer arrives; `ran: false`
+  // is an answer too, carrying the reason there is none.
+  const [advice, setAdvice] = useState<ImportAdvice | null>(null);
+  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
+  const [createdRelations, setCreatedRelations] = useState<ImportRelationResult[] | null>(null);
+  // The parser's own proposal, kept so `absorbAdvice` can tell a sheet somebody
+  // has edited from one they have not looked at yet.
+  const parsed = useRef<SheetProposal[]>([]);
 
   const reset = () => {
     setStep("upload");
@@ -107,7 +127,46 @@ export function ImportWorkbookDialog({
     setChoices({});
     setProgress(null);
     setResults(null);
+    setAdvice(null);
+    setAccepted({});
+    setCreatedRelations(null);
+    parsed.current = [];
     if (inputRef.current) inputRef.current.value = "";
+  };
+
+  /**
+   * Ask the base's model to read the workbook, and fold what it says into the wizard.
+   *
+   * Its failure is not the import's: a refused request, a provider that timed
+   * out, no model configured at all - each leaves the parser's proposal on
+   * screen and the publish available. What it must never do is leave the screen
+   * silent about it, which is why `advice` is set either way and the status line
+   * names the reason.
+   */
+  const runAdvice = async (id: string, force: boolean) => {
+    try {
+      const answer = await analyze.mutateAsync({ importId: id, force });
+      setAdvice(answer);
+      if (!answer.ran) return;
+      setProposals(answer.sheets);
+      setChoices((current) => absorbAdvice(current, parsed.current, answer.sheets));
+      // Every join starts accepted: the person asked for the recommendation by
+      // creating the base with a model, and untickng one is cheaper than ticking
+      // five. It is not published as a promise they did not see - the list is
+      // on the step where the publish happens.
+      setAccepted(
+        Object.fromEntries(answer.relations.map((relation) => [relationKey(relation), true])),
+      );
+    } catch {
+      setAdvice({
+        ran: false,
+        reason: "unreachable",
+        provider: null,
+        model: null,
+        sheets: [],
+        relations: [],
+      });
+    }
   };
 
   const onFile = async (file: File) => {
@@ -121,7 +180,12 @@ export function ImportWorkbookDialog({
     setImportId(record.id);
     setProposals(record.sheets);
     setChoices(initialChoices(record.sheets));
+    parsed.current = record.sheets;
     setStep("sheets");
+    // Started, not awaited: the parser's proposal is already on screen, and the
+    // wizard is usable while the model reads. A second request is asked for by
+    // the button beside the status line.
+    void runAdvice(record.id, false);
   };
 
   const selected = useMemo(() => checkedSheets(proposals, choices), [proposals, choices]);
@@ -171,9 +235,14 @@ export function ImportWorkbookDialog({
     const result = await commit.mutateAsync({
       importId,
       sheets: payload(),
+      // Only the joins whose both sides are being published, and only the ones
+      // still ticked: a relation into a sheet somebody unticked has no dataset
+      // to land on.
+      relations: acceptedRelations(advice?.relations ?? [], accepted, choices),
       onProgress: setProgress,
     });
     setResults(result.sheets);
+    setCreatedRelations(result.relations ?? []);
     setStep("report");
   };
 
@@ -185,6 +254,21 @@ export function ImportWorkbookDialog({
   const index = WIZARD_STEPS.indexOf(step);
   // The one number the bar and its label both show, so they cannot disagree.
   const uploadedPercent = Math.round(uploaded * 100);
+
+  // What the status line under the sheet list says: reading, done, or why not.
+  // `no_model` is its own sentence - a base created without one is a choice, not
+  // a failure - and every other reason is the server's own words.
+  const advisingIdle = advice === null && !analyze.isPending;
+  const adviceLine = analyze.isPending
+    ? t("adviceReading")
+    : advice === null
+      ? t("adviceReading")
+      : advice.ran
+        ? t("adviceDone", { count: advice.sheets.length, model: advice.model ?? "" })
+        : advice.reason === "no_model"
+          ? t("adviceNoModel")
+          : t("adviceFailed", { reason: advice.reason ?? "" });
+  const suggestions = advice?.ran === true ? advice.relations : [];
 
   return (
     <Dialog open={open} onOpenChange={close}>
@@ -291,6 +375,24 @@ export function ImportWorkbookDialog({
             <div className="space-y-2">
               <p className="text-sm font-medium">{t("sheetsFound", { count: proposals.length })}</p>
               <p className="text-muted-foreground text-xs">{t("sheetsHint")}</p>
+              {!advisingIdle && (
+                <div className="rounded-card border-border flex flex-wrap items-center gap-2 border p-2 text-xs">
+                  <Sparkles className="text-brand size-3.5 shrink-0" aria-hidden />
+                  <span className="min-w-0 flex-1" data-testid="advice-status">
+                    {adviceLine}
+                  </span>
+                  {importId !== null && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      loading={analyze.isPending}
+                      onClick={() => void runAdvice(importId, true)}
+                    >
+                      {t("adviceAgain")}
+                    </Button>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 {proposals.map((sheet) => {
                   const choice = choices[sheet.sheet_name];
@@ -427,6 +529,11 @@ export function ImportWorkbookDialog({
                                   ))}
                                 </SelectContent>
                               </Select>
+                              {field.advised === true && (
+                                <Badge variant="outline" className="shrink-0">
+                                  {t("advisedByModel")}
+                                </Badge>
+                              )}
                               <Button
                                 size="sm"
                                 variant={column.isKey ? "secondary" : "ghost"}
@@ -459,6 +566,13 @@ export function ImportWorkbookDialog({
                 const choice = choices[sheet.sheet_name];
                 if (!choice) return null;
                 const kept = keptColumns(choice);
+                // Each kept column with the sheet field it came from: the
+                // preview row is keyed by the field's parsed name, the header by
+                // whatever the person typed in the box.
+                const shown = sheet.fields.flatMap((field, at) => {
+                  const column = choice.columns[at];
+                  return column?.keep ? [{ field, column }] : [];
+                });
                 return (
                   <div
                     key={sheet.sheet_name}
@@ -490,12 +604,19 @@ export function ImportWorkbookDialog({
                       </ul>
                     )}
                     {sheet.preview.length > 0 && (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
+                      // The preview is what the sheet looks like, so it scrolls
+                      // sideways rather than folding: `w-full` made the table
+                      // exactly as wide as the dialog and every cell wrap, which
+                      // turned a 13-column quote sheet into a column of single
+                      // characters. `min-w-full` keeps a narrow sheet filling the
+                      // card; `whitespace-nowrap` is what gives the wide one
+                      // something to scroll.
+                      <div className="overflow-x-auto" data-testid="sheet-preview">
+                        <table className="w-max min-w-full text-left text-xs">
                           <thead className="text-muted-foreground">
                             <tr>
-                              {kept.map((column) => (
-                                <th key={column.name} className="pr-3 font-medium">
+                              {shown.map(({ field, column }) => (
+                                <th key={field.name} className="pr-3 font-medium whitespace-nowrap">
                                   {column.name}
                                 </th>
                               ))}
@@ -504,9 +625,12 @@ export function ImportWorkbookDialog({
                           <tbody>
                             {sheet.preview.slice(0, 3).map((row, at) => (
                               <tr key={at}>
-                                {kept.map((column) => (
-                                  <td key={column.name} className="pr-3">
-                                    {String(row[column.name] ?? "")}
+                                {shown.map(({ field }) => (
+                                  <td key={field.name} className="pr-3 whitespace-nowrap">
+                                    {/* Read by the sheet's own column name, not
+                                        the name in the box: renaming a column
+                                        must not blank its preview. */}
+                                    {String(row[field.name] ?? "")}
                                   </td>
                                 ))}
                               </tr>
@@ -518,6 +642,53 @@ export function ImportWorkbookDialog({
                   </div>
                 );
               })}
+
+              {suggestions.length > 0 && (
+                <div
+                  className="rounded-card border-border space-y-2 border p-3"
+                  data-testid="advice-relations"
+                >
+                  <p className="text-sm font-medium">
+                    {t("relationsFound", { count: suggestions.length })}
+                  </p>
+                  <p className="text-muted-foreground text-xs">{t("relationsHint")}</p>
+                  <ul className="space-y-2">
+                    {suggestions.map((relation) => {
+                      const key = relationKey(relation);
+                      return (
+                        <li key={key} className="flex flex-wrap items-start gap-2 text-xs">
+                          <Checkbox
+                            checked={accepted[key] === true}
+                            onCheckedChange={(checked) =>
+                              setAccepted((current) => ({ ...current, [key]: checked === true }))
+                            }
+                            aria-label={t("relationKept", {
+                              from: relation.from_sheet,
+                              to: relation.to_sheet,
+                            })}
+                          />
+                          <span className="min-w-0 flex-1">
+                            {t("relationLine", {
+                              from: relation.from_sheet,
+                              fromField: relation.from_fields.join(" + "),
+                              to: relation.to_sheet,
+                              toField: relation.to_fields.join(" + "),
+                            })}
+                            {relation.reason !== null && (
+                              <span className="text-muted-foreground block">{relation.reason}</span>
+                            )}
+                          </span>
+                          <Badge variant="outline">
+                            {t("relationConfidence", {
+                              percent: Math.round(relation.confidence * 100),
+                            })}
+                          </Badge>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
@@ -581,6 +752,13 @@ export function ImportWorkbookDialog({
                   </li>
                 ))}
               </ul>
+              {createdRelations !== null && createdRelations.length > 0 && (
+                <p className="text-muted-foreground text-xs" data-testid="import-relations">
+                  {t("relationsCreated", {
+                    count: createdRelations.filter((relation) => relation.created).length,
+                  })}
+                </p>
+              )}
             </div>
           )}
         </div>

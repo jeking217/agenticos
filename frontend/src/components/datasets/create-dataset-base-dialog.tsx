@@ -22,6 +22,14 @@ import {
   SelectValue,
   Textarea,
 } from "@/components/ui";
+import {
+  NO_REASONING,
+  ReasoningModelFields,
+  reasoningIncomplete,
+  reasoningPayload,
+  useReasoningProviders,
+  type ReasoningChoice,
+} from "@/components/kb/reasoning-model-fields";
 import { DIALOG_BODY, DIALOG_COLUMN, DIALOG_FORM } from "@/lib/dialog-sizes";
 import { useCreateDatasetBase } from "@/hooks/use-datasets";
 import { ROUTES } from "@/lib/constants";
@@ -30,9 +38,11 @@ import { cn } from "@/lib/utils";
 /**
  * Creates the base that will hold datasets.
  *
- * It asks for a name and an audience and nothing else: the model belongs to a
- * sheet, not to the base, and the importer is where it is agreed. Asking for an
- * embedding model here would be asking for something a dataset never uses.
+ * A name, an audience, and the model that reads the workbooks put into it. No
+ * embedding model: a dataset has no vector column and nothing to embed, so that
+ * question belongs to the document form and nowhere else. The reading model is
+ * optional - a base with none imports on the parser's rules - which is why the
+ * field starts on "off" rather than demanding a provider.
  */
 export function CreateDatasetBaseDialog() {
   const t = useTranslations("datasets");
@@ -42,6 +52,12 @@ export function CreateDatasetBaseDialog() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [scope, setScope] = useState<"personal" | "org">("personal");
+  const [reasoning, setReasoning] = useState<ReasoningChoice>(NO_REASONING);
+  const { providers } = useReasoningProviders();
+  const incomplete = reasoningIncomplete(
+    reasoning,
+    providers.find((entry) => entry.id === reasoning.provider),
+  );
 
   const submit = async () => {
     // The audience is a decision, not a default: it was collected and then not
@@ -50,10 +66,12 @@ export function CreateDatasetBaseDialog() {
       name: name.trim(),
       description: description.trim() || null,
       scope,
+      ...reasoningPayload(reasoning),
     });
     setOpen(false);
     setName("");
     setDescription("");
+    setReasoning(NO_REASONING);
     router.push(ROUTES.DATASET_BASE(base.id));
   };
 
@@ -110,13 +128,23 @@ export function CreateDatasetBaseDialog() {
                 </SelectContent>
               </Select>
             </FormField>
+
+            <ReasoningModelFields
+              value={reasoning}
+              onChange={setReasoning}
+              idPrefix="dataset-base"
+            />
           </div>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>
               {t("cancel")}
             </Button>
-            <Button onClick={submit} loading={create.isPending} disabled={name.trim().length === 0}>
+            <Button
+              onClick={submit}
+              loading={create.isPending}
+              disabled={name.trim().length === 0 || incomplete}
+            >
               {t("create")}
             </Button>
           </DialogFooter>

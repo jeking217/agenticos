@@ -290,11 +290,12 @@ function KBCard({ kb }: { kb: KnowledgeBase }) {
           </span>
 
           <div className="flex items-center gap-1.5">
-            {isDataset && (
-              <Badge variant="outline" className="border-border text-muted-foreground font-normal">
-                {t("datasetBadge")}
-              </Badge>
-            )}
+            {/* Every card says which of the two this is: a document base is the
+                page's default and used to be the one with no label, so "no
+                badge" read as "unknown kind" rather than "documents". */}
+            <Badge variant="outline" className="border-border text-muted-foreground font-normal">
+              {t(isDataset ? "datasetBadge" : "documentBadge")}
+            </Badge>
             {kb.is_default && (
               <Badge variant="outline" className="border-border text-muted-foreground font-normal">
                 {t("default")}

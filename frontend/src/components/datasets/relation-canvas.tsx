@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import type { Dataset, DatasetRelation, RelationCandidate } from "@/types/datasets";
 
-import { CANVAS, edgeLabel, layoutRelations, type CanvasNode } from "./relation-layout";
+import { CANVAS, arrowStop, edgeLabel, layoutRelations, type CanvasNode } from "./relation-layout";
 
 interface RelationCanvasProps {
   dataset: Dataset;
@@ -66,6 +66,34 @@ export function RelationCanvas({
           aria-hidden
           role="presentation"
         >
+          {/* An edge says which way the key points: `many_to_one` reads as
+              "many of these rows name one row over there", and a line with no
+              head leaves that to the label alone. Two heads, because a
+              confirmed join and a suggestion are drawn in different weights. */}
+          <defs>
+            <marker
+              id="relation-arrow"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" className="fill-foreground/50" />
+            </marker>
+            <marker
+              id="relation-arrow-suggested"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" className="fill-foreground/30" />
+            </marker>
+          </defs>
           {focal &&
             nodes
               .filter((node) => !node.focal)
@@ -74,16 +102,18 @@ export function RelationCanvas({
                 const candidate = relation ? undefined : suggested(node.id);
                 if (!relation && !candidate) return null;
                 const label = edgeLabel(focal, node);
+                const stop = arrowStop(focal, node);
                 return (
                   <g key={node.id}>
                     <line
                       x1={focal.x}
                       y1={focal.y}
-                      x2={node.x}
-                      y2={node.y}
+                      x2={stop.x}
+                      y2={stop.y}
                       className={relation ? "stroke-foreground/40" : "stroke-foreground/25"}
                       strokeWidth={relation ? 1.6 : 1.2}
                       strokeDasharray={relation ? undefined : "5 4"}
+                      markerEnd={`url(#${relation ? "relation-arrow" : "relation-arrow-suggested"})`}
                       data-testid={relation ? "edge-confirmed" : "edge-candidate"}
                     />
                     <text

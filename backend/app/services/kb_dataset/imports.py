@@ -31,11 +31,14 @@ from app.schemas.kb_dataset import (
     DatasetFieldInput,
     DatasetImportCommit,
     DatasetImportDraft,
+    DatasetImportRelation,
     DatasetImportSheet,
+    DatasetRelationInput,
     SheetProposal,
 )
 from app.services.background_jobs import enqueue
-from app.services.kb_dataset import excel, metrics, quality, quota
+from app.services.kb_dataset import excel, metrics, quality, quota, reasoning
+from app.services.kb_dataset import relations as relations_service
 from app.services.kb_dataset.model import create_dataset, field_types, primary_key
 from app.services.kb_dataset.versions import publish
 from app.worker.jobs import IMPORT_DATASET, ImportDataset, ImportSheet
@@ -252,6 +255,92 @@ def plan_of(record: Any) -> dict[str, Any]:
     }
 
 
+async def analyze(
+    db: AsyncSession,
+    *,
+    record: Any,
+    kb: Any,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Ask the base's reasoning model what this workbook means, before publishing.
+
+    Its own request rather than part of the upload, because the two answer
+    different questions and take different amounts of time: the parse is a
+    second on a big file, and a model reading six sheets is several. A wizard
+    that showed nothing until the slower of the two finished would make every
+    import feel like a model call, and one where the model is down would fail
+    the upload itself.
+
+    Nothing here can refuse an import. No model configured, a key that was
+    deleted, a provider that timed out: the answer says `ran: false` and why,
+    and the wizard carries on with the parser's proposal.
+
+    The result is kept on the import, so closing the dialog and reopening it
+    does not buy a second model call, and `force` is how somebody asks for one.
+    """
+    if record.status not in {"draft", "preview"}:
+        raise BadRequestError(message="This import has already been published from")
+    cached = (record.plan or {}).get("advice")
+    if cached and not force:
+        return {**cached, "cached": True}
+    if not record.staged_path or not Path(record.staged_path).exists():
+        raise NotFoundError(message="The uploaded workbook is no longer available; upload it again")
+
+    suggestions: list[dict[str, Any]] = []
+    for dataset in await repo.get_dataset_by_kb(db, kb.id):
+        if dataset.archived_at is not None:
+            continue
+        fields = await repo.list_fields(db, dataset.id)
+        suggestions.append(
+            {
+                "name": dataset.name,
+                "columns": [{"name": field.name, "type": field.data_type} for field in fields],
+            }
+        )
+
+    content = await run_blocking(Path(record.staged_path).read_bytes)
+    proposals = await run_blocking(excel.scan, content)
+    outcome = await reasoning.advise(db, kb, proposals, existing=suggestions)
+
+    if not outcome.ran:
+        result: dict[str, Any] = {
+            "ran": False,
+            "reason": outcome.reason,
+            "provider": outcome.provider,
+            "model": outcome.model,
+            "sheets": (record.plan or {}).get("sheets") or [proposal_payload(p) for p in proposals],
+            "relations": [],
+        }
+        record.plan = {**(record.plan or {}), "advice": result}
+        await db.flush()
+        return result
+
+    assert outcome.advice is not None  # narrowed by `ran`
+    applied = reasoning.apply(proposals, outcome.advice)
+    sheets = []
+    for proposal in applied.proposals:
+        payload = proposal_payload(proposal)
+        # Which columns the model spoke about, so the wizard can say so on the
+        # row rather than silently show a type nobody can attribute.
+        decided = applied.fields.get(payload["sheet_name"], set())
+        for field in payload["fields"]:
+            field["advised"] = field["name"] in decided
+        payload["advised"] = payload["sheet_name"] in applied.sheets or bool(decided)
+        sheets.append(payload)
+
+    result = {
+        "ran": True,
+        "reason": None,
+        "provider": outcome.provider,
+        "model": outcome.model,
+        "sheets": sheets,
+        "relations": applied.relations,
+    }
+    record.plan = {**(record.plan or {}), "advice": result}
+    await db.flush()
+    return result
+
+
 async def save_draft(db: AsyncSession, *, record: Any, draft: DatasetImportDraft) -> dict[str, Any]:
     """Keep the wizard's decisions, step and all, without publishing anything.
 
@@ -403,6 +492,85 @@ def _summary(
         "sheets": list(sheets),
         "failures": failures,
     }
+
+
+async def _create_relations(
+    db: AsyncSession,
+    *,
+    knowledge_base_id: uuid.UUID,
+    requested: list[Any],
+    results: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Create the joins the wizard accepted, resolving names to the datasets they became.
+
+    A suggestion is named after a sheet, because at the moment it is offered the
+    dataset that sheet becomes does not exist. Publishing is what creates it, so
+    this runs afterwards and translates: a sheet that failed to publish drops the
+    suggestion, and a name that matches an existing dataset is taken as one.
+
+    Confirmed, not candidate. The person saw the suggestion, kept it and pressed
+    publish - asking them to confirm the same join a second time on another screen
+    is the double work the recommendation existed to remove. It is still editable
+    from the relation panel, which is what "candidate" was for.
+    """
+    if not requested:
+        return []
+    by_name: dict[str, uuid.UUID] = {}
+    for outcome in results:
+        if outcome.get("status") != "committed":
+            continue
+        identifier = outcome.get("dataset_id")
+        if identifier is None:
+            continue
+        for key in (outcome.get("sheet_name"), outcome.get("dataset_name")):
+            if key:
+                by_name[key] = uuid.UUID(str(identifier))
+    for dataset in await repo.get_dataset_by_kb(db, knowledge_base_id):
+        if dataset.archived_at is None:
+            by_name.setdefault(dataset.name, dataset.id)
+
+    created: list[dict[str, Any]] = []
+    for entry in requested:
+        record: dict[str, Any] = {
+            "from_sheet": entry.from_sheet,
+            "to_sheet": entry.to_sheet,
+            "from_fields": list(entry.from_fields),
+            "to_fields": list(entry.to_fields),
+        }
+        dataset_id = by_name.get(entry.from_sheet)
+        target_id = by_name.get(entry.to_sheet)
+        if dataset_id is None or target_id is None:
+            missing = entry.from_sheet if dataset_id is None else entry.to_sheet
+            record.update({"created": False, "error": f"`{missing}` was not published"})
+            created.append(record)
+            continue
+        dataset = await repo.get_dataset(db, dataset_id)
+        target = await repo.get_dataset(db, target_id)
+        if dataset is None or target is None:
+            record.update({"created": False, "error": "the related dataset is gone"})
+            created.append(record)
+            continue
+        name = (entry.name or f"to_{target.name}")[:64]
+        try:
+            async with db.begin_nested():
+                relation, _warnings = await relations_service.create(
+                    db,
+                    dataset,
+                    DatasetRelationInput(
+                        target_dataset_id=target.id,
+                        name=name,
+                        cardinality=entry.cardinality,
+                        join_type="left",
+                        local_fields=list(entry.from_fields),
+                        foreign_fields=list(entry.to_fields),
+                        status="confirmed",
+                    ),
+                )
+            record.update({"created": True, "relation_id": str(relation.id), "name": name})
+        except Exception as exc:  # a refused join is a line in the report, not a failure
+            record.update({"created": False, "error": str(exc)[:300]})
+        created.append(record)
+    return created
 
 
 async def commit(
@@ -562,11 +730,26 @@ async def commit(
             result.get("error", "") for result in results if result["status"] == "failed"
         )[:1000]
 
+    # Relations last, and only once there are datasets to point at: a workbook's
+    # sheets become datasets during this loop, so a join named before it ran
+    # would have nowhere to land. Each is its own savepoint for the same reason a
+    # sheet is - a relation the compiler would refuse is a row in the report, not
+    # a reason to lose the import that already published.
+    relations = await _create_relations(
+        db,
+        knowledge_base_id=knowledge_base_id,
+        requested=payload.relations,
+        results=results,
+    )
+
     # The last write, so a worker commits the final status with the last sheet
     # rather than leaving the poller on 100% and `running`.
     await sink.report(
         record,
-        _summary(total=total, sheets=results, failures=failures, current=None, phase="done"),
+        {
+            **_summary(total=total, sheets=results, failures=failures, current=None, phase="done"),
+            "relations": relations,
+        },
     )
 
     # The staged workbook has done its job. Removing it is best-effort: a
@@ -576,7 +759,15 @@ async def commit(
         record.staged_path = None
     except OSError:
         pass
-    return {"status": record.status, "sheets": results, "failures": failures}
+    return {
+        "status": record.status,
+        "sheets": results,
+        "failures": failures,
+        # In the answer as well as on the record: the wizard shows the report
+        # from whichever one it has, and a caller that waited (rather than
+        # polling) has only this.
+        "relations": relations,
+    }
 
 
 def job_payload(
@@ -609,6 +800,7 @@ def job_payload(
             for sheet in payload.sheets
         ],
         note=payload.note,
+        relations=[entry.model_dump(mode="json") for entry in payload.relations],
     )
 
 
@@ -627,6 +819,7 @@ def commit_spec(job: ImportDataset) -> DatasetImportCommit:
             for sheet in job.sheets
         ],
         note=job.note,
+        relations=[DatasetImportRelation(**entry) for entry in job.relations],
     )
 
 

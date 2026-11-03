@@ -373,7 +373,7 @@ function DatasetWorkspace({
                   .filter((entry) => !entry.current)
                   .map((entry) => (
                     <SelectItem key={entry.id} value={String(entry.version_no)}>
-                      v{entry.version_no} · {t(`versionKind.${entry.kind}`)}
+                      v{entry.version_no} · {tDatasets(`versionKind.${entry.kind}`)}
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -437,7 +437,10 @@ function DatasetWorkspace({
               >
                 <span className="min-w-0 flex-1 truncate font-medium">{field.display_name}</span>
                 <span className="text-muted-foreground font-mono text-xs">{field.name}</span>
-                <Badge variant="outline">{t(`fieldType.${field.data_type}`)}</Badge>
+                {/* `fieldType.*` lives in the `datasets` namespace, not in
+                    `pages.datasets` - reading it from the page's own translator
+                    resolved nothing and printed the key path. */}
+                <Badge variant="outline">{tDatasets(`fieldType.${field.data_type}`)}</Badge>
                 {field.is_primary_key && <Badge variant="secondary">{t("key")}</Badge>}
               </div>
             ))}

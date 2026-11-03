@@ -8542,6 +8542,7 @@
       "createKnowledgeBase": "建立知識庫",
       "createOneGiveYour": "建立一個，讓你的助手訪問集合中的文件。",
       "datasetBadge": "表格",
+      "documentBadge": "文件",
       "default": "預設",
       "delete": "刪除",
       "deleteCollectionTitle": "刪除 {name}？",

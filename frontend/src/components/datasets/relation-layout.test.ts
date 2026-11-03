@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CANVAS, edgeLabel, layoutRelations } from "./relation-layout";
+import { CANVAS, NODE_HALF, arrowStop, edgeLabel, layoutRelations } from "./relation-layout";
 
 /**
  * Where the cards of the relation canvas go.
@@ -64,5 +64,36 @@ describe("edgeLabel", () => {
     const b = { id: "b", name: "B", x: 200, y: 100, focal: false };
 
     expect(edgeLabel(a, b)).toEqual({ x: 100, y: 92 });
+  });
+});
+
+describe("arrowStop", () => {
+  const centre = { x: 300, y: 170 };
+
+  it("stops at the side of the box on a horizontal edge", () => {
+    // Straight right: the arrowhead belongs on the left edge of the card, not
+    // under its middle, which is where the card would paint over it.
+    expect(arrowStop(centre, { x: 600, y: 170 })).toEqual({ x: 600 - NODE_HALF.w, y: 170 });
+  });
+
+  it("stops at the top of the box on a vertical edge", () => {
+    expect(arrowStop(centre, { x: 300, y: 20 })).toEqual({ x: 300, y: 20 + NODE_HALF.h });
+  });
+
+  it("takes the horizontal side on a shallow diagonal, the vertical one on a steep one", () => {
+    const shallow = arrowStop(centre, { x: 600, y: 200 });
+    const steep = arrowStop(centre, { x: 330, y: 20 });
+
+    // A mostly-horizontal line leaves through the left/right edge, so what is
+    // trimmed is the x distance.
+    expect(shallow.x).toBe(600 - NODE_HALF.w);
+    expect(shallow.y).toBeGreaterThan(170);
+    expect(steep.y).toBe(20 + NODE_HALF.h);
+  });
+
+  it("leaves an edge alone when the two centres are closer than a box", () => {
+    // Nothing sensible to trim: two nodes that overlap stay where they are.
+    expect(arrowStop({ x: 10, y: 10 }, { x: 20, y: 10 })).toEqual({ x: 20, y: 10 });
+    expect(arrowStop(centre, centre)).toEqual(centre);
   });
 });

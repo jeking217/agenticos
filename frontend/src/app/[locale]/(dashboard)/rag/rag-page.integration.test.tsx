@@ -389,5 +389,9 @@ describe("a base that holds rows opens where rows live (#T17)", () => {
 
     const link = await screen.findByRole("link", { name: "pages.kb.openCollection" });
     expect(link).toHaveAttribute("href", "/rag/kb-1");
+    // A document base is the page's default kind, and it used to be the card
+    // with no label - which read as "unknown kind" rather than "documents".
+    expect(screen.getByText("pages.kb.documentBadge")).toBeInTheDocument();
+    expect(screen.queryByText("pages.kb.datasetBadge")).not.toBeInTheDocument();
   });
 });

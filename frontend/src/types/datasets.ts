@@ -157,6 +157,8 @@ export interface SheetFieldProposal {
   is_primary_key: boolean;
   distinct_ratio: number;
   samples: string[];
+  /** True when the reasoning model, rather than the parser, chose this type. */
+  advised?: boolean;
 }
 
 export interface SheetProposal {
@@ -169,6 +171,8 @@ export interface SheetProposal {
   preview: Record<string, unknown>[];
   warnings: string[];
   merged_cells: number;
+  /** True when the model had anything to say about this sheet. */
+  advised?: boolean;
 }
 
 export interface WorkbookImport {
@@ -194,6 +198,38 @@ export interface CommitSheet {
   primary_key_fields?: string[];
 }
 
+/** A join between two sheets of this workbook, or a sheet and an existing dataset. */
+export interface ImportRelation {
+  from_sheet: string;
+  from_fields: string[];
+  to_sheet: string;
+  to_fields: string[];
+  cardinality: RelationCardinality;
+  confidence: number;
+  reason: string | null;
+}
+
+/** What publishing did with one accepted join. */
+export interface ImportRelationResult {
+  from_sheet: string;
+  to_sheet: string;
+  created: boolean;
+  name?: string;
+  relation_id?: string;
+  error?: string;
+}
+
+/** What the base's model made of the workbook; `ran: false` carries the reason. */
+export interface ImportAdvice {
+  ran: boolean;
+  reason: string | null;
+  provider: string | null;
+  model: string | null;
+  sheets: SheetProposal[];
+  relations: ImportRelation[];
+  cached?: boolean;
+}
+
 export interface ImportSheetResult {
   sheet_name: string;
   status: "committed" | "failed";
@@ -214,6 +250,8 @@ export interface ImportResult {
   status: "committed" | "partial" | "failed";
   sheets: ImportSheetResult[];
   failures: number;
+  /** The joins publishing created, and any it refused. */
+  relations?: ImportRelationResult[];
 }
 
 /** How far a publish got. `done` counts a failed sheet: it is settled, not running. */
@@ -242,6 +280,8 @@ export interface ImportStatus {
   sheet_count: number;
   progress: ImportProgress;
   sheets: ImportSheetResult[];
+  /** The joins publishing created, and any it refused. */
+  relations?: ImportRelationResult[];
   plan: ImportPlan;
   error: string | null;
   committed_at: string | null;
@@ -307,4 +347,10 @@ export interface DatasetBase {
   description: string | null;
   scope: "personal" | "org";
   kb_type: "dataset";
+  /** The chat model this base reads workbooks with; absent when it has none. */
+  reasoning_provider: string | null;
+  reasoning_model: string | null;
+  reasoning_base_url: string | null;
+  /** Whether a vault key was stored for it. The key itself never travels. */
+  has_reasoning_key: boolean;
 }

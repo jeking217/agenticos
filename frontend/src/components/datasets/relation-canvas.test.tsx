@@ -77,6 +77,33 @@ describe("the relation canvas", () => {
     expect(dashed?.getAttribute("stroke-dasharray")).toBeTruthy();
   });
 
+  it("points each edge from this dataset to the one it joins", () => {
+    const { container } = draw();
+    const confirmed = container.querySelector('[data-testid="edge-confirmed"]');
+    const suggested = container.querySelector('[data-testid="edge-candidate"]');
+
+    // A head at the far end, and a different one for a suggestion - the two
+    // lines already differ in weight and dash, and the head has to match.
+    expect(confirmed?.getAttribute("marker-end")).toBe("url(#relation-arrow)");
+    expect(suggested?.getAttribute("marker-end")).toBe("url(#relation-arrow-suggested)");
+    expect(container.querySelectorAll("marker")).toHaveLength(2);
+  });
+
+  it("stops an edge at the card's edge, so the head is not painted over", () => {
+    const { container } = draw();
+    const edge = container.querySelector('[data-testid="edge-confirmed"]');
+    const node = screen.getByTestId("canvas-node-ds-2");
+
+    // The line starts at the centre of this card and used to end at the centre
+    // of that one, where the opaque card hid both the tail of the line and the
+    // arrowhead. It now stops a box-height short of it - this pair is stacked
+    // vertically, so the trimmed distance is the y one.
+    const endY = Number(edge?.getAttribute("y2"));
+    const nodeTop = Number.parseFloat(node.style.top);
+    expect(endY).toBeGreaterThan(nodeTop);
+    expect(Math.round(endY - nodeTop)).toBe(32);
+  });
+
   it("draws nothing between datasets with no join and no suggestion", () => {
     draw({ siblings: [customers, products], relations: [], candidates: [] });
 

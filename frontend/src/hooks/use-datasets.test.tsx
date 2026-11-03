@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  useAnalyzeImport,
   useArchiveDataset,
   useCommitImport,
   useCreateDatasetBase,
@@ -21,6 +22,7 @@ import {
   useVersionCompare,
 } from "./use-datasets";
 import {
+  analyzeImport,
   archiveDataset,
   commitImport,
   compareVersions,
@@ -44,6 +46,7 @@ import {
 import { apiClient } from "@/lib/api-client";
 
 vi.mock("@/lib/datasets-api", () => ({
+  analyzeImport: vi.fn(),
   archiveDataset: vi.fn(),
   commitImport: vi.fn(),
   compareVersions: vi.fn(),
@@ -273,6 +276,23 @@ describe("changing a base", () => {
     expect(uploadWorkbook).toHaveBeenCalledWith("kb-1", file, { onProgress });
     // The upload only stages the file; publishing is the commit's job, so nothing
     // is announced here.
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("asks the model for advice and passes the force flag through", async () => {
+    vi.mocked(analyzeImport).mockResolvedValueOnce({
+      ran: false,
+      reason: "no_model",
+      sheets: [],
+    } as never);
+    const { result } = renderHook(() => useAnalyzeImport("kb-1"), { wrapper });
+
+    await act(() => result.current.mutateAsync({ importId: "imp-1", force: true }));
+
+    expect(analyzeImport).toHaveBeenCalledWith("kb-1", "imp-1", { force: true });
+    // `ran: false` is an answer, not a failure: the wizard keeps the parser's
+    // proposal, so nothing is toasted here.
+    expect(toastError).not.toHaveBeenCalled();
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 });

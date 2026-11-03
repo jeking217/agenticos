@@ -37,6 +37,14 @@ import {
   useEndpointEmbeddingModels,
 } from "@/components/kb/embedding-picker";
 import { IngestionSettings, ParserCards } from "@/components/kb/ingestion-settings";
+import {
+  NO_REASONING,
+  ReasoningModelFields,
+  reasoningIncomplete,
+  reasoningPayload,
+  useReasoningProviders,
+  type ReasoningChoice,
+} from "@/components/kb/reasoning-model-fields";
 import { ProviderRow } from "@/components/vault/provider-row";
 import { useKnowledgeBases } from "@/hooks";
 import { useCreateDatasetBase } from "@/hooks/use-datasets";
@@ -96,12 +104,17 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
   const [embeddingSecretId, setEmbeddingSecretId] = useState<string | null>(null);
   const [embeddingBaseUrl, setEmbeddingBaseUrl] = useState("");
   const [embeddingEndpointId, setEmbeddingEndpointId] = useState<string | null>(null);
+  // The model a spreadsheet base reads workbooks with. Its own choice, and
+  // optional: a base without one imports on the parser's rules alone.
+  const [reasoning, setReasoning] = useState<ReasoningChoice>(NO_REASONING);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Readonly<Record<string, string>>>({});
   const { createKB } = useKnowledgeBases();
   const createDatasetBase = useCreateDatasetBase();
   const isDataset = kind === "dataset";
   const { models: embeddingModels, unreadable: modelsUnreadable } = useEmbeddingProviders();
+  const { providers: reasoningProviders } = useReasoningProviders();
+  const reasoningProvider = reasoningProviders.find((entry) => entry.id === reasoning.provider);
   // Whose endpoint the models on offer belong to. The provider decides both the
   // model list and which vault keys can pay, so it is resolved before either -
   // and a model the chosen provider does not serve is not a model this
@@ -132,7 +145,10 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
   const chosen = !sameIngestion(ingestion, DEFAULT_INGESTION_CONFIG);
   const localProblems = chosen ? ingestionProblems(ingestion, t) : {};
   const canSubmit =
-    name.trim().length > 0 && (isDataset || Object.keys(localProblems).length === 0);
+    name.trim().length > 0 &&
+    (isDataset
+      ? !reasoningIncomplete(reasoning, reasoningProvider)
+      : Object.keys(localProblems).length === 0);
   // The parsing details open themselves when they hold something required -
   // LlamaParse's key - or something refused, and never close themselves: a
   // fold shutting the moment its last problem is fixed takes the field being
@@ -155,6 +171,7 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
     setEmbeddingSecretId(null);
     setEmbeddingEndpointId(null);
     setEmbeddingBaseUrl("");
+    setReasoning(NO_REASONING);
     setDetailsOpen(false);
     setErrors({});
   };
@@ -171,6 +188,7 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
           name: name.trim(),
           description: description.trim() || null,
           scope: audience.mode === "private" ? "personal" : "org",
+          ...reasoningPayload(reasoning),
         });
         reset();
         onOpenChange(false);
@@ -221,6 +239,10 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
             "embedding_secret_id",
             "embedding_endpoint_id",
             "embedding_base_url",
+            "reasoning_provider",
+            "reasoning_model",
+            "reasoning_secret_id",
+            "reasoning_base_url",
             ...INGESTION_FORM_FIELDS,
           ],
         },
@@ -300,9 +322,17 @@ export function CreateKBDialog({ open, onOpenChange, onCreated }: CreateKBDialog
             </div>
 
             {isDataset && (
-              <p className="rounded-card border-border bg-muted/40 text-muted-foreground border p-3 text-xs leading-relaxed">
-                {t("datasetNextStep")}
-              </p>
+              <>
+                <ReasoningModelFields
+                  value={reasoning}
+                  onChange={setReasoning}
+                  idPrefix="kb-new"
+                  error={errors.reasoning_model ?? errors.reasoning_secret_id}
+                />
+                <p className="rounded-card border-border bg-muted/40 text-muted-foreground border p-3 text-xs leading-relaxed">
+                  {t("datasetNextStep")}
+                </p>
+              </>
             )}
 
             {/*

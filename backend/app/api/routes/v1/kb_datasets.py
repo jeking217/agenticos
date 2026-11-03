@@ -34,10 +34,12 @@ from app.api.public_api import PUBLIC
 from app.core.permissions import Perm
 from app.schemas.kb_dataset import (
     DatasetBaseCreate,
+    DatasetBaseRead,
     DatasetCompareResult,
     DatasetCreate,
     DatasetFieldChange,
     DatasetImportAccepted,
+    DatasetImportAdvice,
     DatasetImportCommit,
     DatasetImportDraft,
     DatasetImportPlan,
@@ -56,17 +58,23 @@ from app.schemas.kb_dataset import (
     DatasetUpdate,
     DatasetVersionList,
 )
+from app.services.model_profile import provider_catalog
 
 router = APIRouter(dependencies=[PUBLIC])
 
 
 @router.post(
     "/kb/datasets/bases",
+    response_model=DatasetBaseRead,
     status_code=201,
     dependencies=[Depends(require(Perm.DATASETS_EDIT))],
 )
 async def create_dataset_base(data: DatasetBaseCreate, service: DatasetSvc, ctx: Auth) -> Any:
-    """A dataset knowledge base needs no embedding: it is rows, not passages."""
+    """A dataset knowledge base needs no embedding: it is rows, not passages.
+
+    The reasoning model is the one credential a base holds, and it is optional:
+    a base without it imports on the parser's rules alone.
+    """
     base = await service.create_base(data, ctx)
     return {
         "id": base.id,
@@ -74,6 +82,37 @@ async def create_dataset_base(data: DatasetBaseCreate, service: DatasetSvc, ctx:
         "description": base.description,
         "scope": base.scope,
         "kb_type": base.kb_type,
+        "reasoning_provider": base.reasoning_provider,
+        "reasoning_model": base.reasoning_model,
+        "reasoning_base_url": base.reasoning_base_url,
+        "has_reasoning_key": base.reasoning_secret_id is not None,
+    }
+
+
+@router.get(
+    "/kb/datasets/reasoning-providers",
+    dependencies=[Depends(require(Perm.DATASETS_EDIT))],
+)
+async def list_reasoning_providers() -> Any:
+    """The providers a dataset base may read workbooks through.
+
+    Gated on `datasets:edit` rather than the Builder's `agents:view` on purpose:
+    this form is used by somebody who may import spreadsheets, and being unable
+    to name the model that reads them because they cannot see agents would be a
+    permission deciding a different question. The list is the deployment's
+    catalog - names, whether a key is needed, whether an address may be given -
+    and no credential.
+    """
+    return {
+        "items": [
+            {
+                "id": spec.id,
+                "name": spec.name,
+                "keyless": spec.keyless,
+                "supports_base_url": spec.supports_base_url,
+            }
+            for spec in provider_catalog()
+        ]
     }
 
 
@@ -430,6 +469,29 @@ async def list_imports(
     limit: int = Query(20, ge=1, le=100),
 ) -> Any:
     return await service.imports(kb_id, ctx, skip=skip, limit=limit)
+
+
+@router.post(
+    "/kb/{kb_id}/datasets/imports/{import_id}/analyze",
+    response_model=DatasetImportAdvice,
+    dependencies=[Depends(require(Perm.DATASETS_IMPORT))],
+)
+async def analyze_import(
+    kb_id: UUID,
+    import_id: UUID,
+    service: DatasetSvc,
+    ctx: Auth,
+    force: Annotated[
+        bool, Query(description="Ask again instead of reusing the last answer")
+    ] = False,
+) -> Any:
+    """Read the workbook with the base's reasoning model.
+
+    Answers `ran: false` with a reason when there is no model or it did not
+    answer - never a refusal. An import is not blocked by its advice, so an
+    advice endpoint that could block one would be the tail wagging the dog.
+    """
+    return await service.analyze_import(kb_id, import_id, ctx, force=force)
 
 
 @router.post(

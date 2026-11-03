@@ -121,6 +121,10 @@ class ImportDataset(Payload):
     actor_user_id: UUID | None = None
     sheets: list[ImportSheet]
     note: str | None = None
+    # The joins the wizard accepted, named by sheet rather than by dataset: the
+    # datasets do not exist until this job publishes them, so the names are what
+    # travels and `_create_relations` does the translating when it has them.
+    relations: list[dict[str, JsonValue]] = Field(default_factory=list)
 
 
 class SyncCollection(Payload):

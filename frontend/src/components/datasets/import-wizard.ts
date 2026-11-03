@@ -12,7 +12,12 @@
  * two checkboxes - so choosing a key clears the others.
  */
 
-import type { CommitSheet, DatasetFieldType, SheetProposal } from "@/types/datasets";
+import type {
+  CommitSheet,
+  DatasetFieldType,
+  ImportRelation,
+  SheetProposal,
+} from "@/types/datasets";
 
 /** The wizard's six steps, in the order a person meets them. */
 export const WIZARD_STEPS = [
@@ -190,4 +195,65 @@ export function draftStepFor(step: WizardStep): "sheets" | "model" | "validate" 
     default:
       return null;
   }
+}
+
+/**
+ * Fold the model's reading of the workbook into choices somebody may have started.
+ *
+ * The advice arrives a few seconds after the sheets do, which is long enough for
+ * a person to untick a summary tab or rename a dataset. So the merge is by
+ * *sheet*, and only for sheets nobody has touched: comparing against the same
+ * choices the parser originally produced is what makes "untouched" decidable
+ * without tracking every keystroke. A sheet that was edited keeps every part of
+ * that edit - re-applying half of somebody's decision is worse than applying
+ * none of it.
+ */
+export function absorbAdvice(
+  previous: SheetChoices,
+  before: SheetProposal[],
+  after: SheetProposal[],
+): SheetChoices {
+  const baseline = initialChoices(before);
+  const merged: SheetChoices = {};
+  for (const sheet of after) {
+    const advised = initialChoices([sheet])[sheet.sheet_name];
+    const prior = previous[sheet.sheet_name];
+    const untouched =
+      prior === undefined || JSON.stringify(prior) === JSON.stringify(baseline[sheet.sheet_name]);
+    merged[sheet.sheet_name] = untouched || advised === undefined ? (advised ?? prior!) : prior;
+  }
+  return merged;
+}
+
+/** Stable identity for a suggested join, so a checkbox can be keyed by it. */
+export function relationKey(relation: ImportRelation): string {
+  return [
+    relation.from_sheet,
+    relation.from_fields.join(","),
+    relation.to_sheet,
+    relation.to_fields.join(","),
+  ].join("|");
+}
+
+/**
+ * The joins to create: the accepted ones, and only those whose sheets are being imported.
+ *
+ * A join into a sheet somebody unticked has no dataset to land on, and the
+ * backend would refuse it as "not published". Dropping it here means the report
+ * does not carry a warning about a decision nobody could have made.
+ */
+export function acceptedRelations(
+  relations: ImportRelation[],
+  accepted: Readonly<Record<string, boolean>>,
+  choices: SheetChoices,
+): ImportRelation[] {
+  // A name that is not a choice is an existing dataset, which is published
+  // already; only a sheet of this workbook that was left out blocks a join.
+  const leftOut = (name: string) => choices[name] !== undefined && !choices[name].checked;
+  return relations.filter(
+    (relation) =>
+      accepted[relationKey(relation)] === true &&
+      !leftOut(relation.from_sheet) &&
+      !leftOut(relation.to_sheet),
+  );
 }

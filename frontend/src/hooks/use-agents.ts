@@ -660,7 +660,16 @@ export function useAddToAgent() {
       });
       return { already: false };
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.agents.all() }),
+    // The agent's draft changed, and - when the resource was a knowledge base -
+    // the base's own list entry, whose `used_by` is what the card reads. The
+    // invalidations are separate so a skill or an MCP server does not refetch
+    // every knowledge base for nothing.
+    onSuccess: (_result, { resource }) => {
+      queryClient.invalidateQueries({ queryKey: qk.agents.all() });
+      if (resource.kind === "collection") {
+        queryClient.invalidateQueries({ queryKey: qk.kb.all() });
+      }
+    },
     onError: (error) => toast.error(getErrorMessage(error, tErrors)),
   });
 }

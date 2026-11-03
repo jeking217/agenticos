@@ -21,6 +21,7 @@ vi.mock("./api-client", () => ({
 }));
 
 import {
+  analyzeImport,
   archiveDataset,
   commitImport,
   compareVersions,
@@ -36,6 +37,7 @@ import {
   listVersions,
   relationCandidates,
   restoreRow,
+  saveImportDraft,
   updateModel,
   updateRow,
   uploadWorkbook,
@@ -62,6 +64,32 @@ describe("bases and datasets", () => {
 
     await listDatasets("kb-1");
     expect(get).toHaveBeenCalledWith("/kb/kb-1/datasets");
+  });
+
+  it("sends the base's reasoning model, so import advice has something to answer with", async () => {
+    post.mockResolvedValueOnce({ id: "kb-1", name: "Sales" });
+
+    await createDatasetBase({
+      name: "Sales",
+      description: null,
+      scope: "personal",
+      reasoning_provider: "openai",
+      reasoning_model: "gpt-5-mini",
+      reasoning_secret_id: "secret-1",
+      reasoning_base_url: null,
+    });
+
+    // All four travel together: the backend rejects half a model, and a blank
+    // string would read as "chosen" rather than "not chosen".
+    expect(post).toHaveBeenCalledWith("/kb/datasets/bases", {
+      name: "Sales",
+      description: null,
+      scope: "personal",
+      reasoning_provider: "openai",
+      reasoning_model: "gpt-5-mini",
+      reasoning_secret_id: "secret-1",
+      reasoning_base_url: null,
+    });
   });
 
   it("sends the model as the form posted it - fields, metrics and the note", async () => {
@@ -224,16 +252,78 @@ describe("imports", () => {
     });
   });
 
-  it("reads a publish's progress until the worker is done with it", async () => {
-    get.mockResolvedValueOnce({
-      status: "running",
-      progress: { phase: "running", total: 2, done: 1, failed: 0, current_sheet: "客户", percent: 50 },
-      sheets: [{ sheet_name: "订单", status: "committed" }],
-    }).mockResolvedValueOnce({
-      status: "partial",
-      progress: { phase: "done", total: 2, done: 2, failed: 1, current_sheet: null, percent: 100 },
-      sheets: [{ sheet_name: "订单", status: "committed" }],
+  it("publishes the joins the person accepted alongside the sheets", async () => {
+    post.mockResolvedValueOnce({ import_id: "imp-1", status: "queued", progress: {} });
+
+    await commitImport("kb-1", "imp-1", {
+      // Two new datasets, so the sheets are named rather than targeted: the
+      // join is by sheet name and the ids do not exist yet.
+      sheets: [
+        { sheet_name: "订单明细", dataset_name: "订单明细" },
+        { sheet_name: "客户", dataset_name: "客户" },
+      ],
+      relations: [
+        {
+          from_sheet: "订单明细",
+          from_fields: ["客户编号"],
+          to_sheet: "客户",
+          to_fields: ["编号"],
+          cardinality: "many_to_one",
+        },
+      ],
     });
+
+    expect(post).toHaveBeenLastCalledWith("/kb/kb-1/datasets/imports/imp-1/commit", {
+      sheets: [
+        { sheet_name: "订单明细", dataset_name: "订单明细" },
+        { sheet_name: "客户", dataset_name: "客户" },
+      ],
+      relations: [
+        {
+          from_sheet: "订单明细",
+          from_fields: ["客户编号"],
+          to_sheet: "客户",
+          to_fields: ["编号"],
+          cardinality: "many_to_one",
+        },
+      ],
+    });
+  });
+
+  it("reads a publish's progress until the worker is done with it", async () => {
+    const relation = {
+      from_sheet: "订单",
+      to_sheet: "客户",
+      created: true,
+      name: "to_客户",
+      relation_id: "rel-1",
+    };
+    get
+      .mockResolvedValueOnce({
+        status: "running",
+        progress: {
+          phase: "running",
+          total: 2,
+          done: 1,
+          failed: 0,
+          current_sheet: "客户",
+          percent: 50,
+        },
+        sheets: [{ sheet_name: "订单", status: "committed" }],
+      })
+      .mockResolvedValueOnce({
+        status: "partial",
+        progress: {
+          phase: "done",
+          total: 2,
+          done: 2,
+          failed: 1,
+          current_sheet: null,
+          percent: 100,
+        },
+        sheets: [{ sheet_name: "订单", status: "committed" }],
+        relations: [relation],
+      });
     const seen: number[] = [];
 
     const result = await waitForImport("kb-1", "imp-1", {
@@ -248,7 +338,39 @@ describe("imports", () => {
       status: "partial",
       sheets: [{ sheet_name: "订单", status: "committed" }],
       failures: 1,
+      // The joins the worker made after publishing carry through the wait, so a
+      // caller that polled (rather than subscribing) can still report them.
+      relations: [relation],
     });
+  });
+
+  it("reports no relations when the record has none", async () => {
+    get.mockResolvedValueOnce({
+      status: "committed",
+      progress: { phase: "done", total: 1, done: 1, failed: 0, current_sheet: null, percent: 100 },
+      sheets: [{ sheet_name: "订单", status: "committed" }],
+    });
+
+    const result = await waitForImport("kb-1", "imp-1", { sleep: async () => undefined });
+
+    expect(result.relations).toEqual([]);
+  });
+
+  it("asks the model for advice without forcing a re-read by default", async () => {
+    post.mockResolvedValueOnce({ ran: false, reason: "no_model", sheets: [] });
+
+    await analyzeImport("kb-1", "imp-1");
+
+    expect(post).toHaveBeenCalledWith("/kb/kb-1/datasets/imports/imp-1/analyze", {});
+  });
+
+  it("forces a re-read when the person asks for one", async () => {
+    post.mockResolvedValueOnce({ ran: true, reason: null, sheets: [] });
+
+    await analyzeImport("kb-1", "imp-1", { force: true });
+
+    // The cached answer is what `force` bypasses, so it has to reach the URL.
+    expect(post).toHaveBeenCalledWith("/kb/kb-1/datasets/imports/imp-1/analyze?force=true", {});
   });
 
   it("stops waiting when the poll is cancelled", async () => {
@@ -263,5 +385,66 @@ describe("imports", () => {
     ).rejects.toThrow();
 
     expect(get).not.toHaveBeenCalled();
+  });
+
+  it("waits a real interval between polls when no sleep is injected", async () => {
+    get
+      .mockResolvedValueOnce({
+        status: "running",
+        progress: {
+          phase: "running",
+          total: 1,
+          done: 0,
+          failed: 0,
+          current_sheet: null,
+          percent: 0,
+        },
+        sheets: [],
+      })
+      .mockResolvedValueOnce({
+        status: "committed",
+        progress: {
+          phase: "done",
+          total: 1,
+          done: 1,
+          failed: 0,
+          current_sheet: null,
+          percent: 100,
+        },
+        sheets: [{ sheet_name: "订单", status: "committed" }],
+      });
+
+    // Zero interval but the module's own `sleep`, which is the line under test:
+    // a caller that passes nothing still gets a timer rather than a tight loop.
+    const result = await waitForImport("kb-1", "imp-1", { intervalMs: 0 });
+
+    expect(result.status).toBe("committed");
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up instead of waiting forever when the worker never settles", async () => {
+    get.mockResolvedValue({
+      status: "running",
+      progress: { phase: "running", total: 1, done: 0, failed: 0, current_sheet: null, percent: 0 },
+      sheets: [],
+    });
+
+    // A deadline already in the past. The ceiling exists for a job whose worker
+    // died; it has to surface as an error, not a spinner that never ends.
+    await expect(waitForImport("kb-1", "imp-1", { timeoutMs: -1, intervalMs: 0 })).rejects.toThrow(
+      /did not finish in time/,
+    );
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the wizard's decisions without publishing anything", async () => {
+    put.mockResolvedValueOnce({ step: "validate", sheets: [] });
+
+    await saveImportDraft("kb-1", "imp-1", { step: "validate", sheets: [] });
+
+    expect(put).toHaveBeenCalledWith("/kb/kb-1/datasets/imports/imp-1", {
+      step: "validate",
+      sheets: [],
+    });
   });
 });
