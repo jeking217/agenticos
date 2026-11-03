@@ -45,7 +45,7 @@ it.each([false, true])(
     await userEvent.click(button);
     expect(screen.getByRole("heading", { name: "Update available" })).toBeVisible();
     expect(
-      screen.getByText(`You are using ${version}. AgenticOS ${next} is available.`),
+      screen.getByText(`You are using ${version}. UnioneAgent ${next} is available.`),
     ).toBeVisible();
     expect(screen.getByRole("link", { name: "View release" })).toHaveAttribute(
       "href",

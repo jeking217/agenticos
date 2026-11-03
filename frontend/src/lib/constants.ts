@@ -1,4 +1,4 @@
-export const APP_NAME = "agenticos";
+export const APP_NAME = "UnioneAgent";
 
 export const ROUTES = {
   HOME: "/",

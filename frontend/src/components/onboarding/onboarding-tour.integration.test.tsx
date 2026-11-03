@@ -98,7 +98,7 @@ function servePermissions(permissions: readonly string[]) {
   vi.mocked(apiClient.get).mockImplementation((path: string) => {
     if (path === "/agents") {
       return Promise.resolve({
-        items: [{ id: "agent-1", slug: "agenticos", name: "AgenticOS" }],
+        items: [{ id: "agent-1", slug: "agenticos", name: "UnioneAgent" }],
         total: 1,
       });
     }
@@ -146,14 +146,14 @@ describe("OnboardingTour", () => {
   it("auto-opens on the dashboard and welcomes a new user", async () => {
     servePermissions(OWNER);
     render(<OnboardingTour />, { wrapper });
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
     expect(shownStep().popover?.progressText).toBe(`Step 1 of ${OWNER_LAUNCH}`);
   });
 
   it("offers the console's languages on the welcome card, and only there (#2072)", async () => {
     servePermissions(OWNER);
     render(<OnboardingTour />, { wrapper });
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
 
     const description = document.createElement("div");
     shownStep().popover?.onPopoverRender?.({ description } as never, {} as never);
@@ -177,7 +177,7 @@ describe("OnboardingTour", () => {
     vi.mocked(apiClient.patch).mockResolvedValue(user({ job_title: "Sales" }));
     useAuthStore.setState({ user: user({ job_title: "Finance" }) });
     render(<OnboardingTour />, { wrapper });
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
 
     const description = document.createElement("div");
     shownStep().popover?.onPopoverRender?.({ description } as never, {} as never);
@@ -200,7 +200,7 @@ describe("OnboardingTour", () => {
     servePermissions(OWNER);
     vi.mocked(apiClient.patch).mockRejectedValue(new Error("offline"));
     render(<OnboardingTour />, { wrapper });
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
 
     const description = document.createElement("div");
     shownStep().popover?.onPopoverRender?.({ description } as never, {} as never);
@@ -217,7 +217,7 @@ describe("OnboardingTour", () => {
     // The bug this replaces: a click on Next did nothing once a spotlight was up.
     servePermissions(OWNER);
     render(<OnboardingTour />, { wrapper });
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
 
     act(() => shownStep().popover?.onNextClick?.(undefined, {} as DriveStep, {} as never));
     await waitFor(() => expect(shownStep().popover?.title).toBe("Slice the dashboard"));
@@ -236,7 +236,7 @@ describe("OnboardingTour", () => {
     servePermissions(OWNER);
     vi.mocked(apiClient.patch).mockResolvedValue(user({ onboarding_completed_at: "2026-02-02" }));
     render(<OnboardingTour />, { wrapper });
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
 
     act(() => shownStep().popover?.onCloseClick?.(undefined, {} as DriveStep, {} as never));
     await waitFor(() =>
@@ -252,7 +252,7 @@ describe("OnboardingTour", () => {
     servePermissions(OWNER);
     vi.mocked(apiClient.patch).mockResolvedValue(user({ onboarding_completed_at: "2026-02-02" }));
     render(<OnboardingTour />, { wrapper });
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
 
     act(() => shownStep().popover?.onCloseClick?.(undefined, {} as DriveStep, {} as never));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(ROUTES.DASHBOARD));
@@ -277,7 +277,7 @@ describe("OnboardingTour", () => {
     servePermissions(OWNER);
     vi.mocked(apiClient.patch).mockResolvedValue(user({ onboarding_completed_at: "2026-02-02" }));
     render(<OnboardingTour />, { wrapper });
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
 
     act(() => shownStep().popover?.onCloseClick?.(undefined, {} as DriveStep, {} as never));
     expect(toast.info).toHaveBeenCalledWith(
@@ -480,7 +480,7 @@ describe("OnboardingTour's light", () => {
   it("lights nothing on a step that describes no control", async () => {
     servePermissions(OWNER);
     render(<OnboardingTour />, { wrapper });
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
     expect(light.focus).toHaveBeenLastCalledWith(null);
   });
 
@@ -531,7 +531,7 @@ describe("OnboardingTour's light", () => {
       </StrictMode>,
     );
 
-    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to AgenticOS"));
+    await waitFor(() => expect(shownStep().popover?.title).toBe("Welcome to UnioneAgent"));
     const lit = made.filter((instance) => instance.focus.mock.calls.length > 0).at(-1);
     expect(lit?.dead).toBe(false);
   });

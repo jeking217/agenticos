@@ -50,7 +50,7 @@ describe("IphonePush", () => {
   it("says where to allow them when iOS has them off", async () => {
     env.read.mockResolvedValue(push({ permission: "denied" }));
     render(<IphonePush />);
-    expect(await screen.findByText(/Settings, Notifications, AgenticOS/)).toBeInTheDocument();
+    expect(await screen.findByText(/Settings, Notifications, UnioneAgent/)).toBeInTheDocument();
   });
 
   it("turns push on, tests it and turns it off", async () => {

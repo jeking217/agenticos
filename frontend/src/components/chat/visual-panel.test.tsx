@@ -506,7 +506,7 @@ describe("inside another site's frame", () => {
   it("names a page it cannot draw here", () => {
     show([call({ args: { title: "Explainer", kind: "html", content: "<p/>" } })]);
     expect(screen.getByText("Explainer")).toBeInTheDocument();
-    expect(screen.getByText("Shown in AgenticOS")).toBeInTheDocument();
+    expect(screen.getByText("Shown in UnioneAgent")).toBeInTheDocument();
     expect(screen.queryByRole("img")).toBeNull();
     nested.value = false;
   });

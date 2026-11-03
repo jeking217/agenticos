@@ -1,12 +1,17 @@
 /**
- * Write the AgenticOS mark from the one recipe that draws it.
+ * Write the UnioneAgent mark from the one recipe that draws it.
  *
- * The mark is the blob the name "agenticos" draws - the same face every agent in
- * the console wears, from the same `blobatar` - lightened, on a deep violet tile.
- * The surfaces that need it cannot share a file: MkDocs and the README want a
- * path, the console draws it inside a `next/og` image where only a data URI
- * survives, a desktop icon sits on the platform's own grid, and the README shows
- * it moving. All four are written here, so none of them is a second drawing.
+ * The mark is the Unione Cloud artwork (`assets/unione-logo.jpg`), carried
+ * verbatim - the same face every agent in the console wears. The surfaces that
+ * need it cannot share a file: MkDocs and the README want a path, the console
+ * draws it inside a `next/og` image where only a data URI survives, and a
+ * desktop icon sits on the platform's own grid. All are written here, so none
+ * of them is a second drawing.
+ *
+ * The artwork is a raster, so the SVGs wrap it as an embedded `<image>`: the
+ * file names stay what the docs and the desktop pipeline already point at.
+ * `logo-animated.svg` retired with the animated blob and now holds the still
+ * mark, so old links keep resolving.
  *
  * `gen-logo.test.ts` fails when a re-run would change any of them. The desktop
  * app's icon set is rasterised from the last:
@@ -19,76 +24,30 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { blobatar } from "blobatar";
-
 const here = dirname(fileURLToPath(import.meta.url));
+export const SOURCE_JPG = join(here, "assets", "unione-logo.jpg");
 export const LOGO_SVG = join(here, "..", "..", "docs", "assets", "logo.svg");
 export const LOGO_TS = join(here, "..", "src", "lib", "logo.generated.ts");
 export const APP_ICON_SVG = join(here, "..", "..", "desktop", "src-tauri", "app-icon.svg");
 export const ANIMATED_SVG = join(here, "..", "..", "docs", "assets", "logo-animated.svg");
 
-/** The tile: the violet the blob is drawn in, taken down to ink. */
-const TILE = "#2b2547";
-/** The tile's side, and the blob's inset on it, in the mark's own units. */
+/** The SVG canvas the mark is drawn onto, and the sides the wrappers crop to. */
 const SIDE = 104;
-const INSET = 10;
-/** What `blobatar` draws on: its paths are in a 100-unit box. */
-const BLOB_BOX = 100;
 
-/** The blob's paths, with the `<svg>` that wraps them taken off. */
-function blobBody(): string {
-  const svg = blobatar("agenticos", { background: false, hue: 265, tone: 0.1 });
-  const body = /^<svg[^>]*>([\s\S]*)<\/svg>$/.exec(svg)?.[1];
-  if (body === undefined) throw new Error(`blobatar returned an unexpected shape: ${svg}`);
-  return body;
+/** The artwork, as the base64 a data URI embeds. Read once per run. */
+function artworkDataUri(): string {
+  const bytes = readFileSync(SOURCE_JPG);
+  return `data:image/jpeg;base64,${bytes.toString("base64")}`;
 }
 
 /** The mark, as a standalone square SVG. */
 export function buildLogo(): string {
-  const scale = (SIDE - 2 * INSET) / BLOB_BOX;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIDE} ${SIDE}" width="${SIDE}" height="${SIDE}"` +
-    ' role="img" aria-label="AgenticOS">\n' +
-    "  <title>AgenticOS</title>\n" +
-    `  <rect width="${SIDE}" height="${SIDE}" rx="30" fill="${TILE}"/>\n` +
-    `  <g transform="translate(${INSET} ${INSET}) scale(${scale})">${blobBody()}</g>\n` +
-    "</svg>\n"
-  );
-}
-
-/**
- * The mark, alive: the blob breathes, blinks and glances aside, for the README.
- *
- * CSS inside the SVG, which GitHub runs in an `<img>` where it runs no script.
- * Blobatar draws the body and the eyes as one group each, in that order, so
- * those two groups are what move. A reader who asked for reduced motion gets
- * the still mark - the same drawing - because the rules are additive.
- */
-export function buildAnimated(): string {
-  const scale = (SIDE - 2 * INSET) / BLOB_BOX;
-  const groups = blobBody().split("<g ");
-  if (groups.length !== 3)
-    throw new Error("blobatar no longer draws a body group and an eyes group");
-  const body = `<g class="ao-body" ${groups[1]}`;
-  const eyes = `<g class="ao-eyes" ${groups[2]}`;
-  return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIDE} ${SIDE}" width="${SIDE}" height="${SIDE}"` +
-    ' role="img" aria-label="AgenticOS">\n' +
-    "  <title>AgenticOS</title>\n" +
-    "  <style>\n" +
-    "    .ao-float, .ao-body, .ao-eyes, .ao-look { transform-box: fill-box; transform-origin: center; }\n" +
-    "    .ao-float { animation: ao-float 3.6s ease-in-out infinite; }\n" +
-    "    .ao-body { animation: ao-breathe 3.6s ease-in-out infinite; }\n" +
-    "    .ao-look { animation: ao-glance 9s ease-in-out infinite; }\n" +
-    "    .ao-eyes { animation: ao-blink 4.8s ease-in-out infinite; }\n" +
-    "    @keyframes ao-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }\n" +
-    "    @keyframes ao-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.02, 0.985); } }\n" +
-    "    @keyframes ao-glance { 0%, 30%, 100% { transform: translateX(0); } 38%, 52% { transform: translateX(-3px); } 60%, 74% { transform: translateX(3px); } 82% { transform: translateX(0); } }\n" +
-    "    @keyframes ao-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }\n" +
-    "    @media (prefers-reduced-motion: reduce) { .ao-float, .ao-body, .ao-eyes, .ao-look { animation: none; } }\n" +
-    "  </style>\n" +
-    `  <rect width="${SIDE}" height="${SIDE}" rx="30" fill="${TILE}"/>\n` +
-    `  <g transform="translate(${INSET} ${INSET}) scale(${scale})">${groups[0]}<g class="ao-float">${body}<g class="ao-look">${eyes}</g></g></g>\n` +
+    ' role="img" aria-label="UnioneAgent">\n' +
+    "  <title>UnioneAgent</title>\n" +
+    `  <image href="${artworkDataUri()}" x="0" y="0" width="${SIDE}" height="${SIDE}"` +
+    ' preserveAspectRatio="xMidYMid slice"/>\n' +
     "</svg>\n"
   );
 }
@@ -102,7 +61,7 @@ export function buildAnimated(): string {
  */
 export function buildAppIcon(logo: string): string {
   const inner = logo
-    .replace(/^<svg[^>]*>\n {2}<title>AgenticOS<\/title>\n/, "")
+    .replace(/^<svg[^>]*>\n {2}<title>UnioneAgent<\/title>\n/, "")
     .replace(/<\/svg>\n$/, "");
   return (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">\n' +
@@ -113,13 +72,15 @@ export function buildAppIcon(logo: string): string {
 
 /** The same mark as a data URI, for the surfaces that cannot load a file. */
 export function buildModule(logo: string): string {
-  // Percent-encoded rather than base64: a client component and Satori inside
-  // `next/og` both read this, and neither `btoa` nor `Buffer` exists in both.
-  const uri = `data:image/svg+xml,${encodeURIComponent(logo.split(/\s+/).join(" ").trim())}`;
+  // The JPEG directly rather than the wrapper SVG: the raster is the artwork,
+  // and every consumer (`next/og`'s Satori, `<img>`) reads a JPEG data URI as
+  // happily as it read the old percent-encoded SVG - at a third of the bytes.
+  const uri = /href="([^"]+)"/.exec(logo)?.[1];
+  if (uri === undefined) throw new Error("the logo SVG no longer carries an href");
   const version = createHash("sha256").update(logo).digest("hex").slice(0, 8);
   return (
     "// Generated by scripts/gen-logo.ts - do not edit.\n\n" +
-    "/** The AgenticOS mark: the built-in logo, as a data URI. */\n" +
+    "/** The UnioneAgent mark: the built-in logo, as a data URI. */\n" +
     `export const LOGO_DATA_URI =\n  "${uri}";\n\n` +
     "/** Changes with the mark, so a browser holding the old favicon asks again. */\n" +
     `export const LOGO_VERSION = "${version}";\n`
@@ -132,7 +93,7 @@ function main(): number {
     [LOGO_SVG, logo],
     [LOGO_TS, buildModule(logo)],
     [APP_ICON_SVG, buildAppIcon(logo)],
-    [ANIMATED_SVG, buildAnimated()],
+    [ANIMATED_SVG, logo],
   ];
   for (const [path, text] of wanted) {
     let current: string | null = null;

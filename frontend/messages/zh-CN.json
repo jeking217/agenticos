@@ -82,14 +82,14 @@
     "toDock": "固定到程序坞",
     "toTray": "固定到托盘",
     "unpin": "取消固定",
-    "dockHint": "右键点按程序坞中的 AgenticOS 图标，即可与此智能体开始新对话。",
-    "trayHint": "从 AgenticOS 托盘菜单与此智能体开始新对话。",
+    "dockHint": "右键点按程序坞中的 UnioneAgent 图标，即可与此智能体开始新对话。",
+    "trayHint": "从 UnioneAgent 托盘菜单与此智能体开始新对话。",
     "toHomeScreen": "添加到主屏幕",
     "onHomeScreen": "已在你的主屏幕上。点按即可开始新对话。",
-    "inLongPress": "你的启动器不支持固定，因此它位于 AgenticOS 图标的长按列表中。",
+    "inLongPress": "你的启动器不支持固定，因此它位于 UnioneAgent 图标的长按列表中。",
     "failed": "无法将此智能体添加到主屏幕。",
     "toWidget": "固定到小组件",
-    "inWidget": "已固定。把「已固定的智能体」小组件添加到主屏幕；该智能体也会出现在 AgenticOS 图标的菜单和「快捷指令」中。"
+    "inWidget": "已固定。把「已固定的智能体」小组件添加到主屏幕；该智能体也会出现在 UnioneAgent 图标的菜单和「快捷指令」中。"
   },
   "agentTemplates": {
     "browse": "智能体模板",
@@ -1037,7 +1037,7 @@
     "backendComputerLabel": "电脑",
     "backendComputerDetail": "使用个人的电脑，需在每个桌面端对话中单独批准。",
     "backendComputerConsent": "每个人在对话设置中选择一个文件夹或整台电脑。此设置不授予任何访问权限，也不存储个人路径。托管对话必须使用桌面应用才能使用此工作区。",
-    "workflowTablesViaMcp": "工作流和表格是 AgenticOS MCP 服务器中的工具。请在「MCP 服务器」下添加它，并勾选该智能体需要的工具。已有的能力绑定会保留已保存的授权。"
+    "workflowTablesViaMcp": "工作流和表格是 UnioneAgent MCP 服务器中的工具。请在「MCP 服务器」下添加它，并勾选该智能体需要的工具。已有的能力绑定会保留已保存的授权。"
   },
   "answerFormat": {
     "title": "回答格式",
@@ -3595,7 +3595,7 @@
       "savedUnchanged": "该应用已经是这个版本",
       "savedBadge": "已保存 · v{version}",
       "openApp": "打开",
-      "openInConsole": "已在 AgenticOS 中显示",
+      "openInConsole": "已在 UnioneAgent 中显示",
       "followUpLabel": "来自绘图的追问",
       "followUpAsks": "绘图请求将以下内容作为你的消息发送：",
       "followUpSend": "发送",
@@ -3855,7 +3855,7 @@
     },
     "turnLost": "智能体在回答前停止了 — 运行它的服务器已不可用。",
     "turnLostAskAgain": "重新提问",
-    "waitingForComputer": "正在等待你的电脑。请在其上打开 AgenticOS 应用，运行将继续…",
+    "waitingForComputer": "正在等待你的电脑。请在其上打开 UnioneAgent 应用，运行将继续…",
     "browserShownInPanel": "{host} 已在浏览器面板中打开",
     "browserOpenPanel": "在对话旁打开",
     "browserDock": "返回对话旁",
@@ -4784,7 +4784,7 @@
       "agentAsk": "帮我构建第一个智能体。先问我想让它做什么。",
       "hints": {
         "profile": "你的角色和工作，让回答更贴合你。",
-        "chat": "向 AgenticOS 询问任何与工作有关的事。",
+        "chat": "向 UnioneAgent 询问任何与工作有关的事。",
         "routine": "让智能体按计划完成一项任务。",
         "connection": "你的邮件、日历或文件，使用你自己的账户。",
         "agent": "架构师会和你一起构建。",
@@ -4831,7 +4831,7 @@
       "summary": "本期你的智能体运行了 <b>{runs, plural, =0 {零次} other {# 次}}</b>。{waiting, plural, =0 {没有事项等待你处理。} other {有 <b># 项</b>等待你处理。}}"
     },
     "discover": {
-      "title": "了解 AgenticOS",
+      "title": "了解 UnioneAgent",
       "subtitle": "你的智能体能做、但容易被忽略的事。",
       "previous": "上一条提示",
       "next": "更多提示",
@@ -4850,7 +4850,7 @@
         },
         "mcp": {
           "title": "在 Claude Code 或 Cursor 中使用",
-          "body": "AgenticOS 本身也是一个 MCP 服务器：连接 Claude Code、Codex 或 Cursor，就能不离开它们地构建、运行智能体并读取结果。",
+          "body": "UnioneAgent 本身也是一个 MCP 服务器：连接 Claude Code、Codex 或 Cursor，就能不离开它们地构建、运行智能体并读取结果。",
           "cta": "连接一个应用"
         },
         "subagents": {
@@ -4901,7 +4901,7 @@
       "openGroup": "打开群组",
       "widen": "显示最近 90 天"
     },
-    "appSession": "AgenticOS for {platform} {version}",
+    "appSession": "UnioneAgent for {platform} {version}",
     "pushOn": "推送",
     "pushOnHint": "此设备接收推送通知"
   },
@@ -5200,7 +5200,7 @@
       "dropHere": "放到这里，我就和它开始对话。"
     },
     "settings": {
-      "onlyInApp": "这些设置属于 AgenticOS 桌面应用。",
+      "onlyInApp": "这些设置属于 UnioneAgent 桌面应用。",
       "onlyInAppHint": "在桌面应用中打开控制台，即可配置 Blobby、窗口和全局快捷键。",
       "aboutTheApp": "关于桌面应用",
       "unreadable": "桌面应用没有说明它的设置。请重启它；如果它比此控制台旧，请更新。",
@@ -5239,12 +5239,12 @@
       },
       "window": {
         "heading": "桌面应用",
-        "headingHint": "AgenticOS 作为应用在这台电脑上的行为。",
+        "headingHint": "UnioneAgent 作为应用在这台电脑上的行为。",
         "title": "窗口",
         "description": "控制台的样式和主题在「个人资料」的「外观」中设置。",
         "launch_at_login": {
           "label": "登录时打开",
-          "hint": "登录这台电脑时启动 AgenticOS。"
+          "hint": "登录这台电脑时启动 UnioneAgent。"
         },
         "keep_running": {
           "label": "关闭窗口后继续运行",
@@ -5261,8 +5261,8 @@
         "title": "全局快捷键",
         "description": "点击一个输入框，然后按住修饰键并按下某个键。按 Esc 取消；组合键至少需要一个修饰键。",
         "open_console": {
-          "label": "打开 AgenticOS",
-          "hint": "将 AgenticOS 主窗口带到前台。"
+          "label": "打开 UnioneAgent",
+          "hint": "将 UnioneAgent 主窗口带到前台。"
         },
         "quick_ask": {
           "label": "快速提问",
@@ -5338,7 +5338,7 @@
         "selection": "来自 {app} 的选中内容",
         "files": "{count, plural, other {# 个来自访达的文件}}",
         "clipboard": "剪贴板",
-        "allow": "允许 AgenticOS 读取你选中的内容",
+        "allow": "允许 UnioneAgent 读取你选中的内容",
         "attaching": "正在添加选中的文件",
         "attachFailed": "无法附加选中的文件，因此没有发起提问。移除它们即可在不带附件的情况下提问。"
       },
@@ -5373,14 +5373,14 @@
       "anAgent": "一个智能体",
       "approve": "批准",
       "reject": "拒绝",
-      "inboxTitle": "AgenticOS",
+      "inboxTitle": "UnioneAgent",
       "questionBody": "打开对话来回答智能体。"
     },
     "welcome": {
-      "onlyInApp": "此欢迎页属于 AgenticOS 桌面应用。",
+      "onlyInApp": "此欢迎页属于 UnioneAgent 桌面应用。",
       "skip": "暂时跳过",
       "next": "继续",
-      "open": "打开 AgenticOS",
+      "open": "打开 UnioneAgent",
       "blobby": {
         "title": "认识 Blobby",
         "body": "它坐在你的桌面上，在有智能体需要你时告诉你。选择它是谁；之后也可以把它设成你某个智能体的形象。"
@@ -5388,7 +5388,7 @@
       "shortcuts": {
         "title": "随处可用的快捷键",
         "body": "无论前台是哪个应用都可用。",
-        "open_console": "打开 AgenticOS",
+        "open_console": "打开 UnioneAgent",
         "quick_ask": "向任意智能体提问",
         "screenshot_chat": "截图到新对话",
         "off": "关闭",
@@ -5399,13 +5399,13 @@
       "loop": {
         "title": "随时掌握进展",
         "body": "审批会以通知形式送达，你无需打开任何东西就能回复。",
-        "login": "登录时打开 AgenticOS",
+        "login": "登录时打开 UnioneAgent",
         "keepRunning": "关闭窗口后继续运行",
         "test": "通知",
-        "testHint": "你的电脑会询问一次是否允许 AgenticOS 发送通知。",
+        "testHint": "你的电脑会询问一次是否允许 UnioneAgent 发送通知。",
         "send": "发送测试",
         "sent": "已发送",
-        "testTitle": "AgenticOS",
+        "testTitle": "UnioneAgent",
         "testBody": "你的智能体会在这里联系你。"
       },
       "done": {
@@ -5471,7 +5471,7 @@
       "unmuteAll": "{count, plural, other {取消静音 # 个对话}}",
       "mute": "将此对话的通知静音",
       "unmute": "取消静音此对话",
-      "privateTitle": "AgenticOS 动态",
+      "privateTitle": "UnioneAgent 动态",
       "privateApproval": "有智能体需要审批。打开应用查看。",
       "privateQuestion": "有智能体需要你的回答。",
       "privateFailed": "有任务失败。打开应用查看详情。",
@@ -6048,7 +6048,7 @@
     "checkingEndpointModels": "正在询问此端点提供哪些嵌入模型…",
     "endpointModelsListed": "只列出此端点提供的模型。",
     "endpointModelsUnconfirmed": "无法询问此端点提供哪些模型，因此列出了所有 OpenRouter 模型。它不提供的模型会在首次上传时失败。",
-    "endpointServesNoModel": "此端点不提供 AgenticOS 支持的任何嵌入模型。请留空端点，或选择其他服务商。",
+    "endpointServesNoModel": "此端点不提供 UnioneAgent 支持的任何嵌入模型。请留空端点，或选择其他服务商。",
     "endpointLacksCollectionModel": "此端点不提供 {model}，而该集合的向量正是用它生成的。请留空端点，或选择提供它的端点。",
     "localServices": "本地服务",
     "localServicesHint": "部署自有网络上的服务器 — 提供嵌入的 Ollama、供 LiteParse 使用的 OCR 边车 — 注册一次，按集合选用。发送给它们的内容不会离开部署。",
@@ -6148,8 +6148,8 @@
       "unreachable": "无法连接服务器。显示的是 {time} 保存在本设备上的内容。"
     },
     "install": {
-      "offer": "把 AgenticOS 安装为应用：独立窗口、通知和主屏幕图标。",
-      "iosHint": "要安装 AgenticOS，请点按「分享」，再点按「添加到主屏幕」。",
+      "offer": "把 UnioneAgent 安装为应用：独立窗口、通知和主屏幕图标。",
+      "iosHint": "要安装 UnioneAgent，请点按「分享」，再点按「添加到主屏幕」。",
       "install": "安装",
       "dismiss": "不再显示"
     },
@@ -6157,7 +6157,7 @@
     "sessionUnavailableHint": "服务器暂时不可用。你已保存的会话仍会保留，连接恢复后再试。",
     "retrySession": "重试",
     "desktopInstall": {
-      "title": "桌面版 AgenticOS",
+      "title": "桌面版 UnioneAgent",
       "description": "快速提问、语音和本地工具，一个快捷键即可打开。",
       "download": "获取桌面应用",
       "dismiss": "14 天后提醒我"
@@ -6602,7 +6602,7 @@
   },
   "mcpConnect": {
     "title": "连接 MCP 客户端",
-    "why": "Claude Code、Codex、Cursor 或任何其他 MCP 客户端都能通过 AgenticOS 自带的 MCP 服务器在此组织中工作：列出并运行智能体，读取运行记录及其费用，搜索并填充知识库，邀请成员。",
+    "why": "Claude Code、Codex、Cursor 或任何其他 MCP 客户端都能通过 UnioneAgent 自带的 MCP 服务器在此组织中工作：列出并运行智能体，读取运行记录及其费用，搜索并填充知识库，邀请成员。",
     "docs": "MCP 服务器能做什么",
     "serverUrl": "服务器 URL",
     "signIn": "登录方式",
@@ -6620,7 +6620,7 @@
         "key": "Codex 会从其环境中的 AGENTICOS_API_KEY 读取密钥。"
       },
       "claude-desktop": {
-        "browser": "在 Claude（桌面版或 claude.ai）中打开「设置 → 连接器 → 添加自定义连接器」，命名为 AgenticOS 并粘贴服务器 URL。Claude 会通过此控制台登录。该 URL 必须能通过 HTTPS 从互联网访问。",
+        "browser": "在 Claude（桌面版或 claude.ai）中打开「设置 → 连接器 → 添加自定义连接器」，命名为 UnioneAgent 并粘贴服务器 URL。Claude 会通过此控制台登录。该 URL 必须能通过 HTTPS 从互联网访问。",
         "key": "Claude 的连接器始终通过浏览器登录，因此这里不使用 API 密钥。请切换到「通过浏览器」。"
       },
       "cursor": {
@@ -6655,7 +6655,7 @@
     "disconnected": "应用已断开连接",
     "couldNotLoad": "无法加载已连接的应用",
     "emptyTitle": "没有已连接的应用",
-    "emptyWhy": "把 AgenticOS 添加到 Claude Code 或其他 MCP 客户端并登录；它会出现在这里。"
+    "emptyWhy": "把 UnioneAgent 添加到 Claude Code 或其他 MCP 客户端并登录；它会出现在这里。"
   },
   "members": {
     "emailPlaceholder": "colleague@example.com",
@@ -6693,12 +6693,12 @@
   "mobile": {
     "settings": {
       "heading": "移动应用",
-      "headingHint": "手机上的 AgenticOS：无论你在哪，都能处理审批和智能体的提问。"
+      "headingHint": "手机上的 UnioneAgent：无论你在哪，都能处理审批和智能体的提问。"
     },
     "addPhone": {
       "title": "添加手机",
-      "description": "扫描二维码即可让 AgenticOS 应用以你的身份登录。二维码只能使用一次，有效期一分钟。",
-      "step1": "在手机上安装 AgenticOS 并打开。",
+      "description": "扫描二维码即可让 UnioneAgent 应用以你的身份登录。二维码只能使用一次，有效期一分钟。",
+      "step1": "在手机上安装 UnioneAgent 并打开。",
       "step2": "选择「扫描二维码」，或将手机摄像头对准这里。",
       "step3": "扫描二维码，并在手机上确认你的账户。",
       "show": "显示二维码",
@@ -6706,7 +6706,7 @@
       "expiresIn": "{seconds, plural, =1 {还可使用 1 秒} other {还可使用 # 秒}}",
       "expired": "该二维码已过期。",
       "failed": "无法生成二维码，请重试。",
-      "qrLabel": "用于让 AgenticOS 应用以你的身份登录的二维码"
+      "qrLabel": "用于让 UnioneAgent 应用以你的身份登录的二维码"
     },
     "pair": {
       "failed": "此二维码已失效",
@@ -6723,9 +6723,9 @@
       "approve": "批准",
       "reject": "拒绝",
       "runTitle": "{agent} 正在工作",
-      "runBody": "点按可在 AgenticOS 中跟进。",
+      "runBody": "点按可在 UnioneAgent 中跟进。",
       "questionTitle": "{agent} 有一个问题问你",
-      "questionBody": "点按可在 AgenticOS 中回答。",
+      "questionBody": "点按可在 UnioneAgent 中回答。",
       "callTitle": "正在与 {agent} 通话",
       "callBody": "点按可返回通话。",
       "callAsking": "它正在向你提问——点按即可回答。",
@@ -6736,7 +6736,7 @@
     },
     "setup": {
       "title": "完成这台手机的设置",
-      "welcome": "请检查一下这个连接，即使你已经在别处使用 AgenticOS。可选的设置可以稍后再完成。",
+      "welcome": "请检查一下这个连接，即使你已经在别处使用 UnioneAgent。可选的设置可以稍后再完成。",
       "hint": "此服务器上的你的账户和这台手机的设置。",
       "account": "已登录账户",
       "agent": "可用的智能体",
@@ -6856,7 +6856,7 @@
     "consoleVersion": "控制台版本 {version}",
     "updateAvailable": "版本 {version} 已可用",
     "updateTitle": "有可用更新",
-    "updateDescription": "你正在使用 {current}。AgenticOS {latest} 已发布。",
+    "updateDescription": "你正在使用 {current}。UnioneAgent {latest} 已发布。",
     "viewRelease": "查看版本说明",
     "whatsNewTitle": "{version} 的新变化",
     "whatsNewDescription": "你当前版本中的近期更新。",
@@ -7401,7 +7401,7 @@
         "body": "API 密钥和其他凭据存放在这里，静态加密。智能体用它们访问所需的工具，已保存的密钥不会再被任何人看到。"
       },
       "welcome": {
-        "title": "欢迎使用 AgenticOS",
+        "title": "欢迎使用 UnioneAgent",
         "body": "这里是你的团队构建、运行和治理 AI 智能体的地方。我们会逐个部分走一遍，指出值得注意的地方 — 大约一分钟，你随时可以关闭。"
       },
       "workspaces-browser": {
@@ -7646,7 +7646,7 @@
       },
       "org-proactivity-model": {
         "title": "选择主动性模型",
-        "body": "选择服务商、模型和保险库密钥，然后添加模型配置。创建配置会立即保存；「保存」会将其应用到每晚建议和 MCP 关注。这些检查使用此模型，与「活动」中显示的 AgenticOS 起始模型无关。"
+        "body": "选择服务商、模型和保险库密钥，然后添加模型配置。创建配置会立即保存；「保存」会将其应用到每晚建议和 MCP 关注。这些检查使用此模型，与「活动」中显示的 UnioneAgent 起始模型无关。"
       },
       "org-proactivity": {
         "title": "主动性",
@@ -7930,7 +7930,7 @@
       "latestInstalled": "没有报告更新的稳定版本。",
       "refresh": "刷新更新状态",
       "changelog": "查看发布说明",
-      "requirements": "需要本地主机更新器、Docker Compose、干净的生产环境检出和本地文件存储。AgenticOS 之外的基础设施/镜像变更需要通过你的部署流水线。",
+      "requirements": "需要本地主机更新器、Docker Compose、干净的生产环境检出和本地文件存储。UnioneAgent 之外的基础设施/镜像变更需要通过你的部署流水线。",
       "downtime": "请预留至少五分钟维护时间；迁移时长取决于数据库。准备阶段会保持当前版本继续运行。",
       "reconnecting": "API 可能正在重启。主机更新器会独立继续；正在重连…",
       "statusUnavailable": "无法读取更新状态。请重试后再开始其他操作。",
@@ -8099,7 +8099,7 @@
       "categoriesHint": "较大的分组 — 支持、财务、内部。目录会按这些筛选。",
       "tagsHint": "任何更细的、便于以后搜索的标签。",
       "labelCount": "{used} / {max}",
-      "thisPlatformMcp": "AgenticOS（此平台）",
+      "thisPlatformMcp": "UnioneAgent（此平台）",
       "testPanelOpen": "测试",
       "testPanelShortcut": "在构建器旁测试（T）",
       "firstPublishNext": "它已在对话和 API 上线。接下来，选择人们还能从哪里访问它 — 网站内嵌组件、托管页面、Slack 或 Telegram。",
@@ -8308,10 +8308,10 @@
       "stepDisplayHint": "时间线会按发生顺序列出每个步骤；计划会把它们归组在问题下方。",
       "stepDisplayTimeline": "时间线",
       "stepDisplayPlan": "计划",
-      "slackTransport": "Slack 如何访问 AgenticOS",
+      "slackTransport": "Slack 如何访问 UnioneAgent",
       "slackCallsUs": "Slack 调用此部署",
       "slackCallsUsHint": "Slack 把每条消息发送到此部署的公开地址。需要签名密钥。",
-      "weConnectToSlack": "AgenticOS 连接 Slack",
+      "weConnectToSlack": "UnioneAgent 连接 Slack",
       "weConnectToSlackHint": "此部署自行建立连接（Socket 模式），因此无需公开地址 — 适用于防火墙后的部署。需要应用级 token。",
       "mattermostCommandWhy": "要使用 /agent 提问，请在 Mattermost 中创建斜杠命令（Integrations - Slash Commands），触发词设为 agent，请求 URL 设为下面这个，然后粘贴 Mattermost 显示的 token。",
       "mattermostCommandUrlCopy": "复制 URL",
@@ -8977,7 +8977,7 @@
       "tabRunning": "运行中",
       "deleteFailed": "无法删除连接",
       "strandedTitle": "{count, plural, one {1 个沙箱} other {# 个沙箱}}仍留在服务商处",
-      "strandedBody": "AgenticOS 无法从 {name} 背后的服务商处删除{count, plural, one {1 个沙箱} other {# 个沙箱}}，服务商可能仍在为{count, plural, one {它} other {它们}}计费。请先在服务商控制台中删除{count, plural, one {它} other {它们}}，然后在此确认，以清除{count, plural, one {它} other {它们}}的记录并删除连接。",
+      "strandedBody": "UnioneAgent 无法从 {name} 背后的服务商处删除{count, plural, one {1 个沙箱} other {# 个沙箱}}，服务商可能仍在为{count, plural, one {它} other {它们}}计费。请先在服务商控制台中删除{count, plural, one {它} other {它们}}，然后在此确认，以清除{count, plural, one {它} other {它们}}的记录并删除连接。",
       "strandedConfirm": "我已删除，删除此连接"
     },
     "settings": {
@@ -9134,7 +9134,7 @@
         "workEnd": "结束于"
       },
       "prefSuggestion": "给你的建议",
-      "prefSuggestionTrigger": "AgenticOS 发现有值得设置的东西——你反复提出的请求、角色包、你的资料。每天最多向你发送一次。",
+      "prefSuggestionTrigger": "UnioneAgent 发现有值得设置的东西——你反复提出的请求、角色包、你的资料。每天最多向你发送一次。",
       "prefCapabilityRequested": "有人请求能力",
       "prefCapabilityRequestedTrigger": "有人请求了你的某个智能体所缺的能力。发送给智能体所有者，每个人每项能力发送一次。",
       "prefFinding": "来自你的关注的发现",
@@ -9143,9 +9143,9 @@
       "push": {
         "title": "此浏览器中的推送通知",
         "state": {
-          "unsupported": "此浏览器无法接收推送通知。在 iPhone 上，请先把 AgenticOS 添加到主屏幕，再从中打开。",
-          "blocked": "此浏览器阻止了 AgenticOS 的通知。请在站点设置中允许，然后回到这里。",
-          "off": "即使 AgenticOS 已关闭，也能在智能体需要你时在这里收到通知。哪些事件会通知你，在下方设置。",
+          "unsupported": "此浏览器无法接收推送通知。在 iPhone 上，请先把 UnioneAgent 添加到主屏幕，再从中打开。",
+          "blocked": "此浏览器阻止了 UnioneAgent 的通知。请在站点设置中允许，然后回到这里。",
+          "off": "即使 UnioneAgent 已关闭，也能在智能体需要你时在这里收到通知。哪些事件会通知你，在下方设置。",
           "on": "已在此浏览器开启。哪些事件会通知你，在下方「推送」中设置。"
         },
         "turnOn": "开启",
@@ -9156,19 +9156,19 @@
         "failed": "无法在此浏览器中更改推送设置。",
         "phone": {
           "title": "应用关闭时的通知",
-          "noDistributor": "AgenticOS 通过 ntfy 发送这些通知，不经过 Google 的服务器。请从 Play Store 或 F-Droid 安装 ntfy，打开一次，然后回到这里。",
-          "off": "即使 AgenticOS 已关闭，也能在智能体需要你时收到通知。通知通过 {distributor} 送达。",
+          "noDistributor": "UnioneAgent 通过 ntfy 发送这些通知，不经过 Google 的服务器。请从 Play Store 或 F-Droid 安装 ntfy，打开一次，然后回到这里。",
+          "off": "即使 UnioneAgent 已关闭，也能在智能体需要你时收到通知。通知通过 {distributor} 送达。",
           "failed": "{distributor} 未接受注册。请打开它，确认能连上服务器，然后重试。",
           "on": "已开启，通过 {distributor}。哪些事件会通知你，在下方「推送」中设置。",
           "turnOff": "在此手机上关闭",
           "notRegistered": "ntfy 未提供地址。请打开它后重试。",
-          "denied": "Android 设置中已禁用通知。请为 AgenticOS 允许通知，然后重新检查。"
+          "denied": "Android 设置中已禁用通知。请为 UnioneAgent 允许通知，然后重新检查。"
         },
         "iphone": {
           "title": "应用关闭时的通知",
           "notConfigured": "你的组织还没有配置 iPhone 通知。管理员可在「管理 → 设置」中添加公司的 APNs 密钥。",
-          "denied": "此 iPhone 上 AgenticOS 的通知已关闭。请在「设置 → 通知 → AgenticOS」中开启，然后回到这里。",
-          "off": "即使 AgenticOS 已关闭，也能在智能体需要你时收到通知。",
+          "denied": "此 iPhone 上 UnioneAgent 的通知已关闭。请在「设置 → 通知 → UnioneAgent」中开启，然后回到这里。",
+          "off": "即使 UnioneAgent 已关闭，也能在智能体需要你时收到通知。",
           "on": "已在此 iPhone 上开启。哪些事件会通知你，在下方「推送」中设置。",
           "turnOff": "在此 iPhone 上关闭"
         }
@@ -11336,7 +11336,7 @@
       "watchMinutesHint": "单个关注最多可以查看的频率。频率越高，费用越高。",
       "switchOrganizationHint": "配置主动服务前，请先切换到该组织，以便使用它的模型配置和密钥。",
       "switchOrganization": "切换到 {name}",
-      "runAttribution": "后台检查会以已发布的 AgenticOS 起始智能体名义显示在「活动」中。此归属由平台固定。它们使用下方选择的主动服务模型，与智能体自身的模型无关。"
+      "runAttribution": "后台检查会以已发布的 UnioneAgent 起始智能体名义显示在「活动」中。此归属由平台固定。它们使用下方选择的主动服务模型，与智能体自身的模型无关。"
     }
   },
   "theme": {

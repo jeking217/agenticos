@@ -70,7 +70,7 @@ describe("PushSettings", () => {
     unmount();
     env.state.mockImplementation(async () => "unsupported");
     render(<PushSettings />);
-    expect(await screen.findByText(/add AgenticOS to the Home Screen/)).toBeInTheDocument();
+    expect(await screen.findByText(/add UnioneAgent to the Home Screen/)).toBeInTheDocument();
   });
 
   it("shows a failure, and treats an unreadable state as off", async () => {

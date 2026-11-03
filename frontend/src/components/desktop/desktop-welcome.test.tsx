@@ -61,7 +61,7 @@ describe("DesktopWelcome", () => {
     expect(screen.getByText("⌥Space")).toBeInTheDocument();
 
     await next();
-    await userEvent.click(screen.getByRole("switch", { name: "Open AgenticOS at login" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Open UnioneAgent at login" }));
     expect(env.setWindow).toHaveBeenCalledWith({ ...DESKTOP_STATE.window, launch_at_login: true });
     await userEvent.click(
       screen.getByRole("switch", { name: "Keep running when the window is closed" }),
@@ -79,7 +79,7 @@ describe("DesktopWelcome", () => {
     await next();
     expect(screen.getByRole("heading", { name: "You're all set" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Skip for now" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Open AgenticOS" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open UnioneAgent" }));
     expect(env.finish).toHaveBeenCalled();
     await vi.waitFor(() => expect(env.replace).toHaveBeenCalledWith("/dashboard"));
   });
@@ -132,7 +132,7 @@ describe("DesktopWelcome", () => {
     env.shell = null;
     render(<DesktopWelcome />);
     expect(
-      screen.getByText("This welcome belongs to the AgenticOS desktop app."),
+      screen.getByText("This welcome belongs to the UnioneAgent desktop app."),
     ).toBeInTheDocument();
   });
 });

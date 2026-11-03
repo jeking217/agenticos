@@ -47,7 +47,7 @@ describe("cookies shared with another app on the same hostname", () => {
     ["directory login", ldapLogin, { username: "ada", password: "secret" }],
     ["magic link", magicLinkVerify, { token: "one-time" }],
     ["OAuth callback", oauthCallback, { code: "one-time" }],
-  ] as const)("%s sets only AgenticOS cookies", async (_name, handler, credentials) => {
+  ] as const)("%s sets only UnioneAgent cookies", async (_name, handler, credentials) => {
     vi.mocked(backendFetch)
       .mockResolvedValueOnce({ access_token: "fresh-access", refresh_token: "fresh-refresh" })
       .mockResolvedValueOnce({ id: "u-1" });
@@ -59,7 +59,7 @@ describe("cookies shared with another app on the same hostname", () => {
     await expect(response.json()).resolves.toMatchObject({ access_token: "fresh-access" });
   });
 
-  it("password changes replace only AgenticOS cookies", async () => {
+  it("password changes replace only UnioneAgent cookies", async () => {
     vi.mocked(backendFetch).mockResolvedValue({ access_token: "fresh", refresh_token: "fresh-rt" });
 
     const response = await changePassword(
@@ -85,7 +85,7 @@ describe("cookies shared with another app on the same hostname", () => {
     expect(cookieNames(response)).toEqual([]);
   });
 
-  it("session lookup forwards only the AgenticOS access token when both are present", async () => {
+  it("session lookup forwards only the UnioneAgent access token when both are present", async () => {
     vi.mocked(backendFetch).mockResolvedValue({ id: "u-1" });
 
     const response = await me(request({ ...OTHER_APP, ...AGENTICOS }));
@@ -96,7 +96,7 @@ describe("cookies shared with another app on the same hostname", () => {
     });
   });
 
-  it("refresh forwards only the AgenticOS refresh token and keeps API field names", async () => {
+  it("refresh forwards only the UnioneAgent refresh token and keeps API field names", async () => {
     vi.mocked(backendFetch).mockResolvedValue({ access_token: "fresh", refresh_token: "fresh-rt" });
 
     const response = await refresh(request({ ...OTHER_APP, ...AGENTICOS }));
@@ -114,7 +114,7 @@ describe("cookies shared with another app on the same hostname", () => {
     ["session lookup", me],
     ["refresh", refresh],
     ["logout", logout],
-  ] as const)("%s clears only AgenticOS cookies after a refusal", async (_name, handler) => {
+  ] as const)("%s clears only UnioneAgent cookies after a refusal", async (_name, handler) => {
     vi.mocked(backendFetch).mockRejectedValue(new BackendApiError(401, "Unauthorized", null));
 
     const response = await handler(request({ ...OTHER_APP, ...AGENTICOS }));

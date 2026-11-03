@@ -856,7 +856,7 @@ it("routes new workflow and table tools through MCP while keeping old bindings e
   expect(screen.queryByRole("button", { name: "Workflows" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Tables" })).toBeNull();
   expect(
-    screen.getByText(/Workflows and Tables are tools in the AgenticOS MCP server/),
+    screen.getByText(/Workflows and Tables are tools in the UnioneAgent MCP server/),
   ).toBeVisible();
 });
 

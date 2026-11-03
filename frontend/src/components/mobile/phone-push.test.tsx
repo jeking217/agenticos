@@ -45,7 +45,7 @@ describe("PhonePush", () => {
   it("says what to install when the phone has no distributor", async () => {
     env.read.mockResolvedValue(status({ distributors: [], distributor: null }));
     render(<PhonePush />);
-    expect(await screen.findByText(/AgenticOS delivers these through ntfy/)).toBeInTheDocument();
+    expect(await screen.findByText(/UnioneAgent delivers these through ntfy/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Install ntfy" })).toHaveAttribute(
       "href",
       "https://ntfy.sh/docs/subscribe/phone/",

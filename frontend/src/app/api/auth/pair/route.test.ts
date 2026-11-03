@@ -44,7 +44,7 @@ describe("POST /api/auth/pair", () => {
     const response = await POST(
       request(
         { code: "c0de", confirmed: true },
-        { "user-agent": "AgenticOS iOS", "x-forwarded-for": "10.0.0.9" },
+        { "user-agent": "UnioneAgent iOS", "x-forwarded-for": "10.0.0.9" },
       ),
     );
 
@@ -53,7 +53,7 @@ describe("POST /api/auth/pair", () => {
     const [path, init] = vi.mocked(backendFetch).mock.calls[0]!;
     expect(path).toBe("/api/v1/auth/pairing-codes/redeem");
     expect(init?.headers).toMatchObject({
-      "User-Agent": "AgenticOS iOS",
+      "User-Agent": "UnioneAgent iOS",
       "x-forwarded-for": "10.0.0.9",
     });
     const cookies = response.headers.getSetCookie().join("\n");

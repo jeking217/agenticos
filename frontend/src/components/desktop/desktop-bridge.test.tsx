@@ -228,7 +228,7 @@ describe("DesktopBridge", () => {
     });
     expect(env.notify).toHaveBeenCalledWith({
       kind: "inbox",
-      title: "AgenticOS",
+      title: "UnioneAgent",
       body: "Your run finished.",
       path: "/dashboard",
     });

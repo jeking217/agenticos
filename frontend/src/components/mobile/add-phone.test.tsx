@@ -36,7 +36,7 @@ describe("AddPhone", () => {
     await userEvent.click(screen.getByRole("button", { name: "Show a code" }));
 
     expect(
-      await screen.findByRole("img", { name: /signs the AgenticOS app in/ }),
+      await screen.findByRole("img", { name: /signs the UnioneAgent app in/ }),
     ).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Works for 3 more seconds");
     expect(screen.queryByRole("button", { name: /Show a (new )?code/ })).toBeNull();

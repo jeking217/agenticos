@@ -82,14 +82,14 @@
     "toDock": "Pin to Dock",
     "toTray": "Pin to tray",
     "unpin": "Unpin",
-    "dockHint": "Right-click the AgenticOS icon in the Dock for a new chat with this agent.",
-    "trayHint": "A new chat with this agent from the AgenticOS tray menu.",
+    "dockHint": "Right-click the UnioneAgent icon in the Dock for a new chat with this agent.",
+    "trayHint": "A new chat with this agent from the UnioneAgent tray menu.",
     "toHomeScreen": "Add to home screen",
     "onHomeScreen": "On your home screen. Tap it for a new chat.",
-    "inLongPress": "Your launcher cannot pin it, so it is in the AgenticOS icon's long-press list.",
+    "inLongPress": "Your launcher cannot pin it, so it is in the UnioneAgent icon's long-press list.",
     "failed": "The agent could not be added to the home screen.",
     "toWidget": "Pin to widget",
-    "inWidget": "Pinned. Add the Pinned agents widget to your home screen; the agent is also in the AgenticOS icon's menu and in Shortcuts."
+    "inWidget": "Pinned. Add the Pinned agents widget to your home screen; the agent is also in the UnioneAgent icon's menu and in Shortcuts."
   },
   "agentTemplates": {
     "browse": "Agent templates",
@@ -1037,7 +1037,7 @@
     "backendComputerLabel": "Computer",
     "backendComputerDetail": "Use the person’s computer, approved separately in each desktop chat.",
     "backendComputerConsent": "Each person chooses a folder or Whole computer in chat settings. This setting grants no access and stores no personal path. A hosted chat must use the desktop app for this workspace.",
-    "workflowTablesViaMcp": "Workflows and Tables are tools in the AgenticOS MCP server. Add it under MCP servers and select the tools this agent needs. Existing capability bindings keep their saved grants."
+    "workflowTablesViaMcp": "Workflows and Tables are tools in the UnioneAgent MCP server. Add it under MCP servers and select the tools this agent needs. Existing capability bindings keep their saved grants."
   },
   "answerFormat": {
     "title": "Answer format",
@@ -3595,7 +3595,7 @@
       "savedUnchanged": "The app already has exactly this version",
       "savedBadge": "Saved · v{version}",
       "openApp": "Open",
-      "openInConsole": "Shown in AgenticOS",
+      "openInConsole": "Shown in UnioneAgent",
       "followUpLabel": "A follow-up from the drawing",
       "followUpAsks": "The drawing asks to send this as your message:",
       "followUpSend": "Send",
@@ -3855,7 +3855,7 @@
     },
     "turnLost": "The agent stopped before it answered - the server running it went away.",
     "turnLostAskAgain": "Ask again",
-    "waitingForComputer": "Waiting for your computer. Open the AgenticOS app on it and the run carries on…",
+    "waitingForComputer": "Waiting for your computer. Open the UnioneAgent app on it and the run carries on…",
     "browserShownInPanel": "{host} is open in the browser panel",
     "browserOpenPanel": "Open beside the chat",
     "browserDock": "Back beside the chat",
@@ -4784,7 +4784,7 @@
       "agentAsk": "Help me build my first agent. Ask me what I want it to do.",
       "hints": {
         "profile": "Your role and work, so answers fit you.",
-        "chat": "Ask AgenticOS anything about your work.",
+        "chat": "Ask UnioneAgent anything about your work.",
         "routine": "Let an agent do a task on a schedule.",
         "connection": "Your mail, calendar or files, with your own account.",
         "agent": "The Architect builds one with you.",
@@ -4831,7 +4831,7 @@
       "summary": "Your agents ran <b>{runs, plural, =0 {nothing} =1 {once} other {# times}}</b> in this period. {waiting, plural, =0 {Nothing is waiting on you.} =1 {<b>One call</b> is waiting on you.} other {<b># calls</b> are waiting on you.}}"
     },
     "discover": {
-      "title": "Discover AgenticOS",
+      "title": "Discover UnioneAgent",
       "subtitle": "What your agents can do that is easy to miss.",
       "previous": "Previous tips",
       "next": "More tips",
@@ -4850,7 +4850,7 @@
         },
         "mcp": {
           "title": "Use it from Claude Code or Cursor",
-          "body": "AgenticOS is an MCP server too: connect Claude Code, Codex or Cursor and build agents, run them and read results without leaving them.",
+          "body": "UnioneAgent is an MCP server too: connect Claude Code, Codex or Cursor and build agents, run them and read results without leaving them.",
           "cta": "Connect an app"
         },
         "subagents": {
@@ -4901,7 +4901,7 @@
       "openGroup": "Open the group",
       "widen": "Show the last 90 days"
     },
-    "appSession": "AgenticOS for {platform} {version}",
+    "appSession": "UnioneAgent for {platform} {version}",
     "pushOn": "Push",
     "pushOnHint": "This device receives push notifications"
   },
@@ -5200,7 +5200,7 @@
       "dropHere": "Drop it here and I'll start a chat with it."
     },
     "settings": {
-      "onlyInApp": "These settings belong to the AgenticOS desktop app.",
+      "onlyInApp": "These settings belong to the UnioneAgent desktop app.",
       "onlyInAppHint": "Open the console in the desktop app to configure blobby, the window and the global shortcuts.",
       "aboutTheApp": "About the desktop app",
       "unreadable": "The desktop app did not say what its settings are. Restart it, or update it if it is older than this console.",
@@ -5239,12 +5239,12 @@
       },
       "window": {
         "heading": "Desktop app",
-        "headingHint": "How AgenticOS behaves as an application on this computer.",
+        "headingHint": "How UnioneAgent behaves as an application on this computer.",
         "title": "Window",
         "description": "The style and theme of the console are under Profile, Appearance.",
         "launch_at_login": {
           "label": "Open at login",
-          "hint": "Start AgenticOS when you sign in to this computer."
+          "hint": "Start UnioneAgent when you sign in to this computer."
         },
         "keep_running": {
           "label": "Keep running when the window is closed",
@@ -5261,8 +5261,8 @@
         "title": "Global shortcuts",
         "description": "Click a field, then hold the modifiers and press a key. Escape cancels; a combination needs at least one modifier.",
         "open_console": {
-          "label": "Open AgenticOS",
-          "hint": "Bring the main AgenticOS window to the front."
+          "label": "Open UnioneAgent",
+          "hint": "Bring the main UnioneAgent window to the front."
         },
         "quick_ask": {
           "label": "Quick ask",
@@ -5338,7 +5338,7 @@
         "selection": "Selection from {app}",
         "files": "{count, plural, one {# file} other {# files}} from Finder",
         "clipboard": "Clipboard",
-        "allow": "Let AgenticOS read what you select",
+        "allow": "Let UnioneAgent read what you select",
         "attaching": "Attaching the selected files",
         "attachFailed": "The selected files could not be attached, so nothing was asked. Take them off to ask without them."
       },
@@ -5373,14 +5373,14 @@
       "anAgent": "An agent",
       "approve": "Approve",
       "reject": "Reject",
-      "inboxTitle": "AgenticOS",
+      "inboxTitle": "UnioneAgent",
       "questionBody": "Open the conversation to answer the agent."
     },
     "welcome": {
-      "onlyInApp": "This welcome belongs to the AgenticOS desktop app.",
+      "onlyInApp": "This welcome belongs to the UnioneAgent desktop app.",
       "skip": "Skip for now",
       "next": "Continue",
-      "open": "Open AgenticOS",
+      "open": "Open UnioneAgent",
       "blobby": {
         "title": "Meet blobby",
         "body": "It sits on your desktop and tells you when an agent needs you. Pick who it is; you can make it one of your agents later."
@@ -5388,7 +5388,7 @@
       "shortcuts": {
         "title": "Shortcuts that work anywhere",
         "body": "They work whichever application is in front.",
-        "open_console": "Open AgenticOS",
+        "open_console": "Open UnioneAgent",
         "quick_ask": "Ask any agent",
         "screenshot_chat": "Screenshot to a new chat",
         "off": "Off",
@@ -5399,13 +5399,13 @@
       "loop": {
         "title": "Stay in the loop",
         "body": "Approvals arrive as notifications you can answer without opening anything.",
-        "login": "Open AgenticOS at login",
+        "login": "Open UnioneAgent at login",
         "keepRunning": "Keep running when the window is closed",
         "test": "Notifications",
-        "testHint": "Your computer asks once whether AgenticOS may notify you.",
+        "testHint": "Your computer asks once whether UnioneAgent may notify you.",
         "send": "Send a test",
         "sent": "Sent",
-        "testTitle": "AgenticOS",
+        "testTitle": "UnioneAgent",
         "testBody": "This is where your agents will reach you."
       },
       "done": {
@@ -5471,7 +5471,7 @@
       "unmuteAll": "{count, plural, one {Unmute # conversation} other {Unmute # conversations}}",
       "mute": "Mute notifications for this conversation",
       "unmute": "Unmute this conversation",
-      "privateTitle": "AgenticOS activity",
+      "privateTitle": "UnioneAgent activity",
       "privateApproval": "An agent needs approval. Open the app to review it.",
       "privateQuestion": "An agent needs your answer.",
       "privateFailed": "A task failed. Open the app for details.",
@@ -6048,7 +6048,7 @@
     "checkingEndpointModels": "Asking this endpoint which embedding models it serves…",
     "endpointModelsListed": "Only the models this endpoint serves are listed.",
     "endpointModelsUnconfirmed": "This endpoint could not be asked which models it serves, so every OpenRouter model is listed. A model it does not serve will fail on the first upload.",
-    "endpointServesNoModel": "This endpoint serves none of the embedding models AgenticOS offers. Leave the endpoint empty, or choose another provider.",
+    "endpointServesNoModel": "This endpoint serves none of the embedding models UnioneAgent offers. Leave the endpoint empty, or choose another provider.",
     "endpointLacksCollectionModel": "This endpoint does not serve {model}, the model this collection's vectors were made with. Leave the endpoint empty, or choose one that serves it.",
     "localServices": "Local services",
     "localServicesHint": "Servers on the deployment's own network - an Ollama that embeds, an OCR sidecar for LiteParse - registered once and chosen per collection. Nothing sent to one leaves the deployment.",
@@ -6148,8 +6148,8 @@
       "unreachable": "Can't reach the server. Showing what was saved on this device at {time}."
     },
     "install": {
-      "offer": "Install AgenticOS as an app: its own window, notifications and a home-screen icon.",
-      "iosHint": "To install AgenticOS, tap Share, then Add to Home Screen.",
+      "offer": "Install UnioneAgent as an app: its own window, notifications and a home-screen icon.",
+      "iosHint": "To install UnioneAgent, tap Share, then Add to Home Screen.",
       "install": "Install",
       "dismiss": "Don't show again"
     },
@@ -6157,7 +6157,7 @@
     "sessionUnavailableHint": "The server is temporarily unavailable. Your saved session has been kept. Try again when the connection returns.",
     "retrySession": "Try again",
     "desktopInstall": {
-      "title": "AgenticOS on your desktop",
+      "title": "UnioneAgent on your desktop",
       "description": "Quick Ask, voice and your local tools, one shortcut away.",
       "download": "Get the desktop app",
       "dismiss": "Remind me in 14 days"
@@ -6602,7 +6602,7 @@
   },
   "mcpConnect": {
     "title": "Connect an MCP client",
-    "why": "Claude Code, Codex, Cursor or any other MCP client can work in this organization through AgenticOS's own MCP server: list and run agents, read runs and what they cost, search and fill knowledge bases, invite members.",
+    "why": "Claude Code, Codex, Cursor or any other MCP client can work in this organization through UnioneAgent's own MCP server: list and run agents, read runs and what they cost, search and fill knowledge bases, invite members.",
     "docs": "What the MCP server can do",
     "serverUrl": "Server URL",
     "signIn": "Sign in",
@@ -6620,7 +6620,7 @@
         "key": "Codex reads the key from AGENTICOS_API_KEY in its environment."
       },
       "claude-desktop": {
-        "browser": "In Claude (desktop or claude.ai), open Settings → Connectors → Add custom connector, name it AgenticOS and paste the server URL. Claude signs in through this console. The URL has to be reachable from the internet over HTTPS.",
+        "browser": "In Claude (desktop or claude.ai), open Settings → Connectors → Add custom connector, name it UnioneAgent and paste the server URL. Claude signs in through this console. The URL has to be reachable from the internet over HTTPS.",
         "key": "Claude’s connectors always sign in through the browser, so an API key is not used here. Switch to “Through the browser”."
       },
       "cursor": {
@@ -6655,7 +6655,7 @@
     "disconnected": "Application disconnected",
     "couldNotLoad": "Could not load connected applications",
     "emptyTitle": "No connected applications",
-    "emptyWhy": "Add AgenticOS to Claude Code or another MCP client and sign in; it appears here."
+    "emptyWhy": "Add UnioneAgent to Claude Code or another MCP client and sign in; it appears here."
   },
   "members": {
     "emailPlaceholder": "colleague@example.com",
@@ -6693,12 +6693,12 @@
   "mobile": {
     "settings": {
       "heading": "Mobile app",
-      "headingHint": "AgenticOS on your phone: approvals and your agents' questions where you are."
+      "headingHint": "UnioneAgent on your phone: approvals and your agents' questions where you are."
     },
     "addPhone": {
       "title": "Add a phone",
-      "description": "Sign the AgenticOS app in as you by scanning a code. The code works once, for a minute.",
-      "step1": "Install AgenticOS on your phone and open it.",
+      "description": "Sign the UnioneAgent app in as you by scanning a code. The code works once, for a minute.",
+      "step1": "Install UnioneAgent on your phone and open it.",
       "step2": "Choose Scan a code, or point the phone's camera here.",
       "step3": "Scan the code and confirm your account on the phone.",
       "show": "Show a code",
@@ -6706,7 +6706,7 @@
       "expiresIn": "{seconds, plural, =1 {Works for 1 more second} other {Works for # more seconds}}",
       "expired": "That code has expired.",
       "failed": "A code could not be made. Try again.",
-      "qrLabel": "A code that signs the AgenticOS app in as you"
+      "qrLabel": "A code that signs the UnioneAgent app in as you"
     },
     "pair": {
       "failed": "This code no longer works",
@@ -6723,9 +6723,9 @@
       "approve": "Approve",
       "reject": "Reject",
       "runTitle": "{agent} is working",
-      "runBody": "Tap to follow it in AgenticOS.",
+      "runBody": "Tap to follow it in UnioneAgent.",
       "questionTitle": "{agent} has a question for you",
-      "questionBody": "Tap to answer it in AgenticOS.",
+      "questionBody": "Tap to answer it in UnioneAgent.",
       "callTitle": "On a call with {agent}",
       "callBody": "Tap to go back to the call.",
       "callAsking": "It is asking you something - tap to answer.",
@@ -6736,7 +6736,7 @@
     },
     "setup": {
       "title": "Finish setting up this phone",
-      "welcome": "Review this connection, even if you already use AgenticOS elsewhere. You can finish optional settings later.",
+      "welcome": "Review this connection, even if you already use UnioneAgent elsewhere. You can finish optional settings later.",
       "hint": "Your account and this phone’s settings on this server.",
       "account": "Signed-in account",
       "agent": "An agent you can use",
@@ -6856,7 +6856,7 @@
     "consoleVersion": "Console version {version}",
     "updateAvailable": "Version {version} is available",
     "updateTitle": "Update available",
-    "updateDescription": "You are using {current}. AgenticOS {latest} is available.",
+    "updateDescription": "You are using {current}. UnioneAgent {latest} is available.",
     "viewRelease": "View release",
     "whatsNewTitle": "What’s new in {version}",
     "whatsNewDescription": "Recent changes in the version you are using.",
@@ -7401,7 +7401,7 @@
         "body": "API keys and other credentials live here, encrypted at rest. Agents use them to reach the tools they need, and nobody sees a stored secret again."
       },
       "welcome": {
-        "title": "Welcome to AgenticOS",
+        "title": "Welcome to UnioneAgent",
         "body": "This is where your team builds, runs and governs its AI agents. We'll step through each section and point out what's worth noticing - about a minute, and you can close it whenever you like."
       },
       "workspaces-browser": {
@@ -7646,7 +7646,7 @@
       },
       "org-proactivity-model": {
         "title": "Choose the proactivity model",
-        "body": "Choose a provider, model and vault key, then add the model profile. Creating a profile stores it immediately; Save applies it to nightly suggestions and MCP watches. These checks use this model independently of the AgenticOS starter shown in Activity."
+        "body": "Choose a provider, model and vault key, then add the model profile. Creating a profile stores it immediately; Save applies it to nightly suggestions and MCP watches. These checks use this model independently of the UnioneAgent starter shown in Activity."
       },
       "org-proactivity": {
         "title": "Proactivity",
@@ -7930,7 +7930,7 @@
       "latestInstalled": "No newer stable release reported.",
       "refresh": "Refresh update status",
       "changelog": "Read release notes",
-      "requirements": "Requires the local host updater, Docker Compose, a clean production checkout and local file storage. Infrastructure/image changes outside AgenticOS require your deployment pipeline.",
+      "requirements": "Requires the local host updater, Docker Compose, a clean production checkout and local file storage. Infrastructure/image changes outside UnioneAgent require your deployment pipeline.",
       "downtime": "Allow at least five minutes of maintenance; migration duration depends on the database. Preparation leaves the current version running.",
       "reconnecting": "The API may be restarting. The host updater continues independently; reconnecting…",
       "statusUnavailable": "Cannot read update status. Retry before starting another operation.",
@@ -8099,7 +8099,7 @@
       "categoriesHint": "Broad groups - support, finance, internal. The catalog filters by these.",
       "tagsHint": "Anything narrower you want to search by later.",
       "labelCount": "{used} of {max}",
-      "thisPlatformMcp": "AgenticOS (this platform)",
+      "thisPlatformMcp": "UnioneAgent (this platform)",
       "testPanelOpen": "Test",
       "testPanelShortcut": "Test beside the Builder (T)",
       "firstPublishNext": "It is live in chat and over the API. Next, choose where else people reach it - a website widget, a hosted page, Slack or Telegram.",
@@ -8308,10 +8308,10 @@
       "stepDisplayHint": "A timeline lists each step as it happens; a plan groups them under the question.",
       "stepDisplayTimeline": "A timeline",
       "stepDisplayPlan": "A plan",
-      "slackTransport": "How Slack reaches AgenticOS",
+      "slackTransport": "How Slack reaches UnioneAgent",
       "slackCallsUs": "Slack calls this deployment",
       "slackCallsUsHint": "Slack sends each message to this deployment's public address. Needs the signing secret.",
-      "weConnectToSlack": "AgenticOS connects to Slack",
+      "weConnectToSlack": "UnioneAgent connects to Slack",
       "weConnectToSlackHint": "This deployment opens the connection itself (Socket Mode), so it needs no public address - for a deployment behind a firewall. Needs the app-level token.",
       "mattermostCommandWhy": "To ask with /agent, create a slash command in Mattermost (Integrations - Slash Commands) with the trigger word agent and this request URL, then paste the token Mattermost shows below.",
       "mattermostCommandUrlCopy": "Copy URL",
@@ -8977,7 +8977,7 @@
       "tabRunning": "Running",
       "deleteFailed": "Could not delete the connection",
       "strandedTitle": "{count, plural, one {A sandbox is} other {# sandboxes are}} still on the provider",
-      "strandedBody": "AgenticOS could not remove {count, plural, one {a sandbox} other {# sandboxes}} from the provider behind {name}, and the provider may still be billing for {count, plural, one {it} other {them}}. Delete {count, plural, one {it} other {them}} in the provider's console first, then confirm here to forget {count, plural, one {it} other {them}} and delete the connection.",
+      "strandedBody": "UnioneAgent could not remove {count, plural, one {a sandbox} other {# sandboxes}} from the provider behind {name}, and the provider may still be billing for {count, plural, one {it} other {them}}. Delete {count, plural, one {it} other {them}} in the provider's console first, then confirm here to forget {count, plural, one {it} other {them}} and delete the connection.",
       "strandedConfirm": "I deleted them, delete the connection"
     },
     "settings": {
@@ -9134,7 +9134,7 @@
         "workEnd": "Ends at"
       },
       "prefSuggestion": "Suggestions for you",
-      "prefSuggestionTrigger": "AgenticOS noticed something worth setting up - a request you keep repeating, a role pack, your profile. At most once a day, to you.",
+      "prefSuggestionTrigger": "UnioneAgent noticed something worth setting up - a request you keep repeating, a role pack, your profile. At most once a day, to you.",
       "prefCapabilityRequested": "A capability asked for",
       "prefCapabilityRequestedTrigger": "Somebody asked for a capability one of your agents lacks. Sent to the agent's owner, once per person and capability.",
       "prefFinding": "Findings from your watches",
@@ -9143,9 +9143,9 @@
       "push": {
         "title": "Push notifications in this browser",
         "state": {
-          "unsupported": "This browser cannot receive push notifications. On an iPhone, add AgenticOS to the Home Screen first and open it from there.",
-          "blocked": "This browser blocks notifications from AgenticOS. Allow them in the site settings, then come back here.",
-          "off": "Get notified here when an agent needs you, even with AgenticOS closed. Which events reach you is set below.",
+          "unsupported": "This browser cannot receive push notifications. On an iPhone, add UnioneAgent to the Home Screen first and open it from there.",
+          "blocked": "This browser blocks notifications from UnioneAgent. Allow them in the site settings, then come back here.",
+          "off": "Get notified here when an agent needs you, even with UnioneAgent closed. Which events reach you is set below.",
           "on": "On in this browser. Which events reach you is set below, under Push."
         },
         "turnOn": "Turn on",
@@ -9156,19 +9156,19 @@
         "failed": "Push could not be changed in this browser.",
         "phone": {
           "title": "Notifications while the app is closed",
-          "noDistributor": "AgenticOS delivers these through ntfy, without Google's servers. Install ntfy from the Play Store or F-Droid, open it once, then come back here.",
-          "off": "Get notified when an agent needs you, even with AgenticOS closed. They come through {distributor}.",
+          "noDistributor": "UnioneAgent delivers these through ntfy, without Google's servers. Install ntfy from the Play Store or F-Droid, open it once, then come back here.",
+          "off": "Get notified when an agent needs you, even with UnioneAgent closed. They come through {distributor}.",
           "failed": "{distributor} did not take the registration. Open it, check it can reach its server, and try again.",
           "on": "On, through {distributor}. Which events reach you is set below, under Push.",
           "turnOff": "Turn off on this phone",
           "notRegistered": "ntfy did not hand over an address. Open it and try again.",
-          "denied": "Notifications are disabled in Android settings. Allow them for AgenticOS, then check again."
+          "denied": "Notifications are disabled in Android settings. Allow them for UnioneAgent, then check again."
         },
         "iphone": {
           "title": "Notifications while the app is closed",
           "notConfigured": "Your organization has not set up iPhone notifications yet. An administrator adds the company's APNs key under Admin, Settings.",
-          "denied": "Notifications are off for AgenticOS on this iPhone. Turn them on in Settings, Notifications, AgenticOS, then come back here.",
-          "off": "Get notified when an agent needs you, even with AgenticOS closed.",
+          "denied": "Notifications are off for UnioneAgent on this iPhone. Turn them on in Settings, Notifications, UnioneAgent, then come back here.",
+          "off": "Get notified when an agent needs you, even with UnioneAgent closed.",
           "on": "On for this iPhone. Which events reach you is set below, under Push.",
           "turnOff": "Turn off on this iPhone"
         }
@@ -11336,7 +11336,7 @@
       "watchMinutesHint": "How often one watch may look at most. More often costs more.",
       "switchOrganizationHint": "Switch to this organization before configuring proactivity so its model profiles and keys are used.",
       "switchOrganization": "Switch to {name}",
-      "runAttribution": "Background checks appear under the published AgenticOS starter agent in Activity. This assignment is fixed by the platform. They use the proactivity model selected below, independently of the agent’s own model."
+      "runAttribution": "Background checks appear under the published UnioneAgent starter agent in Activity. This assignment is fixed by the platform. They use the proactivity model selected below, independently of the agent’s own model."
     }
   },
   "theme": {

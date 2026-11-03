@@ -193,8 +193,8 @@ describe("TurnRail arrows", () => {
  */
 describe("previewOf", () => {
   it("takes the emphasis markers out rather than showing them", () => {
-    expect(previewOf("I am running on **AgenticOS**, configured by a _spec_.")).toBe(
-      "I am running on AgenticOS, configured by a spec.",
+    expect(previewOf("I am running on **UnioneAgent**, configured by a _spec_.")).toBe(
+      "I am running on UnioneAgent, configured by a spec.",
     );
   });
 

@@ -28,7 +28,7 @@ describe("DesktopOnly", () => {
     env.shell = { ...MAC_MAIN, platform: "android" };
     render(<DesktopOnly>{() => <p>settings</p>}</DesktopOnly>);
     expect(
-      screen.getByText("These settings belong to the AgenticOS desktop app."),
+      screen.getByText("These settings belong to the UnioneAgent desktop app."),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "About the desktop app" })).toHaveAttribute(
       "href",

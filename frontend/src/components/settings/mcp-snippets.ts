@@ -33,7 +33,7 @@ const KEY_PLACEHOLDER = "Bearer aos_…";
 // i18n-exempt: VS Code's input reference syntax, written into the reader's config
 const VSCODE_KEY_REFERENCE = "Bearer ${input:agenticos-key}";
 // i18n-exempt: the prompt VS Code shows, written into the reader's own config file
-const VSCODE_KEY_PROMPT = "AgenticOS API key";
+const VSCODE_KEY_PROMPT = "UnioneAgent API key";
 
 function json(value: unknown): string {
   return JSON.stringify(value, null, 2);

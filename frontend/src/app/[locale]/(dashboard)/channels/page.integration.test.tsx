@@ -665,7 +665,7 @@ describe("the channels page", () => {
     await mount();
     await userEvent.click((await screen.findAllByRole("button", { name: "Add channel" })).at(-1)!);
     await userEvent.click(screen.getByRole("button", { name: "Slack" }));
-    await userEvent.click(screen.getByRole("radio", { name: /AgenticOS connects to Slack/ }));
+    await userEvent.click(screen.getByRole("radio", { name: /UnioneAgent connects to Slack/ }));
     await userEvent.type(screen.getByLabelText(/Name/), "Acme Slack");
     await userEvent.type(screen.getByLabelText(/Bot token/), "xoxb-a-long-token");
     await userEvent.type(screen.getByLabelText(/App-level token/), "xapp-1-token");

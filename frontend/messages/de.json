@@ -994,7 +994,7 @@
     "backendComputerLabel": "Computer",
     "backendComputerDetail": "Den Computer der Person nutzen, separat im Desktop-Chat erlaubt.",
     "backendComputerConsent": "Jede Person wählt einen Ordner oder Gesamter Computer in den Chat-Einstellungen. Diese Einstellung gewährt keinen Zugriff und speichert keinen persönlichen Pfad. Dieser Workspace benötigt die Desktop-App.",
-    "workflowTablesViaMcp": "Workflows und Tables sind Werkzeuge des AgenticOS-MCP-Servers. Füge ihn unter MCP-Server hinzu und wähle die benötigten Werkzeuge. Bestehende Capability-Bindungen behalten ihre gespeicherten Freigaben."
+    "workflowTablesViaMcp": "Workflows und Tables sind Werkzeuge des UnioneAgent-MCP-Servers. Füge ihn unter MCP-Server hinzu und wähle die benötigten Werkzeuge. Bestehende Capability-Bindungen behalten ihre gespeicherten Freigaben."
   },
   "auth": {
     "agreeToTerms": "Mit dem Anlegen eines Kontos stimmen Sie unseren <terms>AGB</terms> und der <privacy>Datenschutzerklärung</privacy> zu.",
@@ -1941,7 +1941,7 @@
       "savedUnchanged": "Die App hat bereits genau diese Version",
       "savedBadge": "Gespeichert · v{version}",
       "openApp": "Öffnen",
-      "openInConsole": "In AgenticOS sichtbar",
+      "openInConsole": "In UnioneAgent sichtbar",
       "followUpLabel": "Eine Folgenachricht aus dem Visual",
       "followUpAsks": "Das Visual möchte dies als Ihre Nachricht senden:",
       "followUpSend": "Senden",
@@ -2201,7 +2201,7 @@
     },
     "turnLost": "Der Agent hat aufgehört, bevor er geantwortet hat - der Server, auf dem er lief, ist weggefallen.",
     "turnLostAskAgain": "Erneut fragen",
-    "waitingForComputer": "Warte auf Ihren Computer. Öffnen Sie dort die AgenticOS-App, dann läuft der Lauf weiter…",
+    "waitingForComputer": "Warte auf Ihren Computer. Öffnen Sie dort die UnioneAgent-App, dann läuft der Lauf weiter…",
     "browserShownInPanel": "{host} ist im Browserbereich geöffnet",
     "browserOpenPanel": "Neben dem Chat öffnen",
     "browserDock": "Zurück neben den Chat",
@@ -3091,7 +3091,7 @@
       "agentAsk": "Helfen Sie mir, meinen ersten Agent zu bauen. Fragen Sie mich, was er tun soll.",
       "hints": {
         "profile": "Ihre Rolle und Arbeit, damit Antworten zu Ihnen passen.",
-        "chat": "Fragen Sie AgenticOS alles zu Ihrer Arbeit.",
+        "chat": "Fragen Sie UnioneAgent alles zu Ihrer Arbeit.",
         "routine": "Ein Agent erledigt eine Aufgabe nach Zeitplan.",
         "connection": "Mail, Kalender oder Dateien, mit Ihrem eigenen Konto.",
         "agent": "Der Architect baut ihn mit Ihnen.",
@@ -3138,7 +3138,7 @@
       "summary": "Ihre Agents liefen in diesem Zeitraum <b>{runs, plural, =0 {gar nicht} =1 {einmal} other {#-mal}}</b>. {waiting, plural, =0 {Nichts wartet auf Sie.} =1 {<b>Ein Aufruf</b> wartet auf Sie.} other {<b># Aufrufe</b> warten auf Sie.}}"
     },
     "discover": {
-      "title": "AgenticOS entdecken",
+      "title": "UnioneAgent entdecken",
       "subtitle": "Was Ihre Agents können und leicht übersehen wird.",
       "previous": "Vorherige Tipps",
       "next": "Weitere Tipps",
@@ -3157,7 +3157,7 @@
         },
         "mcp": {
           "title": "Aus Claude Code oder Cursor heraus nutzen",
-          "body": "AgenticOS ist auch ein MCP-Server: Verbinden Sie Claude Code, Codex oder Cursor und bauen, starten und lesen Sie Agents, ohne sie zu verlassen.",
+          "body": "UnioneAgent ist auch ein MCP-Server: Verbinden Sie Claude Code, Codex oder Cursor und bauen, starten und lesen Sie Agents, ohne sie zu verlassen.",
           "cta": "App verbinden"
         },
         "subagents": {
@@ -3208,7 +3208,7 @@
       "openGroup": "Gruppe öffnen",
       "widen": "Letzte 90 Tage zeigen"
     },
-    "appSession": "AgenticOS für {platform} {version}",
+    "appSession": "UnioneAgent für {platform} {version}",
     "pushOn": "Push",
     "pushOnHint": "Dieses Gerät erhält Push-Benachrichtigungen"
   },
@@ -3560,7 +3560,7 @@
     "checkingEndpointModels": "Dieser Endpoint wird gefragt, welche Embedding-Modelle er bereitstellt …",
     "endpointModelsListed": "Es werden nur die Modelle aufgeführt, die dieser Endpoint bereitstellt.",
     "endpointModelsUnconfirmed": "Dieser Endpoint konnte nicht gefragt werden, welche Modelle er bereitstellt, daher werden alle OpenRouter-Modelle aufgeführt. Ein Modell, das er nicht bereitstellt, schlägt beim ersten Upload fehl.",
-    "endpointServesNoModel": "Dieser Endpoint stellt keines der Embedding-Modelle bereit, die AgenticOS anbietet. Lassen Sie den Endpoint leer oder wählen Sie einen anderen Provider.",
+    "endpointServesNoModel": "Dieser Endpoint stellt keines der Embedding-Modelle bereit, die UnioneAgent anbietet. Lassen Sie den Endpoint leer oder wählen Sie einen anderen Provider.",
     "endpointLacksCollectionModel": "Dieser Endpoint stellt {model} nicht bereit, das Modell, mit dem die Vektoren dieser Collection erstellt wurden. Lassen Sie den Endpoint leer oder wählen Sie einen, der es bereitstellt.",
     "localServices": "Lokale Dienste",
     "localServicesHint": "Server im eigenen Netz des Deployments – ein Ollama, das einbettet, ein OCR-Sidecar für LiteParse – einmal registriert und pro Collection gewählt. Nichts, was an einen davon geht, verlässt das Deployment.",
@@ -3654,8 +3654,8 @@
       "unreachable": "Der Server ist nicht erreichbar. Angezeigt wird die auf diesem Gerät um {time} gespeicherte Kopie."
     },
     "install": {
-      "offer": "Installieren Sie AgenticOS als App: eigenes Fenster, Benachrichtigungen und ein Symbol auf dem Startbildschirm.",
-      "iosHint": "Um AgenticOS zu installieren, tippen Sie auf Teilen und dann auf Zum Home-Bildschirm.",
+      "offer": "Installieren Sie UnioneAgent als App: eigenes Fenster, Benachrichtigungen und ein Symbol auf dem Startbildschirm.",
+      "iosHint": "Um UnioneAgent zu installieren, tippen Sie auf Teilen und dann auf Zum Home-Bildschirm.",
       "install": "Installieren",
       "dismiss": "Nicht mehr anzeigen"
     },
@@ -3663,7 +3663,7 @@
     "sessionUnavailableHint": "Der Server ist vorübergehend nicht erreichbar. Ihre gespeicherte Sitzung bleibt erhalten. Versuchen Sie es erneut, sobald die Verbindung wiederhergestellt ist.",
     "retrySession": "Erneut versuchen",
     "desktopInstall": {
-      "title": "AgenticOS auf deinem Desktop",
+      "title": "UnioneAgent auf deinem Desktop",
       "description": "Quick Ask, Sprache und lokale Werkzeuge per Tastenkürzel.",
       "download": "Desktop-App herunterladen",
       "dismiss": "In 14 Tagen erinnern"
@@ -4074,7 +4074,7 @@
     "consoleVersion": "Konsolenversion {version}",
     "updateAvailable": "Version {version} ist verfügbar",
     "updateTitle": "Update verfügbar",
-    "updateDescription": "Du verwendest {current}. AgenticOS {latest} ist verfügbar.",
+    "updateDescription": "Du verwendest {current}. UnioneAgent {latest} ist verfügbar.",
     "viewRelease": "Release ansehen",
     "whatsNewTitle": "Neu in {version}",
     "whatsNewDescription": "Änderungen in der verwendeten Version.",
@@ -4604,7 +4604,7 @@
         "body": "API-Schlüssel und andere Zugangsdaten liegen hier, im Ruhezustand verschlüsselt. Agents nutzen sie, um die Tools zu erreichen, die sie brauchen, und niemand sieht ein gespeichertes Secret wieder."
       },
       "welcome": {
-        "title": "Willkommen bei AgenticOS",
+        "title": "Willkommen bei UnioneAgent",
         "body": "Hier baut, betreibt und steuert Ihr Team seine KI-Agents. Wir gehen jeden Bereich durch und zeigen, worauf es ankommt - etwa eine Minute, und Sie können jederzeit schließen."
       },
       "workspaces-browser": {
@@ -4849,7 +4849,7 @@
       },
       "org-proactivity-model": {
         "title": "Proaktivitätsmodell auswählen",
-        "body": "Wähle Anbieter, Modell und Vault-Schlüssel und füge das Modellprofil hinzu. Das Profil wird sofort gespeichert; Save übernimmt es für nächtliche Vorschläge und MCP-Beobachtungen. Diese Prüfungen verwenden dieses Modell unabhängig vom AgenticOS-Startagenten in Activity."
+        "body": "Wähle Anbieter, Modell und Vault-Schlüssel und füge das Modellprofil hinzu. Das Profil wird sofort gespeichert; Save übernimmt es für nächtliche Vorschläge und MCP-Beobachtungen. Diese Prüfungen verwenden dieses Modell unabhängig vom UnioneAgent-Startagenten in Activity."
       },
       "org-proactivity": {
         "title": "Proaktivität",
@@ -5233,7 +5233,7 @@
       "categoriesHint": "Grobe Gruppen - Support, Finanzen, intern. Der Katalog filtert danach.",
       "tagsHint": "Alles Feinere, wonach Sie später suchen möchten.",
       "labelCount": "{used} von {max}",
-      "thisPlatformMcp": "AgenticOS (diese Plattform)",
+      "thisPlatformMcp": "UnioneAgent (diese Plattform)",
       "testPanelOpen": "Testen",
       "testPanelShortcut": "Neben dem Builder testen (T)",
       "firstPublishNext": "Er ist im Chat und über die API live. Wählen Sie als Nächstes, wo ihn die Leute sonst erreichen - ein Website-Widget, eine gehostete Seite, Slack oder Telegram.",
@@ -5366,10 +5366,10 @@
       "stepDisplayHint": "Eine Zeitleiste zeigt jeden Schritt, wenn er passiert; ein Plan fasst sie unter der Frage zusammen.",
       "stepDisplayTimeline": "Zeitleiste",
       "stepDisplayPlan": "Plan",
-      "slackTransport": "Wie Slack AgenticOS erreicht",
+      "slackTransport": "Wie Slack UnioneAgent erreicht",
       "slackCallsUs": "Slack ruft dieses Deployment auf",
       "slackCallsUsHint": "Slack schickt jede Nachricht an die öffentliche Adresse dieses Deployments. Braucht das Signing Secret.",
-      "weConnectToSlack": "AgenticOS verbindet sich mit Slack",
+      "weConnectToSlack": "UnioneAgent verbindet sich mit Slack",
       "weConnectToSlackHint": "Dieses Deployment baut die Verbindung selbst auf (Socket Mode) und braucht keine öffentliche Adresse - für ein Deployment hinter einer Firewall. Braucht das App-Level-Token.",
       "mattermostCommandWhy": "Für /agent in Mattermost einen Slash Command anlegen (Integrations - Slash Commands) mit dem Auslösewort agent und dieser Request URL, dann das Token, das Mattermost zeigt, hier einfügen.",
       "mattermostCommandUrlCopy": "URL kopieren",
@@ -5917,7 +5917,7 @@
       "tabRunning": "Laufend",
       "deleteFailed": "Die Verbindung konnte nicht gelöscht werden",
       "strandedTitle": "{count, plural, one {Eine Sandbox ist} other {# Sandboxes sind}} noch beim Anbieter",
-      "strandedBody": "AgenticOS konnte {count, plural, one {eine Sandbox} other {# Sandboxes}} beim Anbieter hinter {name} nicht entfernen, und der Anbieter berechnet sie möglicherweise noch. Lösche sie zuerst in der Konsole des Anbieters und bestätige dann hier, um sie zu vergessen und die Verbindung zu löschen.",
+      "strandedBody": "UnioneAgent konnte {count, plural, one {eine Sandbox} other {# Sandboxes}} beim Anbieter hinter {name} nicht entfernen, und der Anbieter berechnet sie möglicherweise noch. Lösche sie zuerst in der Konsole des Anbieters und bestätige dann hier, um sie zu vergessen und die Verbindung zu löschen.",
       "strandedConfirm": "Ich habe sie gelöscht, Verbindung löschen"
     },
     "settings": {
@@ -6074,7 +6074,7 @@
         "workEnd": "Ende"
       },
       "prefSuggestion": "Vorschläge für Sie",
-      "prefSuggestionTrigger": "AgenticOS hat etwas bemerkt, das sich einzurichten lohnt - eine Anfrage, die Sie wiederholen, ein Paket für Ihre Rolle, Ihr Profil. Höchstens einmal am Tag, an Sie.",
+      "prefSuggestionTrigger": "UnioneAgent hat etwas bemerkt, das sich einzurichten lohnt - eine Anfrage, die Sie wiederholen, ein Paket für Ihre Rolle, Ihr Profil. Höchstens einmal am Tag, an Sie.",
       "prefCapabilityRequested": "Eine Capability angefragt",
       "prefCapabilityRequestedTrigger": "Jemand hat eine Capability angefragt, die einem Ihrer Agents fehlt. An den Besitzer des Agents, einmal pro Person und Capability.",
       "prefFinding": "Funde Ihrer Beobachtungen",
@@ -6083,9 +6083,9 @@
       "push": {
         "title": "Push-Benachrichtigungen in diesem Browser",
         "state": {
-          "unsupported": "Dieser Browser kann keine Push-Benachrichtigungen empfangen. Auf dem iPhone füge AgenticOS zuerst zum Home-Bildschirm hinzu und öffne es von dort.",
-          "blocked": "Dieser Browser blockiert Benachrichtigungen von AgenticOS. Erlaube sie in den Website-Einstellungen und komm dann hierher zurück.",
-          "off": "Werde hier benachrichtigt, wenn ein Agent dich braucht, auch wenn AgenticOS geschlossen ist. Welche Ereignisse dich erreichen, legst du unten fest.",
+          "unsupported": "Dieser Browser kann keine Push-Benachrichtigungen empfangen. Auf dem iPhone füge UnioneAgent zuerst zum Home-Bildschirm hinzu und öffne es von dort.",
+          "blocked": "Dieser Browser blockiert Benachrichtigungen von UnioneAgent. Erlaube sie in den Website-Einstellungen und komm dann hierher zurück.",
+          "off": "Werde hier benachrichtigt, wenn ein Agent dich braucht, auch wenn UnioneAgent geschlossen ist. Welche Ereignisse dich erreichen, legst du unten fest.",
           "on": "In diesem Browser an. Welche Ereignisse dich erreichen, legst du unten unter Push fest."
         },
         "turnOn": "Einschalten",
@@ -6096,19 +6096,19 @@
         "failed": "Push konnte in diesem Browser nicht geändert werden.",
         "phone": {
           "title": "Benachrichtigungen bei geschlossener App",
-          "noDistributor": "AgenticOS stellt sie über ntfy zu, ohne Googles Server. Installiere ntfy aus dem Play Store oder F-Droid, öffne es einmal und komm hierher zurück.",
-          "off": "Werde benachrichtigt, wenn ein Agent dich braucht, auch wenn AgenticOS geschlossen ist. Sie kommen über {distributor}.",
+          "noDistributor": "UnioneAgent stellt sie über ntfy zu, ohne Googles Server. Installiere ntfy aus dem Play Store oder F-Droid, öffne es einmal und komm hierher zurück.",
+          "off": "Werde benachrichtigt, wenn ein Agent dich braucht, auch wenn UnioneAgent geschlossen ist. Sie kommen über {distributor}.",
           "failed": "{distributor} hat die Registrierung nicht angenommen. Öffne es, prüfe die Verbindung zu seinem Server und versuche es erneut.",
           "on": "An, über {distributor}. Welche Ereignisse dich erreichen, legst du unten unter Push fest.",
           "turnOff": "Auf diesem Telefon ausschalten",
           "notRegistered": "ntfy hat keine Adresse übergeben. Öffne es und versuche es erneut.",
-          "denied": "Benachrichtigungen sind in den Android-Einstellungen deaktiviert. Erlaube sie für AgenticOS und prüfe erneut."
+          "denied": "Benachrichtigungen sind in den Android-Einstellungen deaktiviert. Erlaube sie für UnioneAgent und prüfe erneut."
         },
         "iphone": {
           "title": "Benachrichtigungen bei geschlossener App",
           "notConfigured": "Deine Organisation hat iPhone-Benachrichtigungen noch nicht eingerichtet. Eine Administratorin oder ein Administrator fügt den APNs-Schlüssel der Firma unter Admin, Einstellungen hinzu.",
-          "denied": "Benachrichtigungen für AgenticOS sind auf diesem iPhone aus. Schalte sie unter Einstellungen, Mitteilungen, AgenticOS ein und komm dann hierher zurück.",
-          "off": "Lass dich benachrichtigen, wenn ein Agent dich braucht, auch wenn AgenticOS geschlossen ist.",
+          "denied": "Benachrichtigungen für UnioneAgent sind auf diesem iPhone aus. Schalte sie unter Einstellungen, Mitteilungen, UnioneAgent ein und komm dann hierher zurück.",
+          "off": "Lass dich benachrichtigen, wenn ein Agent dich braucht, auch wenn UnioneAgent geschlossen ist.",
           "on": "Auf diesem iPhone an. Welche Ereignisse dich erreichen, legst du unten unter Push fest.",
           "turnOff": "Auf diesem iPhone ausschalten"
         }
@@ -7816,7 +7816,7 @@
       "watchMinutesHint": "Wie oft eine einzelne Beobachtung höchstens nachsehen darf. Häufiger kostet mehr.",
       "switchOrganizationHint": "Wechsle vor dem Konfigurieren der Proaktivität zu dieser Organisation, damit ihre Modellprofile und Schlüssel verwendet werden.",
       "switchOrganization": "Zu {name} wechseln",
-      "runAttribution": "Hintergrundprüfungen erscheinen in Activity unter dem veröffentlichten AgenticOS-Startagenten. Diese Zuordnung ist in der Plattform festgelegt. Sie verwenden das unten gewählte Proaktivitätsmodell, unabhängig vom eigenen Modell des Agenten."
+      "runAttribution": "Hintergrundprüfungen erscheinen in Activity unter dem veröffentlichten UnioneAgent-Startagenten. Diese Zuordnung ist in der Plattform festgelegt. Sie verwenden das unten gewählte Proaktivitätsmodell, unabhängig vom eigenen Modell des Agenten."
     }
   },
   "theme": {
@@ -10201,7 +10201,7 @@
     "disconnected": "Anwendung getrennt",
     "couldNotLoad": "Verbundene Anwendungen konnten nicht geladen werden",
     "emptyTitle": "Keine verbundenen Anwendungen",
-    "emptyWhy": "Fügen Sie AgenticOS zu Claude Code oder einem anderen MCP-Client hinzu und melden Sie sich an; es erscheint hier."
+    "emptyWhy": "Fügen Sie UnioneAgent zu Claude Code oder einem anderen MCP-Client hinzu und melden Sie sich an; es erscheint hier."
   },
   "liveUpdates": {
     "changedElsewhere": "{actor} hat das {surface} geändert, während Sie es bearbeitet haben. Laden Sie neu, um diese Version zu sehen, oder behalten Sie Ihre Änderungen und speichern Sie darüber.",
@@ -11288,7 +11288,7 @@
   },
   "mcpConnect": {
     "title": "Einen MCP-Client verbinden",
-    "why": "Claude Code, Codex, Cursor oder jeder andere MCP-Client kann über den eigenen MCP-Server von AgenticOS in dieser Organisation arbeiten: Agents auflisten und ausführen, Runs und ihre Kosten lesen, Wissensdatenbanken durchsuchen und füllen, Mitglieder einladen.",
+    "why": "Claude Code, Codex, Cursor oder jeder andere MCP-Client kann über den eigenen MCP-Server von UnioneAgent in dieser Organisation arbeiten: Agents auflisten und ausführen, Runs und ihre Kosten lesen, Wissensdatenbanken durchsuchen und füllen, Mitglieder einladen.",
     "docs": "Was der MCP-Server kann",
     "serverUrl": "Server-URL",
     "signIn": "Anmeldung",
@@ -11306,7 +11306,7 @@
         "key": "Codex liest den Schlüssel aus AGENTICOS_API_KEY in seiner Umgebung."
       },
       "claude-desktop": {
-        "browser": "Öffnen Sie in Claude (Desktop oder claude.ai) Einstellungen → Connectors → Add custom connector, nennen Sie ihn AgenticOS und fügen Sie die Server-URL ein. Claude meldet sich über diese Konsole an. Die URL muss aus dem Internet über HTTPS erreichbar sein.",
+        "browser": "Öffnen Sie in Claude (Desktop oder claude.ai) Einstellungen → Connectors → Add custom connector, nennen Sie ihn UnioneAgent und fügen Sie die Server-URL ein. Claude meldet sich über diese Konsole an. Die URL muss aus dem Internet über HTTPS erreichbar sein.",
         "key": "Claudes Connectors melden sich immer über den Browser an, ein API-Schlüssel wird hier nicht verwendet. Wechseln Sie zu „Über den Browser“."
       },
       "cursor": {
@@ -11825,9 +11825,9 @@
       "approve": "Genehmigen",
       "reject": "Ablehnen",
       "runTitle": "{agent} arbeitet",
-      "runBody": "Tippen, um in AgenticOS mitzuverfolgen.",
+      "runBody": "Tippen, um in UnioneAgent mitzuverfolgen.",
       "questionTitle": "{agent} hat eine Frage an Sie",
-      "questionBody": "Tippen Sie, um in AgenticOS zu antworten.",
+      "questionBody": "Tippen Sie, um in UnioneAgent zu antworten.",
       "callTitle": "Im Gespräch mit {agent}",
       "callBody": "Tippen Sie, um zum Gespräch zurückzukehren.",
       "callAsking": "Es fragt Sie etwas - tippen Sie, um zu antworten.",
@@ -11838,7 +11838,7 @@
     },
     "setup": {
       "title": "Dieses Telefon fertig einrichten",
-      "welcome": "Prüfe diese Verbindung, auch wenn du AgenticOS bereits nutzt. Optionale Einstellungen kannst du später ergänzen.",
+      "welcome": "Prüfe diese Verbindung, auch wenn du UnioneAgent bereits nutzt. Optionale Einstellungen kannst du später ergänzen.",
       "hint": "Dein Konto und die Einstellungen dieses Telefons auf diesem Server.",
       "account": "Angemeldetes Konto",
       "agent": "Ein verfügbarer Agent",
@@ -11927,14 +11927,14 @@
       },
       "shortcuts": {
         "open_console": {
-          "label": "AgenticOS öffnen",
-          "hint": "Das Hauptfenster von AgenticOS in den Vordergrund bringen."
+          "label": "UnioneAgent öffnen",
+          "hint": "Das Hauptfenster von UnioneAgent in den Vordergrund bringen."
         }
       }
     },
     "welcome": {
       "shortcuts": {
-        "open_console": "AgenticOS öffnen"
+        "open_console": "UnioneAgent öffnen"
       }
     },
     "quickAsk": {
@@ -12022,7 +12022,7 @@
       "unmuteAll": "{count, plural, one {# Gespräch wieder aktivieren} other {# Gespräche wieder aktivieren}}",
       "mute": "Mitteilungen für dieses Gespräch stummschalten",
       "unmute": "Mitteilungen für dieses Gespräch aktivieren",
-      "privateTitle": "AgenticOS-Aktivität",
+      "privateTitle": "UnioneAgent-Aktivität",
       "privateApproval": "Ein Agent benötigt eine Freigabe. Öffnen Sie die App zur Prüfung.",
       "privateQuestion": "Ein Agent benötigt Ihre Antwort.",
       "privateFailed": "Eine Aufgabe ist fehlgeschlagen. Details finden Sie in der App.",
@@ -12042,14 +12042,14 @@
     "toDock": "Im Dock anheften",
     "toTray": "In der Taskleiste anheften",
     "unpin": "Lösen",
-    "dockHint": "Rechtsklick auf das AgenticOS-Symbol im Dock startet einen neuen Chat mit diesem Agenten.",
-    "trayHint": "Ein neuer Chat mit diesem Agenten aus dem Menü des AgenticOS-Symbols.",
+    "dockHint": "Rechtsklick auf das UnioneAgent-Symbol im Dock startet einen neuen Chat mit diesem Agenten.",
+    "trayHint": "Ein neuer Chat mit diesem Agenten aus dem Menü des UnioneAgent-Symbols.",
     "toHomeScreen": "Zum Startbildschirm hinzufügen",
     "onHomeScreen": "Auf dem Startbildschirm. Tippen für einen neuen Chat.",
-    "inLongPress": "Dein Launcher kann ihn nicht anheften, darum steht er in der Liste beim langen Drücken auf das AgenticOS-Symbol.",
+    "inLongPress": "Dein Launcher kann ihn nicht anheften, darum steht er in der Liste beim langen Drücken auf das UnioneAgent-Symbol.",
     "failed": "Der Agent konnte nicht zum Startbildschirm hinzugefügt werden.",
     "toWidget": "An Widget anheften",
-    "inWidget": "Angeheftet. Füge das Widget „Angeheftete Agenten“ zum Home-Bildschirm hinzu; der Agent ist auch im Menü des AgenticOS-Symbols und in Kurzbefehle."
+    "inWidget": "Angeheftet. Füge das Widget „Angeheftete Agenten“ zum Home-Bildschirm hinzu; der Agent ist auch im Menü des UnioneAgent-Symbols und in Kurzbefehle."
   },
   "capabilityChoices": {
     "computer_use": {

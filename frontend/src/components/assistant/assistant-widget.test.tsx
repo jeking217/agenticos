@@ -171,7 +171,7 @@ describe("the Architect widget", () => {
   it("is the Architect in the reader's language until it is renamed, and wears its mark", () => {
     // Installed beside an agent that took its handle: the name had to differ,
     // the console still calls it the Architect.
-    state.assistant = assistant({ name: "Architect (AgenticOS)" });
+    state.assistant = assistant({ name: "Architect (UnioneAgent)" });
     const { unmount } = render(<AssistantWidget />);
     expect(screen.getByRole("button", { name: "Open Architect" })).toBeInTheDocument();
     expect(document.querySelector('svg rect[fill="#2557d6"]')).not.toBeNull();

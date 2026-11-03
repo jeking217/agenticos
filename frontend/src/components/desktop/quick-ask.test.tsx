@@ -416,7 +416,7 @@ describe("QuickAsk", () => {
       render(<QuickAsk />);
       open({ ...FOUND, selection: null, clipboard: null, accessibility: false });
       await userEvent.click(
-        screen.getByRole("button", { name: "Let AgenticOS read what you select" }),
+        screen.getByRole("button", { name: "Let UnioneAgent read what you select" }),
       );
       expect(env.allow).toHaveBeenCalled();
       await userEvent.click(screen.getByRole("button", { name: "1 file from Finder" }));

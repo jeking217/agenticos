@@ -55,7 +55,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    PROJECT_NAME: str = "agenticos"
+    PROJECT_NAME: str = "UnioneAgent"
     API_V1_STR: str = "/api/v1"
     UPDATE_AGENT_SOCKET: Path | None = None
     UPDATE_PIPELINE_URL: str | None = None
@@ -1086,7 +1086,7 @@ class Settings(BaseSettings):
 
     EMAIL_PROVIDER: str = "smtp"
     EMAIL_FROM: str = "noreply@agenticos.com"
-    EMAIL_FROM_NAME: str = "agenticos"
+    EMAIL_FROM_NAME: str = "UnioneAgent"
     EMAIL_REPLY_TO: str | None = None
     SMTP_HOST: str = "localhost"
     SMTP_PORT: int = 587

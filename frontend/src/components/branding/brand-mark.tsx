@@ -40,9 +40,11 @@ export function BrandMark({ className, size = 24 }: { className?: string; size?:
   }
 
   return (
-    // The AgenticOS blob on its violet tile. An `<img>` on a data URI rather than
-    // inline paths, because `icon.tsx` hands `next/og` that exact string - one
-    // drawing is what keeps the browser tab and the sidebar showing the same face.
+    // The UnioneAgent mark - the built-in artwork is an opaque square, so the
+    // rounding here is what keeps it from reading as a sticker on a dark rail.
+    // An `<img>` on a data URI rather than inline paths, because `icon.tsx`
+    // hands `next/og` that exact string - one drawing is what keeps the browser
+    // tab and the sidebar showing the same face.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={LOGO_DATA_URI}
@@ -51,7 +53,7 @@ export function BrandMark({ className, size = 24 }: { className?: string; size?:
       title={appName}
       width={size}
       height={size}
-      className={cn("shrink-0", className)}
+      className={cn("shrink-0 rounded-md", className)}
       style={{ width: size, height: size }}
       data-testid="brand-glyph"
     />

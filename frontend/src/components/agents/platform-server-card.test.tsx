@@ -19,7 +19,7 @@ const DEFAULT_TOOLS = () => ({
 const tools = vi.fn(DEFAULT_TOOLS);
 vi.mock("@/hooks", () => ({ usePlatformMcpTools: () => tools() }));
 vi.mock("@/components/branding/branding-provider", () => ({
-  useBranding: () => ({ appName: "AgenticOS", logoUrl: null }),
+  useBranding: () => ({ appName: "UnioneAgent", logoUrl: null }),
 }));
 
 /** The card as the Builder holds it: the spec's platform binding, changed in place. */
@@ -52,13 +52,13 @@ beforeEach(() => {
   tools.mockImplementation(DEFAULT_TOOLS);
 });
 
-describe("the AgenticOS server in the Builder", () => {
+describe("the UnioneAgent server in the Builder", () => {
   it("is switched on with writes held for approval, and says it acts as whoever asks", async () => {
     const onChange = vi.fn();
     render(<Harness initial={null} onChange={onChange} />);
     expect(screen.getByText("Acts as whoever asks")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("switch", { name: "Use AgenticOS in this agent" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Use UnioneAgent in this agent" }));
 
     expect(onChange).toHaveBeenLastCalledWith(NEW_PLATFORM_BINDING);
     expect(screen.getByRole("dialog")).toHaveTextContent("exactly their permissions");
@@ -162,7 +162,7 @@ describe("the AgenticOS server in the Builder", () => {
   it("switches off from the card", async () => {
     const onChange = vi.fn();
     render(<Harness initial={NEW_PLATFORM_BINDING} onChange={onChange} />);
-    await userEvent.click(screen.getByRole("switch", { name: "Use AgenticOS in this agent" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Use UnioneAgent in this agent" }));
     expect(onChange).toHaveBeenLastCalledWith(null);
     expect(screen.queryByRole("dialog")).toBeNull();
   });

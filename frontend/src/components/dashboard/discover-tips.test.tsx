@@ -27,7 +27,7 @@ describe("the dashboard's discover tips", () => {
   it("offers each feature with a way to it", () => {
     render(<DiscoverTips />);
 
-    expect(screen.getByRole("heading", { name: "Discover AgenticOS" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Discover UnioneAgent" })).toBeInTheDocument();
     expect(
       within(tile("Use it from Claude Code or Cursor")).getByRole("link", {
         name: /Connect an app/,
@@ -73,7 +73,7 @@ describe("the dashboard's discover tips", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Hide tips" }));
 
-    expect(screen.queryByText("Discover AgenticOS")).toBeNull();
+    expect(screen.queryByText("Discover UnioneAgent")).toBeNull();
   });
 
   it("still closes where the browser keeps nothing", async () => {
@@ -87,7 +87,7 @@ describe("the dashboard's discover tips", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Hide tips" }));
 
-    expect(screen.queryByText("Discover AgenticOS")).toBeNull();
+    expect(screen.queryByText("Discover UnioneAgent")).toBeNull();
   });
 
   it("ignores a stored value that is not a list of tips", () => {

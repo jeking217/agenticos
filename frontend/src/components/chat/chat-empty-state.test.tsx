@@ -54,7 +54,7 @@ describe("ChatEmptyState", () => {
   });
 
   it("opens the starter agent's chat on the person's own first messages and suggestions", async () => {
-    env.agents = [{ ...AGENT, slug: "agenticos", name: "AgenticOS", starters: [] }];
+    env.agents = [{ ...AGENT, slug: "agenticos", name: "UnioneAgent", starters: [] }];
     env.personal = ["Show my pipeline", "Plan my Monday"];
     const onPick = vi.fn();
     render(<ChatEmptyState onPick={onPick} />);

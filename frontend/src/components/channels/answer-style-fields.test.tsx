@@ -80,7 +80,7 @@ describe("which way a Slack bot connects", () => {
       "aria-checked",
       "true",
     );
-    await userEvent.click(screen.getByRole("radio", { name: /AgenticOS connects to Slack/ }));
+    await userEvent.click(screen.getByRole("radio", { name: /UnioneAgent connects to Slack/ }));
     expect(onChange).toHaveBeenCalledWith(false);
   });
 });

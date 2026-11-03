@@ -195,7 +195,7 @@ async def _prepare_local(
         await page.navigate(start_url)
     elif not is_native:
         raise EndpointError(
-            "This desktop version does not support persistent browser tabs. Update AgenticOS."
+            "This desktop version does not support persistent browser tabs. Update UnioneAgent."
         )
 
 

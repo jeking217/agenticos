@@ -41,7 +41,7 @@ describe("ShortcutSettings", () => {
       shortcuts: [{ action: "open_console", accelerator: "CmdOrCtrl+Shift+O", problem: null }],
     } satisfies DesktopState;
     render(<ShortcutSettings />);
-    expect(field("Open AgenticOS")).toHaveValue("⌘⇧O");
+    expect(field("Open UnioneAgent")).toHaveValue("⌘⇧O");
   });
 
   it("records the next combination pressed in a field and saves it", async () => {

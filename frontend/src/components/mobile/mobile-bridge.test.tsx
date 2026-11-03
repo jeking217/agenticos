@@ -180,7 +180,7 @@ describe("MobileBridge", () => {
         id: "run:r1",
         kind: "run",
         title: "Support is working",
-        body: "Tap to follow it in AgenticOS.",
+        body: "Tap to follow it in UnioneAgent.",
         path: "/runs?run=r1",
         startedAt: Date.parse("2026-10-21T10:00:00Z"),
       },
@@ -188,7 +188,7 @@ describe("MobileBridge", () => {
         id: "run:r2",
         kind: "run",
         title: "An agent is working",
-        body: "Tap to follow it in AgenticOS.",
+        body: "Tap to follow it in UnioneAgent.",
         path: "/runs?run=r2",
       },
     ]);
