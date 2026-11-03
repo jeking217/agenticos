@@ -12,14 +12,14 @@ import { useOrgStore } from "@/stores";
 import type { KnowledgeBase } from "@/types";
 
 vi.mock("@/lib/api-client", () => ({
-  apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+  apiClient: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
   ApiError: class ApiError extends Error {},
 }));
 vi.mock("@/lib/rag-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/rag-api")>()),
   searchDocuments: vi.fn(),
 }));
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), info: vi.fn(), error: vi.fn() } }));
 // Key-returning translator, the same convention as the sidebar tests: the
 // assertions below name message keys, not English copy.
 vi.mock("next-intl", async () => ({
@@ -75,6 +75,26 @@ function mockApi(kbList: KnowledgeBase[] | Error) {
     // The create dialog picks a provider and then a model, and renders straight
     // from the answer - an `{ items: [] }` shaped reply has no `providers` to
     // read a model list out of.
+    // The draft a removal reads: the agent on the card's `used_by` row.
+    if (endpoint === "/agents/a1") {
+      return Promise.resolve({
+        id: "a1",
+        draft_spec: {
+          spec_version: 5,
+          name: "Billing",
+          description: null,
+          instructions: "",
+          model_profile_id: null,
+          model_settings: {},
+          capabilities: [{ id: "knowledge", enabled: true }],
+          collection_ids: ["kb-1"],
+          skill_ids: [],
+          context_ids: [],
+          mcp_servers: [],
+          budget: null,
+        },
+      });
+    }
     if (endpoint === "/rag/embedding-models") {
       return Promise.resolve({
         providers: [
@@ -393,5 +413,38 @@ describe("a base that holds rows opens where rows live (#T17)", () => {
     // with no label - which read as "unknown kind" rather than "documents".
     expect(screen.getByText("pages.kb.documentBadge")).toBeInTheDocument();
     expect(screen.queryByText("pages.kb.datasetBadge")).not.toBeInTheDocument();
+  });
+});
+
+// The card says which agents have the base; that row is where a reader who did
+// not mean to give it away takes it back (#2075).
+describe("taking a knowledge base back off an agent", () => {
+  it("writes the agent's draft without it and names the agent", async () => {
+    perms.add("agents:edit");
+    vi.mocked(apiClient.put).mockResolvedValue({ id: "a1" });
+    mockApi([{ ...kb("kb-1", "Handbook", "handbook"), used_by: [{ id: "a1", name: "Billing" }] }]);
+
+    render(<RAGPage />, { wrapper });
+
+    await userEvent.click(await screen.findByTestId("used-by-remove"));
+
+    await waitFor(() =>
+      expect(apiClient.put).toHaveBeenCalledWith("/agents/a1/draft", {
+        spec: expect.objectContaining({ collection_ids: [] }),
+      }),
+    );
+    // The capability goes with the last base, so the agent does not keep a
+    // knowledge tool that reads nothing.
+    const [, body] = vi.mocked(apiClient.put).mock.calls[0]!;
+    expect((body as { spec: { capabilities: { id: string }[] } }).spec.capabilities).toEqual([]);
+  });
+
+  it("offers no removal control to a reader who may not edit agents", async () => {
+    mockApi([{ ...kb("kb-1", "Handbook", "handbook"), used_by: [{ id: "a1", name: "Billing" }] }]);
+
+    render(<RAGPage />, { wrapper });
+
+    await screen.findByText("Handbook");
+    expect(screen.queryByTestId("used-by-remove")).not.toBeInTheDocument();
   });
 });

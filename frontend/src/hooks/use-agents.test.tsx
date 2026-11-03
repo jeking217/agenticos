@@ -13,6 +13,7 @@ import {
   useAllAgentVersions,
   useAgents,
   useAddToAgent,
+  useRemoveFromAgent,
   useCapabilityCatalog,
   useDelegationTree,
   usePromptVariables,
@@ -1247,5 +1248,68 @@ describe("useAddToAgent", () => {
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: qk.agents.all() });
     expect(invalidate).not.toHaveBeenCalledWith({ queryKey: qk.kb.all() });
+  });
+});
+
+describe("useRemoveFromAgent", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("writes the draft without the knowledge base", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      id: "a1",
+      draft_spec: { ...SPEC, collection_ids: ["kb", "other"] },
+    });
+    vi.mocked(apiClient.put).mockResolvedValue({ id: "a1" });
+    const { result } = renderHook(() => useRemoveFromAgent(), { wrapper });
+
+    const answer = await result.current.mutateAsync({
+      agentId: "a1",
+      resource: { kind: "collection", id: "kb" },
+    });
+
+    expect(answer).toEqual({ removed: true });
+    const [path, body] = vi.mocked(apiClient.put).mock.calls[0]!;
+    expect(path).toBe("/agents/a1/draft");
+    expect((body as { spec: AgentSpec }).spec.collection_ids).toEqual(["other"]);
+  });
+
+  it("says so rather than writing a draft for a card that had gone stale", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ id: "a1", draft_spec: SPEC });
+    const { result } = renderHook(() => useRemoveFromAgent(), { wrapper });
+
+    const answer = await result.current.mutateAsync({
+      agentId: "a1",
+      resource: { kind: "collection", id: "kb" },
+    });
+
+    expect(answer).toEqual({ removed: false });
+    expect(apiClient.put).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the knowledge bases, and the context files when one was taken", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      id: "a1",
+      draft_spec: { ...SPEC, context_ids: ["f1"] },
+    });
+    vi.mocked(apiClient.put).mockResolvedValue({ id: "a1" });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const { result } = renderHook(() => useRemoveFromAgent(), { wrapper: withClient(client) });
+
+    await result.current.mutateAsync({ agentId: "a1", resource: { kind: "context", id: "f1" } });
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: qk.agents.all() });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: qk.context.all() });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: qk.kb.all() });
+  });
+
+  it("says what was refused", async () => {
+    vi.mocked(apiClient.get).mockRejectedValue(new Error("nope"));
+    const { result } = renderHook(() => useRemoveFromAgent(), { wrapper });
+
+    await expect(
+      result.current.mutateAsync({ agentId: "a1", resource: { kind: "collection", id: "kb" } }),
+    ).rejects.toThrow();
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
   });
 });

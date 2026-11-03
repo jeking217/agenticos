@@ -1,9 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+
 import { BlankPeek, Card, DocPeek, TextPeek } from "@/components/ui";
 import { AddToAgent } from "@/components/agents/add-to-agent";
 import { UsedBy } from "@/components/agents/used-by";
 import { AudienceChip } from "@/components/sharing/audience-chip";
+import { usePermissions, useRemoveFromAgent } from "@/hooks";
+import type { AgentUsage } from "@/types/agents";
+import { Perm } from "@/types/permissions";
 import type { ContextFileSummary } from "@/types/providers";
 
 interface ContextCardProps {
@@ -13,6 +20,27 @@ interface ContextCardProps {
 
 /** Preview, usage and the next action, with concise metadata beside the action. */
 export function ContextCard({ file, onOpen }: ContextCardProps) {
+  const tAgents = useTranslations("agents");
+  const { can } = usePermissions();
+  const remove = useRemoveFromAgent();
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  // Same line, same undo as a knowledge base's card: the file is bound in the
+  // agent's draft, and this writes that draft without it.
+  const takeAway = async (agent: AgentUsage) => {
+    setRemoving(agent.id);
+    const answer = await remove
+      .mutateAsync({ agentId: agent.id, resource: { kind: "context", id: file.id } })
+      .catch(() => null);
+    setRemoving(null);
+    if (answer === null) return;
+    if (answer.removed) {
+      toast.success(tAgents("removedFromAgent", { name: file.name, agent: agent.name }));
+    } else {
+      toast.info(tAgents("notOnAgent", { name: file.name, agent: agent.name }));
+    }
+  };
+
   return (
     <Card className="peek-card group hover:border-foreground/20 flex flex-col overflow-hidden">
       <button
@@ -44,7 +72,12 @@ export function ContextCard({ file, onOpen }: ContextCardProps) {
           </span>
         </span>
       </button>
-      <UsedBy agents={file.used_by} className="text-foreground/85 mx-4 mb-3 gap-2" />
+      <UsedBy
+        agents={file.used_by}
+        className="text-foreground/85 mx-4 mb-3 gap-2"
+        onRemove={can(Perm.agentsEdit) ? takeAway : undefined}
+        removing={removing}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
         <div className="text-muted-foreground flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           <AudienceChip visibility={file.visibility} groups={file.shared_groups} />{" "}

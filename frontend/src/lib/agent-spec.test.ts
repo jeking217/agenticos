@@ -16,6 +16,7 @@ import {
   withCapability,
   withContextFiles,
   withResource,
+  withoutResource,
   hasResource,
   KNOWLEDGE_ID,
   withSkills,
@@ -393,6 +394,81 @@ describe("withResource", () => {
     expect(hasResource({ ...spec(), mcp_servers: [personal] }, { kind: "mcp", id: "c1" })).toBe(
       false,
     );
+  });
+});
+
+describe("withoutResource", () => {
+  it("unbinds a knowledge base and switches the capability off with the last one", () => {
+    // The mirror of binding: a capability left on with nothing to read is the
+    // half-binding `withResource` exists to avoid.
+    const before = spec({
+      collection_ids: ["kb"],
+      capabilities: [binding(KNOWLEDGE_ID), binding(CHARTS_ID)],
+    });
+
+    const after = withoutResource(before, { kind: "collection", id: "kb" });
+
+    expect(after.collection_ids).toEqual([]);
+    expect(after.capabilities.map((entry) => entry.id)).toEqual([CHARTS_ID]);
+    expect(hasResource(after, { kind: "collection", id: "kb" })).toBe(false);
+  });
+
+  it("keeps the capability while another knowledge base is still bound", () => {
+    const before = spec({
+      collection_ids: ["kb", "other"],
+      capabilities: [binding(KNOWLEDGE_ID)],
+    });
+
+    const after = withoutResource(before, { kind: "collection", id: "kb" });
+
+    expect(after.collection_ids).toEqual(["other"]);
+    expect(after.capabilities.map((entry) => entry.id)).toEqual([KNOWLEDGE_ID]);
+  });
+
+  it.each([
+    ["skill", "skill_ids", SKILLS_ID],
+    ["context", "context_ids", CONTEXT_ID],
+  ] as const)("unbinds a %s and the capability that read it", (kind, field, capability) => {
+    const before = spec({
+      [field]: ["r1", "r2"],
+      capabilities: [binding(capability)],
+    } as Partial<AgentSpec>);
+
+    const after = withoutResource(before, { kind, id: "r1" });
+
+    expect(after[field]).toEqual(["r2"]);
+    expect(after.capabilities.map((entry) => entry.id)).toEqual([capability]);
+    expect(withResource(after, { kind, id: "r1" })[field]).toEqual(["r2", "r1"]);
+  });
+
+  it("takes off the organization's binding to a server and leaves a personal one", () => {
+    const personal = {
+      account: "personal" as const,
+      catalog_key: "c1",
+      allowed_tools: null,
+      approval: "none" as const,
+    };
+    const before = spec({
+      mcp_servers: [
+        personal,
+        { account: "organization", connection_id: "c1", allowed_tools: null, approval: "none" },
+      ],
+    });
+
+    const after = withoutResource(before, { kind: "mcp", id: "c1" });
+
+    expect(after.mcp_servers).toEqual([personal]);
+    expect(hasResource(after, { kind: "mcp", id: "c1" })).toBe(false);
+  });
+
+  it("changes nothing for a resource that was already off", () => {
+    // A card can outlive the draft it was drawn from; asking for an undo twice
+    // is not an error and must not switch a capability off.
+    const before = spec({ capabilities: [binding(KNOWLEDGE_ID)] });
+
+    const after = withoutResource(before, { kind: "collection", id: "kb" });
+
+    expect(after).toEqual(before);
   });
 });
 

@@ -5,7 +5,12 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { agentListParams, canonicalFacet } from "@/lib/agent-facets";
-import { hasResource, withResource, type AgentResourceRef } from "@/lib/agent-spec";
+import {
+  hasResource,
+  withoutResource,
+  withResource,
+  type AgentResourceRef,
+} from "@/lib/agent-spec";
 import { apiClient } from "@/lib/api-client";
 import { fieldProblems, getErrorMessage, problemList } from "@/lib/api-error";
 import type { FieldProblem } from "@/lib/api-error";
@@ -668,6 +673,49 @@ export function useAddToAgent() {
       queryClient.invalidateQueries({ queryKey: qk.agents.all() });
       if (resource.kind === "collection") {
         queryClient.invalidateQueries({ queryKey: qk.kb.all() });
+      }
+    },
+    onError: (error) => toast.error(getErrorMessage(error, tErrors)),
+  });
+}
+
+/**
+ * Take a knowledge base, a context file or a skill away from an agent, from the
+ * card that says the agent has it (#2075).
+ *
+ * "Used by Billing" answers a question a reader will want to act on, and the
+ * undo used to be three levels into the Builder. Same draft save as the Builder
+ * makes: nothing is published, and whoever opens the agent next sees the base
+ * gone. Answers whether anything was bound, so a card that had gone stale says
+ * so rather than claiming a removal it did not make.
+ */
+export function useRemoveFromAgent() {
+  const tErrors = useTranslations("errors");
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      agentId,
+      resource,
+    }: {
+      agentId: string;
+      resource: AgentResourceRef;
+    }): Promise<{ removed: boolean }> => {
+      const agent = await apiClient.get<AgentDetail>(`/agents/${agentId}`);
+      if (!hasResource(agent.draft_spec, resource)) return { removed: false };
+      await apiClient.put<Agent>(`/agents/${agentId}/draft`, {
+        spec: withoutResource(agent.draft_spec, resource),
+      });
+      return { removed: true };
+    },
+    // The same two lists the add refreshes: the agent, and the resource whose
+    // `used_by` the card reads. Context files carry one too, and skills do not.
+    onSuccess: (_result, { resource }) => {
+      queryClient.invalidateQueries({ queryKey: qk.agents.all() });
+      if (resource.kind === "collection") {
+        queryClient.invalidateQueries({ queryKey: qk.kb.all() });
+      }
+      if (resource.kind === "context") {
+        queryClient.invalidateQueries({ queryKey: qk.context.all() });
       }
     },
     onError: (error) => toast.error(getErrorMessage(error, tErrors)),

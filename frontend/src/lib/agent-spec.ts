@@ -495,6 +495,41 @@ export function withResource(spec: AgentSpec, resource: AgentResourceRef): Agent
   };
 }
 
+/**
+ * The spec with one resource no longer bound (#2075's other half).
+ *
+ * "Used by Billing" on a card is a fact a reader will want to undo from where
+ * they read it, rather than by finding which tab of the Builder holds the list.
+ * The capability goes off with the last id, as it comes on with the first: a
+ * capability left on with nothing to read is the half-binding `withSkills` and
+ * `withContextFiles` both refuse. Removing something not bound returns the spec
+ * unchanged, so a stale card is not an error.
+ */
+export function withoutResource(spec: AgentSpec, resource: AgentResourceRef): AgentSpec {
+  // Nothing bound: the spec unchanged, capability included. Removing something
+  // twice must not switch off a capability somebody turned on by hand.
+  if (!hasResource(spec, resource)) return spec;
+  if (resource.kind === "mcp") {
+    return {
+      ...spec,
+      mcp_servers: spec.mcp_servers.filter(
+        (ref) => !(ref.account === "organization" && ref.connection_id === resource.id),
+      ),
+    };
+  }
+  const without = (ids: string[]) => ids.filter((id) => id !== resource.id);
+  if (resource.kind === "skill") return { ...spec, ...withSkills(spec, without(spec.skill_ids)) };
+  if (resource.kind === "context") {
+    return { ...spec, ...withContextFiles(spec, without(spec.context_ids)) };
+  }
+  const collectionIds = without(spec.collection_ids);
+  return {
+    ...spec,
+    collection_ids: collectionIds,
+    capabilities: withCapability(spec.capabilities, KNOWLEDGE_ID, collectionIds.length > 0),
+  };
+}
+
 /** Whether a spec already holds this resource. */
 export function hasResource(spec: AgentSpec, resource: AgentResourceRef): boolean {
   if (resource.kind === "mcp") {

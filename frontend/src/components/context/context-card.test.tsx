@@ -1,6 +1,8 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 
 import { ContextCard } from "./context-card";
 import type { ContextFileSummary } from "@/types/providers";
@@ -11,6 +13,17 @@ vi.mock("@/components/agents/add-to-agent", () => ({
     <span>{`add-to-agent ${resource.kind} ${resource.id}`}</span>
   ),
 }));
+
+const perms = new Set<string>();
+vi.mock("@/hooks/use-permissions", () => ({
+  usePermissions: () => ({ can: (p: string) => perms.has(p) }),
+}));
+
+/** The removal is a mutation, so it needs a client even when it never fires. */
+function wrapper({ children }: { children: ReactNode }) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
 
 const FILE: ContextFileSummary = {
   id: "c1",
@@ -26,7 +39,7 @@ const FILE: ContextFileSummary = {
 
 function renderCard(props: Partial<React.ComponentProps<typeof ContextCard>> = {}) {
   const onOpen = vi.fn();
-  render(<ContextCard file={FILE} onOpen={onOpen} {...props} />);
+  render(<ContextCard file={FILE} onOpen={onOpen} {...props} />, { wrapper });
   return { onOpen };
 }
 
@@ -95,16 +108,12 @@ describe("ContextCard", () => {
 
         onOpen={vi.fn()}
       />,
+      { wrapper },
     );
     expect(screen.getByText(/term,meaning/)).toBeInTheDocument();
 
-    rerender(
-      <ContextCard
-        file={{ ...FILE, excerpt: "" }}
-
-        onOpen={vi.fn()}
-      />,
-    );
+    // `rerender` reuses the tree the first render made, wrapper included.
+    rerender(<ContextCard file={{ ...FILE, excerpt: "" }} onOpen={vi.fn()} />);
     expect(screen.queryByText(/term,meaning/)).toBeNull();
     expect(screen.queryByText("Glossary")).toBeNull();
   });
@@ -133,4 +142,18 @@ it("shows agent usage immediately alongside concise metadata", () => {
 it("shows an unused resource's next step without opening Details", () => {
   renderCard({ file: { ...FILE, used_by: [] } });
   expect(screen.getByText("Not used by any agent yet")).toBeVisible();
+});
+
+it("offers to take the file back off an agent where the reader may edit agents", () => {
+  perms.add("agents:edit");
+  renderCard({ file: { ...FILE, used_by: [{ id: "support", name: "Support" }] } });
+
+  expect(screen.getByRole("button", { name: "Remove from Support" })).toBeVisible();
+  perms.clear();
+});
+
+it("shows no removal control to a reader who may not edit agents", () => {
+  renderCard({ file: { ...FILE, used_by: [{ id: "support", name: "Support" }] } });
+
+  expect(screen.queryByRole("button", { name: "Remove from Support" })).toBeNull();
 });

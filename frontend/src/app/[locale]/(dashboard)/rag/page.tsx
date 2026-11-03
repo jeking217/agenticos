@@ -34,12 +34,20 @@ import {
 } from "@/components/ui";
 import { AddToAgent } from "@/components/agents/add-to-agent";
 import { GroupFilter, NothingSharedWithGroup } from "@/components/groups/group-filter";
-import { useGroups, useKnowledgeBases, usePermissions, useUrlState } from "@/hooks";
+import {
+  useGroups,
+  useKnowledgeBases,
+  usePermissions,
+  useRemoveFromAgent,
+  useUrlState,
+} from "@/hooks";
 import { useOrgStore } from "@/stores";
 import { ROUTES } from "@/lib/constants";
 import type { KBScope, KnowledgeBase } from "@/types";
+import type { AgentUsage } from "@/types/agents";
 import { Perm } from "@/types/permissions";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 /**
  * How each scope is drawn: an icon, and the key to the word for it.
@@ -255,13 +263,33 @@ export default function RAGPage() {
 
 function KBCard({ kb }: { kb: KnowledgeBase }) {
   const t = useTranslations("pages.kb");
+  const tAgents = useTranslations("agents");
   const { can } = usePermissions();
   const canAdd = can(Perm.agentsEdit);
+  const remove = useRemoveFromAgent();
+  const [removing, setRemoving] = useState<string | null>(null);
   const meta = SCOPE_META[kb.scope];
   // Same row, same permissions, two products. A dataset base has no documents
   // to list and no ingestion to configure, so the collection page would be a
   // page of zeroes over controls that do not apply (#T17).
   const isDataset = kb.kb_type === "dataset";
+
+  // The other half of "Add to an agent", on the line that says who has it: the
+  // draft save the Builder makes, with nothing published, and the toast naming
+  // the agent so a card with several never leaves the reader guessing.
+  const takeAway = async (agent: AgentUsage) => {
+    setRemoving(agent.id);
+    const answer = await remove
+      .mutateAsync({ agentId: agent.id, resource: { kind: "collection", id: kb.id } })
+      .catch(() => null);
+    setRemoving(null);
+    if (answer === null) return;
+    if (answer.removed) {
+      toast.success(tAgents("removedFromAgent", { name: kb.name, agent: agent.name }));
+    } else {
+      toast.info(tAgents("notOnAgent", { name: kb.name, agent: agent.name }));
+    }
+  };
 
   // The class list below is a class list, not a message. It was in
   // `messages/en.json` as `groupBorderBorderBg2`, read through
@@ -322,7 +350,12 @@ function KBCard({ kb }: { kb: KnowledgeBase }) {
           groups={kb.shared_groups}
           className="mt-4"
         />
-        <UsedBy agents={kb.used_by} className="mt-2" />
+        <UsedBy
+          agents={kb.used_by}
+          className="mt-2"
+          onRemove={canAdd ? takeAway : undefined}
+          removing={removing}
+        />
 
         <div className="text-muted-foreground mt-3 flex items-center justify-between gap-2 text-xs">
           <span className="inline-flex items-center gap-1.5 truncate">

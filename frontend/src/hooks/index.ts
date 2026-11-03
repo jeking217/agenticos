@@ -62,6 +62,7 @@ export {
   VERSIONS_PAGE_SIZE,
   useCapabilityCatalog,
   useAddToAgent,
+  useRemoveFromAgent,
   useDelegationTree,
   usePromptVariables,
 } from "./use-agents";
@@ -137,12 +138,7 @@ export {
   type SharedWithMeCounts,
 } from "./use-dashboard-data";
 export { useAllWorkspaceFiles, useWorkspaceFiles } from "./use-sandbox-workspaces";
-export {
-  useFileActions,
-  useFileBlob,
-  useFileBytes,
-  useFileText,
-} from "./use-file-content";
+export { useFileActions, useFileBlob, useFileBytes, useFileText } from "./use-file-content";
 export { useRenderedDocument, useWorkbook } from "./use-office-document";
 export { useSkillChanges } from "./use-skill-changes";
 export { useSkill, useSkillResource, useSkills } from "./use-skills";
