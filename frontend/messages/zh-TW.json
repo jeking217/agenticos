@@ -5245,6 +5245,21 @@
       "question": "{agent} · 需要回答",
       "approval": "{agent} · 需要審批",
       "agent": "智慧體"
+    },
+    "drama": {
+      "notInstalledTitle": "未偵測到 AI 短劇用戶端",
+      "notInstalledBody": "AI 短劇在獨立的桌面程式 Unione AI Drama 中執行，本機尚未安裝。安裝後即可從這裡直接開啟並自動登入。",
+      "stepDownload": "取得 Unione AI Drama 安裝包（由管理員提供，或從下方網址下載）",
+      "stepInstall": "執行安裝程式，依提示完成安裝",
+      "stepRetry": "回到 AgenticOS，重新點選「{app}」",
+      "noDownload": "目前部署未提供下載網址，請聯絡管理員取得安裝包。",
+      "copyLink": "複製下載網址",
+      "copied": "已複製",
+      "failedTitle": "無法啟動 AI 短劇",
+      "failedBody": "已找到 Unione AI Drama，但啟動失敗。請確認安裝完整，或從選單手動開啟一次後再試。",
+      "ticketTitle": "登入資訊未能傳遞",
+      "ticketBody": "AI 短劇可以開啟，但這次沒有取得一次性登入票據，需要在用戶端中手動登入。請確認網路可存取本平台後重試。",
+      "close": "知道了"
     }
   },
   "directory": {
@@ -6635,7 +6650,8 @@
     "whatsNewTitle": "{version} 的新變化",
     "whatsNewDescription": "你當前版本中的近期更新。",
     "whatsNewDone": "知道了",
-    "datasets": "資料集"
+    "datasets": "資料集",
+    "drama": "AI 短劇"
   },
   "notifications": {
     "markAllRead": "全部標為已讀",

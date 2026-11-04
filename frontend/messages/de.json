@@ -4101,7 +4101,8 @@
     "whatsNewTitle": "Neu in {version}",
     "whatsNewDescription": "Änderungen in der verwendeten Version.",
     "whatsNewDone": "Verstanden",
-    "datasets": "Datensätze"
+    "datasets": "Datensätze",
+    "drama": "KI-Drama"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -12058,6 +12059,21 @@
     },
     "notifications": {
       "questionBody": "Öffnen Sie das Gespräch, um dem Agent zu antworten."
+    },
+    "drama": {
+      "notInstalledTitle": "Unione AI Drama ist nicht installiert",
+      "notInstalledBody": "AI-Drama läuft in einer eigenen Desktop-App, Unione AI Drama, die auf diesem Computer fehlt. Einmal installieren - danach öffnet dieser Eintrag sie angemeldet.",
+      "stepDownload": "Das Installationspaket von Unione AI Drama beim Administrator oder unter der Adresse unten beziehen",
+      "stepInstall": "Das Installationsprogramm ausführen und den Schritten folgen",
+      "stepRetry": "Zu AgenticOS zurückkehren und erneut {app} wählen",
+      "noDownload": "Diese Installation nennt keine Download-Adresse. Bitte beim Administrator nach dem Installationspaket fragen.",
+      "copyLink": "Download-Adresse kopieren",
+      "copied": "Kopiert",
+      "failedTitle": "AI-Drama konnte nicht gestartet werden",
+      "failedBody": "Unione AI Drama wurde gefunden, startet aber nicht. Installation prüfen oder die App einmal von Hand öffnen und erneut versuchen.",
+      "ticketTitle": "Anmeldung konnte nicht übergeben werden",
+      "ticketBody": "Die App lässt sich öffnen, diesmal wurde aber kein Einmal-Ticket ausgestellt - die Anmeldung muss dort von Hand erfolgen. Prüfen Sie, ob diese Plattform erreichbar ist, und versuchen Sie es erneut.",
+      "close": "Verstanden"
     }
   },
   "agentPin": {

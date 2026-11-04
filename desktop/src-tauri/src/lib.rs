@@ -21,6 +21,7 @@ mod console;
 mod context;
 mod device;
 mod docker_install;
+mod drama;
 mod dropped;
 mod local_browser;
 mod local_fs;
@@ -1408,7 +1409,8 @@ pub fn run() {
             local_work::local_file,
             local_services::local_services,
             local_services::local_save_service,
-            local_services::local_remove_service
+            local_services::local_remove_service,
+            drama::open_drama
         ])
         .manage(PendingSignIn::default())
         .manage(SignInProof::default())

@@ -289,6 +289,37 @@ platform's subject beside it. The platform's token is spent on the identity it
 named and is never stored, and what is issued is an ordinary local session -
 which is why pairing, API keys and the OAuth server work unchanged.
 
+### Handing a signed-in person to the drama app
+
+The console's sidebar has an entry for the drama app, **Unione AI Drama**, which
+is a separate desktop program on the same computer. Choosing it mints a
+one-time ticket for the person signed in here (`POST /api/v1/drama/tickets`) and
+asks the desktop shell to start that program with the ticket on its command
+line. The program redeems it at `GET /api/v1/drama/access?accessToken=…`, gets
+the same `{tenantId, userId}` the portal would have given it, and lands on its
+home screen already signed in.
+
+Tickets are `tk-` plus 32 hex digits, valid for two minutes and spendable once -
+the redemption is a single `UPDATE … RETURNING`, so two racing redemptions cannot
+both win. A refusal is the platform's envelope with `success: false` in HTTP 200,
+worded `票据无效或已使用`; unknown, expired and already-spent tickets are
+deliberately indistinguishable. The app's own session stays local: the `token`
+in the envelope is born and stored there and never presented back here.
+
+Two settings, both optional:
+
+| Setting | Where | What it does |
+| --- | --- | --- |
+| `NEXT_PUBLIC_DRAMA_DOWNLOAD_URL` | frontend build env | Address the "not installed" dialog offers. Empty means the dialog asks the person to get the installer from their administrator rather than pointing at a dead link. |
+| `UNIONE_DRAMA_PATH` | desktop shell's environment | Full path to the program's executable, for a development build, a portable copy, or a second installation. Checked before the usual install locations; a value that points nowhere is a refusal, not a reason to search elsewhere. |
+
+Without the override the shell looks where each platform's installer puts the
+app (`%LOCALAPPDATA%\Unione AI Drama`, `%PROGRAMFILES%\Unione AI Drama`,
+`/Applications/Unione AI Drama.app`, and so on), then on `PATH` for `reveric`.
+The binary keeps its old name on every platform; only the window and the bundle
+carry the product's name. The entry is only drawn inside the desktop shell - in
+a browser there is no local program to start.
+
 ### Directory sign-in (LDAP)
 
 Signing in with an Active Directory, OpenLDAP or FreeIPA account, by binding as

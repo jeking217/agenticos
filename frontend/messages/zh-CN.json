@@ -5504,6 +5504,21 @@
       "question": "{agent} · 需要回答",
       "approval": "{agent} · 需要审批",
       "agent": "智能体"
+    },
+    "drama": {
+      "notInstalledTitle": "未检测到 AI 短剧客户端",
+      "notInstalledBody": "AI 短剧在独立的桌面程序 Unione AI Drama 中运行，本机尚未安装。安装后即可从这里直接打开并自动登录。",
+      "stepDownload": "获取 Unione AI Drama 安装包（由管理员提供，或从下方地址下载）",
+      "stepInstall": "运行安装程序，按提示完成安装",
+      "stepRetry": "回到 AgenticOS，重新点击「{app}」",
+      "noDownload": "当前部署未提供下载地址，请联系管理员获取安装包。",
+      "copyLink": "复制下载地址",
+      "copied": "已复制",
+      "failedTitle": "无法启动 AI 短剧",
+      "failedBody": "已找到 Unione AI Drama，但启动失败。请确认安装完整，或从菜单中手动打开一次后再试。",
+      "ticketTitle": "登录信息未能传递",
+      "ticketBody": "AI 短剧可以打开，但这次没有拿到一次性登录票据，需要在客户端里手动登录。请确认网络可访问本平台后重试。",
+      "close": "知道了"
     }
   },
   "directory": {
@@ -6883,7 +6898,8 @@
     "whatsNewTitle": "{version} 的新变化",
     "whatsNewDescription": "你当前版本中的近期更新。",
     "whatsNewDone": "知道了",
-    "datasets": "数据集"
+    "datasets": "数据集",
+    "drama": "AI 短剧"
   },
   "navigation": {
     "dashboard": "概览",

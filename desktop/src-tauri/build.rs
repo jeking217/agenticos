@@ -64,6 +64,7 @@ const COMMANDS: &[&str] = &[
     "local_services",
     "local_save_service",
     "local_remove_service",
+    "open_drama",
 ];
 
 fn main() {

@@ -74,8 +74,7 @@ function compress(state: number[], block: Uint8Array): void {
   for (let index = 0; index < 16; index += 1) {
     const at = index * 4;
     words[index] =
-      ((block[at]! << 24) | (block[at + 1]! << 16) | (block[at + 2]! << 8) | block[at + 3]!) >>>
-      0;
+      ((block[at]! << 24) | (block[at + 1]! << 16) | (block[at + 2]! << 8) | block[at + 3]!) >>> 0;
   }
   for (let index = 16; index < 68; index += 1) {
     const mixed = (words[index - 16]! ^ words[index - 9]! ^ rotl(words[index - 3]!, 15)) >>> 0;
@@ -223,9 +222,11 @@ function parsePublicKey(publicKeyHex: string): Point {
   let raw = publicKeyHex.trim().toLowerCase().replace(/\s+/g, "");
   if (raw.startsWith("04")) raw = raw.slice(2);
   if (!/^[0-9a-f]+$/.test(raw) || raw.length !== 128) {
+    // i18n-exempt: developer-facing detail of a thrown crypto error; the form shows its own message.
     throw new Sm2Error("The platform's public key is not 64 bytes of hex");
   }
   const point = { x: BigInt(`0x${raw.slice(0, 64)}`), y: BigInt(`0x${raw.slice(64)}`) };
+  // i18n-exempt: developer-facing detail of a thrown crypto error.
   if (!onCurve(point)) throw new Sm2Error("The platform's public key is not on the curve");
   return point;
 }
@@ -286,19 +287,23 @@ export function encryptSm2(
   options: Sm2EncryptOptions = {},
 ): string {
   const message = new TextEncoder().encode(plaintext);
+  // i18n-exempt: developer-facing detail of a thrown crypto error.
   if (message.length === 0) throw new Sm2Error("Nothing to encrypt");
   // Also the case of an older backend whose config answers no key at all: a missing
   // key is a deployment this form cannot sign in to, not a crash.
+  // i18n-exempt: developer-facing detail of a thrown crypto error.
   if (!publicKeyHex?.trim()) throw new Sm2Error("No public key to encrypt to");
   const publicKey = parsePublicKey(publicKeyHex);
 
   for (;;) {
     const k = options.scalar ?? randomScalar();
+    // i18n-exempt: developer-facing detail of a thrown crypto error.
     if (k < ONE || k > N - ONE) throw new Sm2Error("The ephemeral scalar must be in [1, n-1]");
 
     const c1 = multiply(k, { x: GX, y: GY });
     const shared = multiply(k, publicKey);
     if (c1 === null || shared === null) {
+      // i18n-exempt: developer-facing detail of a thrown crypto error.
       if (options.scalar !== undefined) throw new Sm2Error("The ephemeral scalar is unusable");
       continue;
     }
@@ -315,6 +320,7 @@ export function encryptSm2(
     const stream = kdf(source, message.length);
     if (!stream.some((byte) => byte !== 0)) {
       // GB/T 32918.4 s.6.1 step A5: an all-zero key stream makes this `k` unusable.
+      // i18n-exempt: developer-facing detail of a thrown crypto error.
       if (options.scalar !== undefined) throw new Sm2Error("The ephemeral scalar is unusable");
       continue;
     }

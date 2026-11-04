@@ -85,6 +85,7 @@ Redis = Annotated[RedisClient, Depends(get_redis)]
 from app.services.mentions import MentionService
 from app.services.personal_data import PersonalDataService
 from app.services.browser_sign_in import BrowserSignInService
+from app.services.drama_ticket import DramaTicketService
 from app.services.user import UserService
 from app.services.session import SessionService
 from app.services.web_push import WebPushService
@@ -975,6 +976,14 @@ def get_browser_sign_in_service(db: DBSession) -> BrowserSignInService:
 
 
 BrowserSignInSvc = Annotated[BrowserSignInService, Depends(get_browser_sign_in_service)]
+
+
+def get_drama_ticket_service(db: DBSession) -> DramaTicketService:
+    """Tickets for the drama app, over the request's session."""
+    return DramaTicketService(db)
+
+
+DramaTicketSvc = Annotated[DramaTicketService, Depends(get_drama_ticket_service)]
 
 
 def get_skill_proposal_service(db: DBSession) -> SkillProposalService:

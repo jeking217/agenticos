@@ -68,6 +68,9 @@ pub const GRANTS: &[(&str, &[&str])] = &[
             "allow-local-services",
             "allow-local-save-service",
             "allow-local-remove-service",
+            // Starts one program this shell chose and holds no path from the
+            // page: the ticket is the only argument, and `drama.rs` validates it.
+            "allow-open-drama",
             "allow-page-error",
             "core:event:allow-listen",
             "core:event:allow-unlisten",

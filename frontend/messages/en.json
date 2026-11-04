@@ -5504,6 +5504,21 @@
       "question": "{agent} · needs an answer",
       "approval": "{agent} · approval needed",
       "agent": "Agent"
+    },
+    "drama": {
+      "notInstalledTitle": "Unione AI Drama is not installed",
+      "notInstalledBody": "AI Drama runs in a separate desktop app, Unione AI Drama, which is not on this computer. Install it once and this entry opens it - signed in - from then on.",
+      "stepDownload": "Get the Unione AI Drama installer from your administrator, or from the address below",
+      "stepInstall": "Run the installer and follow its steps",
+      "stepRetry": "Come back to AgenticOS and choose {app} again",
+      "noDownload": "This deployment publishes no download address. Ask your administrator for the installer.",
+      "copyLink": "Copy download address",
+      "copied": "Copied",
+      "failedTitle": "AI Drama could not be started",
+      "failedBody": "Unione AI Drama was found but would not start. Check the installation, or open it once by hand and try again.",
+      "ticketTitle": "Sign-in could not be handed over",
+      "ticketBody": "The app can open, but no one-time sign-in ticket was issued this time, so you will need to sign in there. Check that this platform is reachable and try again.",
+      "close": "Got it"
     }
   },
   "directory": {
@@ -6883,7 +6898,8 @@
     "whatsNewTitle": "What’s new in {version}",
     "whatsNewDescription": "Recent changes in the version you are using.",
     "whatsNewDone": "Got it",
-    "datasets": "Datasets"
+    "datasets": "Datasets",
+    "drama": "AI Drama"
   },
   "navigation": {
     "dashboard": "Dashboard",

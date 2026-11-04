@@ -65,6 +65,7 @@ from app.api.routes.v1 import table_views
 from app.api.routes.v1 import virtual_table_triggers
 from app.api.routes.v1 import memory as memory_files
 from app.api.routes.v1 import browser_sign_ins
+from app.api.routes.v1 import drama
 from app.api.routes.v1 import permissions
 from app.api.routes.v1 import telegram_webhook
 from app.api.routes.v1 import slack_webhook
@@ -307,3 +308,6 @@ v1_router.include_router(
     org_integrations.router, prefix="/org/integrations", tags=["org:integrations"]
 )
 v1_router.include_router(voice.router, tags=["voice"])
+
+# Handing a signed-in person to the drama app on the same computer (#2302).
+v1_router.include_router(drama.router, prefix="/drama", tags=["drama"])

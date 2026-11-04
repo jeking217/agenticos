@@ -27,6 +27,7 @@ import { useTranslations } from "next-intl";
 import { ChevronRight, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { ProjectRows } from "@/components/layout/project-rows";
+import { DramaEntry } from "@/components/layout/drama-entry";
 
 import { BrandLink } from "@/components/layout/brand-link";
 import { stripLocale } from "@/lib/active-route";
@@ -153,6 +154,10 @@ export function SidebarNav({
           collapsed={collapsed}
         />
       ))}
+      {/* Another program on this computer, at the foot of the list rather than
+          in it: a rule separates it from the destinations that are pages here,
+          which is the one thing about it that matters when scanning the column. */}
+      <DramaEntry collapsed={collapsed} />
     </nav>
   );
 }

@@ -140,7 +140,8 @@
     "whatsNewTitle": "Co nowego w {version}",
     "whatsNewDescription": "Zmiany w wersji, z której korzystasz.",
     "whatsNewDone": "Rozumiem",
-    "datasets": "Zestawy danych"
+    "datasets": "Zestawy danych",
+    "drama": "Dramat AI"
   },
   "auth": {
     "agreeToTerms": "Tworząc konto, akceptujesz nasz <terms>Regulamin</terms> i <privacy>Politykę prywatności</privacy>.",
@@ -12079,6 +12080,21 @@
       "question": "{agent} · potrzebuje odpowiedzi",
       "approval": "{agent} · wymaga zgody",
       "agent": "Agent"
+    },
+    "drama": {
+      "notInstalledTitle": "Unione AI Drama nie jest zainstalowany",
+      "notInstalledBody": "AI Drama działa w osobnej aplikacji desktopowej Unione AI Drama, której nie ma na tym komputerze. Po instalacji ten wpis będzie ją otwierał z zalogowaniem.",
+      "stepDownload": "Pobierz instalator Unione AI Drama od administratora lub z adresu poniżej",
+      "stepInstall": "Uruchom instalator i postępuj zgodnie z instrukcjami",
+      "stepRetry": "Wróć do AgenticOS i wybierz ponownie {app}",
+      "noDownload": "Ta instalacja nie podaje adresu pobierania. Poproś administratora o instalator.",
+      "copyLink": "Kopiuj adres pobierania",
+      "copied": "Skopiowano",
+      "failedTitle": "Nie udało się uruchomić AI Drama",
+      "failedBody": "Znaleziono Unione AI Drama, ale nie uruchamia się. Sprawdź instalację lub otwórz aplikację ręcznie i spróbuj ponownie.",
+      "ticketTitle": "Nie udało się przekazać logowania",
+      "ticketBody": "Aplikacja może się otworzyć, ale tym razem nie wydano jednorazowego biletu logowania - zaloguj się w niej ręcznie. Sprawdź dostępność platformy i spróbuj ponownie.",
+      "close": "Rozumiem"
     }
   },
   "mobile": {
