@@ -6,6 +6,8 @@ use tauri::{
     AppHandle, Emitter, Manager, Wry,
 };
 
+use crate::i18n;
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Entry {
     id: String,
@@ -110,13 +112,14 @@ fn label(value: &str) -> String {
 }
 
 pub fn menu(app: &AppHandle) -> tauri::Result<Submenu<Wry>> {
+    let strings = i18n::strings();
     let mut submenus = Vec::new();
     for row in entries(app) {
-        let open = MenuItem::with_id(app, format!("activity:open:{}", row.id), "Open", true, None::<&str>)?;
+        let open = MenuItem::with_id(app, format!("activity:open:{}", row.id), strings.activity_open, true, None::<&str>)?;
         let stop = MenuItem::with_id(
             app,
             format!("activity:stop:{}", row.id),
-            "Stop",
+            strings.activity_stop,
             row.stop_conversation.is_some(),
             None::<&str>,
         )?;
@@ -127,15 +130,19 @@ pub fn menu(app: &AppHandle) -> tauri::Result<Submenu<Wry>> {
         Vec::new()
     });
     for grant in grants {
-        let name = grant
-            .conversation_id
-            .as_deref()
-            .map(|id| format!("Whole computer · {}", id.chars().take(8).collect::<String>()))
-            .unwrap_or_else(|| "Whole computer · new chat".into());
+        // A grant outlives the conversation that asked for it until one claims
+        // it, so its label is the owner and, when there is one, a short id.
+        let name = strings.whole_computer(
+            grant
+                .conversation_id
+                .as_deref()
+                .map(|id| id.chars().take(8).collect::<String>())
+                .as_deref(),
+        );
         let revoke = MenuItem::with_id(
             app,
             format!("activity:revoke:{}", grant.id),
-            "Revoke access",
+            strings.revoke_access,
             true,
             None::<&str>,
         )?;
@@ -146,24 +153,24 @@ pub fn menu(app: &AppHandle) -> tauri::Result<Submenu<Wry>> {
         let revoke = MenuItem::with_id(
             app,
             format!("activity:folder:{}", grant.path),
-            "Revoke folder access",
+            strings.revoke_folder,
             true,
             None::<&str>,
         )?;
         // The full path is the menu's label: never a shared project or agent grant.
         submenus.push(Submenu::with_items(app, label(&grant.path), true, &[&revoke])?);
     }
-    let ready = MenuItem::with_id(app, "activity:readiness", "App readiness…", true, None::<&str>)?;
+    let ready = MenuItem::with_id(app, "activity:readiness", strings.activity_ready, true, None::<&str>)?;
     let screen = MenuItem::with_id(
         app,
         "activity:screen",
-        "Take back screen control",
+        strings.activity_screen,
         crate::screen::allowed(app),
         None::<&str>,
     )?;
     let mut items: Vec<&dyn IsMenuItem<Wry>> = vec![&ready, &screen];
     items.extend(submenus.iter().map(|item| item as &dyn IsMenuItem<Wry>));
-    Submenu::with_items(app, "Activity & Access", true, &items)
+    Submenu::with_items(app, strings.activity, true, &items)
 }
 
 pub fn refresh(app: &AppHandle) -> Result<(), String> {

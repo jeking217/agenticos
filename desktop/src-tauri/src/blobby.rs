@@ -26,12 +26,12 @@ pub const DROP_EVENT: &str = "desktop:blobby-drop";
 pub const SHOW_MENU_ID: &str = "show-blobby";
 pub const CUSTOMIZE_MENU_ID: &str = "customize-blobby";
 const CAST_MENU_PREFIX: &str = "blobby-cast-";
-/// The sizes the menu offers; anything between them is a pinch away.
-pub const SIZES: [(&str, &str, f64); 3] = [
-    ("blobby-size-small", "Small", 0.75),
-    ("blobby-size-medium", "Medium", 1.0),
-    ("blobby-size-large", "Large", 1.35),
-];
+pub const SMALL_SIZE: &str = "blobby-size-small";
+pub const MEDIUM_SIZE: &str = "blobby-size-medium";
+pub const LARGE_SIZE: &str = "blobby-size-large";
+/// The sizes the menu offers; anything between them is a pinch away. Their
+/// labels live in `i18n`, beside every other label the menu draws.
+pub const SIZES: [(&str, f64); 3] = [(SMALL_SIZE, 0.75), (MEDIUM_SIZE, 1.0), (LARGE_SIZE, 1.35)];
 /// Room for the creature at its natural size and, above it, a speech bubble of two short lines.
 const SIZE: (f64, f64) = (200.0, 232.0);
 /// How small and how large it may be made, as a multiple of its natural size.
@@ -193,7 +193,7 @@ pub struct BlobbyMenu {
 fn nearest_size(scale: f64) -> f64 {
     SIZES
         .iter()
-        .map(|(_, _, size)| *size)
+        .map(|(_, size)| *size)
         .min_by(|a, b| (a - scale).abs().total_cmp(&(b - scale).abs()))
         .unwrap_or(1.0)
 }
@@ -202,16 +202,17 @@ fn nearest_size(scale: f64) -> f64 {
 pub fn size_from_menu_id(id: &str) -> Option<f64> {
     SIZES
         .iter()
-        .find(|(menu_id, ..)| *menu_id == id)
-        .map(|(_, _, size)| *size)
+        .find(|(menu_id, _)| *menu_id == id)
+        .map(|(_, size)| *size)
 }
 
 impl BlobbyMenu {
     pub fn build(app: &AppHandle, blobby: &BlobbySettings) -> tauri::Result<Self> {
+        let strings = crate::i18n::strings();
         let show = CheckMenuItem::with_id(
             app,
             SHOW_MENU_ID,
-            "Show blobby",
+            strings.blobby_show,
             true,
             blobby.enabled,
             Some("CmdOrCtrl+Shift+B"),
@@ -233,12 +234,15 @@ impl BlobbyMenu {
         let nearest = nearest_size(blobby.size);
         let sizes = SIZES
             .iter()
-            .map(|(id, label, size)| {
-                let item = CheckMenuItem::with_id(app, *id, *label, true, *size == nearest, None::<&str>)?;
+            .map(|(id, size)| {
+                // The id is the fallback only if a size were added without a
+                // label, which the catalog's own test rules out.
+                let label = crate::i18n::blobby_size_label(id).unwrap_or(id);
+                let item = CheckMenuItem::with_id(app, *id, label, true, *size == nearest, None::<&str>)?;
                 Ok((*size, item))
             })
             .collect::<tauri::Result<Vec<_>>>()?;
-        let customize = MenuItem::with_id(app, CUSTOMIZE_MENU_ID, "Customize blobby…", true, None::<&str>)?;
+        let customize = MenuItem::with_id(app, CUSTOMIZE_MENU_ID, strings.blobby_customize, true, None::<&str>)?;
         Ok(Self {
             show,
             cast,
@@ -248,6 +252,7 @@ impl BlobbyMenu {
     }
 
     pub fn submenu(&self, app: &AppHandle) -> tauri::Result<Submenu<Wry>> {
+        let strings = crate::i18n::strings();
         let separator = tauri::menu::PredefinedMenuItem::separator(app)?;
         let separator_two = tauri::menu::PredefinedMenuItem::separator(app)?;
         let size_items: Vec<&dyn IsMenuItem<Wry>> = self
@@ -255,14 +260,14 @@ impl BlobbyMenu {
             .iter()
             .map(|(_, item)| item as &dyn IsMenuItem<Wry>)
             .collect();
-        let size = Submenu::with_items(app, "Size", true, &size_items)?;
+        let size = Submenu::with_items(app, strings.blobby_size, true, &size_items)?;
         let mut items: Vec<&dyn IsMenuItem<Wry>> = vec![&self.show, &size, &separator];
         for (_, item) in &self.cast {
             items.push(item);
         }
         items.push(&separator_two);
         items.push(&self.customize);
-        Submenu::with_items(app, "Blobby", true, &items)
+        Submenu::with_items(app, strings.blobby, true, &items)
     }
 
     pub fn reflect(&self, blobby: &BlobbySettings) -> tauri::Result<()> {
@@ -443,7 +448,7 @@ mod tests {
         assert_eq!(super::nearest_size(0.8), 0.75);
         assert_eq!(super::nearest_size(1.1), 1.0);
         assert_eq!(super::nearest_size(1.6), 1.35);
-        for (id, _, size) in super::SIZES {
+        for (id, size) in super::SIZES {
             assert_eq!(super::size_from_menu_id(id), Some(size));
         }
         assert_eq!(super::size_from_menu_id("show-blobby"), None);

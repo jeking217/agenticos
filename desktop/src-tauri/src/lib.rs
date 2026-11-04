@@ -24,6 +24,7 @@ mod docker_install;
 mod drama;
 mod dropped;
 mod frame;
+mod i18n;
 mod local_browser;
 mod local_fs;
 mod local_instances;
@@ -947,26 +948,28 @@ pub struct ShellMenu {
 
 impl ShellMenu {
     fn build(app: &AppHandle, settings: &Settings) -> tauri::Result<Self> {
+        // The labels the system's language asks for; `i18n` holds the catalogs.
+        let strings = i18n::strings();
         let local = local_instances::selected(app).is_ok_and(|instance| instance.is_some());
         Ok(Self {
             blobby: blobby::BlobbyMenu::build(app, &settings.blobby)?,
-            open_console: MenuItem::with_id(app, OPEN_CONSOLE, "Open UnioneAgent", true, None::<&str>)?,
-            new_chat: MenuItem::with_id(app, NEW_CHAT, "New Chat", true, Some("CmdOrCtrl+N"))?,
-            quick_ask: MenuItem::with_id(app, QUICK_ASK, "Quick Ask", true, None::<&str>)?,
-            screenshot: MenuItem::with_id(app, SCREENSHOT_CHAT, "Screenshot to New Chat", true, None::<&str>)?,
-            settings: MenuItem::with_id(app, SETTINGS, "Settings…", true, Some("CmdOrCtrl+,"))?,
+            open_console: MenuItem::with_id(app, OPEN_CONSOLE, strings.open_console, true, None::<&str>)?,
+            new_chat: MenuItem::with_id(app, NEW_CHAT, strings.new_chat, true, Some("CmdOrCtrl+N"))?,
+            quick_ask: MenuItem::with_id(app, QUICK_ASK, strings.quick_ask, true, None::<&str>)?,
+            screenshot: MenuItem::with_id(app, SCREENSHOT_CHAT, strings.screenshot, true, None::<&str>)?,
+            settings: MenuItem::with_id(app, SETTINGS, strings.settings, true, Some("CmdOrCtrl+,"))?,
             // Off where the organization manages the server.
             change_server: MenuItem::with_id(
                 app,
                 CHANGE_SERVER,
-                "Change Server…",
+                strings.change_server,
                 !managed::current(app).server_locked,
                 None::<&str>,
             )?,
             local: [
-                MenuItem::with_id(app, LOCAL_START, "Start", local, None::<&str>)?,
-                MenuItem::with_id(app, LOCAL_STOP, "Stop", local, None::<&str>)?,
-                MenuItem::with_id(app, LOCAL_UPDATE, "Update", local, None::<&str>)?,
+                MenuItem::with_id(app, LOCAL_START, strings.local_start, local, None::<&str>)?,
+                MenuItem::with_id(app, LOCAL_STOP, strings.local_stop, local, None::<&str>)?,
+                MenuItem::with_id(app, LOCAL_UPDATE, strings.local_update, local, None::<&str>)?,
             ],
         })
     }
@@ -996,6 +999,7 @@ impl ShellMenu {
 
     /// The tray's menu, which is also blobby's: everything the shell does, with no window open.
     fn tray(&self, app: &AppHandle) -> tauri::Result<Menu<Wry>> {
+        let strings = i18n::strings();
         let separator = || PredefinedMenuItem::separator(app);
         let blobby = self.blobby.submenu(app)?;
         let activity = activity::menu(app)?;
@@ -1007,12 +1011,12 @@ impl ShellMenu {
         let agent_items: Vec<&dyn IsMenuItem<Wry>> = agents.iter().map(|i| i as &dyn IsMenuItem<Wry>).collect();
         // Absent rather than empty: a submenu with nothing in it is a dead end.
         let chat_with = (!agents.is_empty())
-            .then(|| Submenu::with_items(app, "New Chat With", true, &agent_items))
+            .then(|| Submenu::with_items(app, strings.new_chat_with, true, &agent_items))
             .transpose()?;
-        let quit = PredefinedMenuItem::quit(app, Some("Quit UnioneAgent"))?;
-        let check_updates = MenuItem::with_id(app, "check-updates", "Check for Updates…", true, None::<&str>)?;
+        let quit = PredefinedMenuItem::quit(app, Some(strings.quit))?;
+        let check_updates = MenuItem::with_id(app, "check-updates", strings.check_updates, true, None::<&str>)?;
         let [start, stop, update] = &self.local;
-        let local = Submenu::with_items(app, "UnioneAgent on This Computer", true, &[start, stop, update])?;
+        let local = Submenu::with_items(app, strings.local_group, true, &[start, stop, update])?;
         let (first, second, third) = (separator()?, separator()?, separator()?);
         let mut items: Vec<&dyn IsMenuItem<Wry>> = vec![&self.open_console, &self.new_chat];
         if let Some(chat_with) = &chat_with {
@@ -1039,16 +1043,17 @@ impl ShellMenu {
     /// console's window is the one thing that would make it look like a
     /// browser, and everything in it is in the tray.
     fn menu_bar(&self, app: &AppHandle) -> tauri::Result<Menu<Wry>> {
+        let strings = i18n::strings();
         let separator = || PredefinedMenuItem::separator(app);
         let app_menu = Submenu::with_items(
             app,
             "UnioneAgent",
             true,
             &[
-                &PredefinedMenuItem::about(app, Some("About UnioneAgent"), None)?,
+                &PredefinedMenuItem::about(app, Some(strings.about), None)?,
                 &separator()?,
                 &self.settings,
-                &MenuItem::with_id(app, "check-updates", "Check for Updates…", true, None::<&str>)?,
+                &MenuItem::with_id(app, "check-updates", strings.check_updates, true, None::<&str>)?,
                 &self.change_server,
                 &separator()?,
                 &PredefinedMenuItem::services(app, None)?,
@@ -1062,7 +1067,7 @@ impl ShellMenu {
         )?;
         let file = Submenu::with_items(
             app,
-            "File",
+            strings.menu_file,
             true,
             &[
                 &self.new_chat,
@@ -1074,7 +1079,7 @@ impl ShellMenu {
         )?;
         let edit = Submenu::with_items(
             app,
-            "Edit",
+            strings.menu_edit,
             true,
             &[
                 &PredefinedMenuItem::undo(app, None)?,
@@ -1088,43 +1093,48 @@ impl ShellMenu {
         )?;
         let view = Submenu::with_items(
             app,
-            "View",
+            strings.menu_view,
             true,
             &[
-                &MenuItem::with_id(app, RELOAD, "Reload", true, Some("CmdOrCtrl+R"))?,
+                &MenuItem::with_id(app, RELOAD, strings.reload, true, Some("CmdOrCtrl+R"))?,
                 &separator()?,
                 &PredefinedMenuItem::fullscreen(app, None)?,
             ],
         )?;
         let destinations = GO
             .iter()
-            .map(|(id, label, _, accelerator)| MenuItem::with_id(app, *id, *label, true, Some(*accelerator)))
+            .map(|(id, label, _, accelerator)| {
+                // The English in `GO` is the fallback for an id the catalogs
+                // have not learned yet; every one of them has a label.
+                let label = i18n::go_label(id).unwrap_or(label);
+                MenuItem::with_id(app, *id, label, true, Some(*accelerator))
+            })
             .collect::<tauri::Result<Vec<_>>>()?;
-        let back = MenuItem::with_id(app, BACK, "Back", true, Some("CmdOrCtrl+["))?;
-        let forward = MenuItem::with_id(app, FORWARD, "Forward", true, Some("CmdOrCtrl+]"))?;
+        let back = MenuItem::with_id(app, BACK, strings.back, true, Some("CmdOrCtrl+["))?;
+        let forward = MenuItem::with_id(app, FORWARD, strings.forward, true, Some("CmdOrCtrl+]"))?;
         let go_separator = separator()?;
         let mut go_items: Vec<&dyn IsMenuItem<Wry>> = destinations.iter().map(|i| i as &dyn IsMenuItem<Wry>).collect();
         go_items.extend([&go_separator as &dyn IsMenuItem<Wry>, &back, &forward]);
-        let go = Submenu::with_items(app, "Go", true, &go_items)?;
+        let go = Submenu::with_items(app, strings.menu_go, true, &go_items)?;
         let window = Submenu::with_items(
             app,
-            "Window",
+            strings.menu_window,
             true,
             &[
                 &PredefinedMenuItem::minimize(app, None)?,
-                &PredefinedMenuItem::maximize(app, Some("Zoom"))?,
+                &PredefinedMenuItem::maximize(app, Some(strings.zoom))?,
                 &separator()?,
                 &self.open_console,
             ],
         )?;
         let help = Submenu::with_items(
             app,
-            "Help",
+            strings.menu_help,
             true,
             &[&MenuItem::with_id(
                 app,
                 DOCUMENTATION,
-                "UnioneAgent Documentation",
+                strings.documentation,
                 true,
                 None::<&str>,
             )?],
@@ -1195,7 +1205,7 @@ pub fn tray_working(app: &AppHandle, working: bool) {
         return;
     };
     let tooltip = if working {
-        "UnioneAgent - an agent is working on this computer"
+        i18n::strings().tooltip_working
     } else {
         "UnioneAgent"
     };

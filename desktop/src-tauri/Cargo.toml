@@ -62,7 +62,7 @@ tauri-plugin-single-instance = "2"
 # restricts `reg.exe` would lose the lookup with no way to tell why. Already in
 # the lockfile through Tauri; declared because this code calls it.
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Registry"] }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Registry", "Win32_Globalization"] }
 
 # Quick ask as a real NSPanel, which takes the keyboard without bringing the
 # app - and the console window - forward. Already in the tree through Tauri's
