@@ -1218,8 +1218,22 @@ fn install_menu(app: &AppHandle, settings: &Settings) -> tauri::Result<TrayIcon>
         .menu(&shell_menu.tray(app)?)
         .show_menu_on_left_click(true)
         .tooltip("UnioneAgent");
-    match tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png")) {
-        Ok(icon) => tray = tray.icon(icon).icon_as_template(true),
+    // macOS 的菜单栏是单色的，模板图交给系统按菜单栏的墨色上色。Windows 的通知
+    // 区域没有这回事：模板图会被原样画出来，深色任务栏上的黑色剪影等于没有。
+    // 所以 Windows 用带品牌色的方块，任务栏深浅都看得见。
+    #[cfg(target_os = "macos")]
+    let tray_png: &[u8] = include_bytes!("../icons/tray-template.png");
+    #[cfg(not(target_os = "macos"))]
+    let tray_png: &[u8] = include_bytes!("../icons/tray-windows.png");
+
+    match tauri::image::Image::from_bytes(tray_png) {
+        Ok(icon) => {
+            tray = tray.icon(icon);
+            #[cfg(target_os = "macos")]
+            {
+                tray = tray.icon_as_template(true);
+            }
+        }
         Err(e) => {
             eprintln!("tray icon: {e}");
             if let Some(icon) = app.default_window_icon() {

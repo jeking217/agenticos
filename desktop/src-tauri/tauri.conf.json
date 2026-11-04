@@ -60,7 +60,8 @@
         "sidebarImage": "installers/windows-sidebar.bmp",
         "headerImage": "installers/windows-header.bmp",
         "installerIcon": "icons/icon.ico",
-        "compression": "lzma"
+        "compression": "lzma",
+        "installerHooks": "installers/icon-refresh.nsh"
       },
       "wix": {
         "bannerPath": "installers/windows-banner.bmp",
