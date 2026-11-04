@@ -145,48 +145,254 @@ fn on_path(name: &str) -> Option<PathBuf> {
         .find(|candidate| candidate.is_file())
 }
 
-/// The executable the Windows uninstall entry says it installed.
+/// How an uninstall entry spells the product, matched case-insensitively
+/// against the key's name and its display name.
 ///
-/// The installer lets a person choose the folder, and with it the app can be
-/// anywhere - a second drive, a per-user install, a folder named by hand. The
-/// uninstall key is the app telling Windows where it put itself, which beats
-/// guessing at the three places an installer most often uses.
+/// The display name is localised - `Unione AI Drama 版本 0.7.0` - and the key is
+/// named after the installer that wrote it, `ai.reveric_is1`, so a lookup that
+/// knows only one of the two spellings misses installations that are perfectly
+/// good. Neither marker is the bare product family: this console is installed as
+/// `UnioneAgent`, and a marker that matched that would find the shell itself and
+/// start it again in place of the drama app.
+const ENTRY_MARKERS: [&str; 2] = ["reveric", "ai drama"];
+
+/// The path out of a registry value that names a file.
+///
+/// The installers write these three ways - bare, quoted because the folder has a
+/// space in it, and with `,0` after the path naming an icon index inside the
+/// file. All three mean the same file.
+fn file_path(value: &str) -> String {
+    let value = value.trim();
+    let path = match value.strip_prefix('"') {
+        Some(rest) => rest.split('"').next().unwrap_or(rest),
+        None => value.split(',').next().unwrap_or(value),
+    };
+    path.trim().to_owned()
+}
+
+/// Whether this path is the drama app's own executable.
+///
+/// Named as well as present: an entry that survives an upgrade can point at
+/// something else entirely, and starting that instead is not what the console
+/// asked for.
+fn is_binary(candidate: &PathBuf) -> bool {
+    candidate.is_file()
+        && candidate
+            .file_name()
+            .is_some_and(|name| name.eq_ignore_ascii_case(BINARY))
+}
+
+/// The same path with `%Variables%` in it resolved.
+///
+/// The drama app's own installer writes literal paths, but an entry an
+/// administrator created may name `%ProgramFiles%`, and a path that is not
+/// expanded points at a folder that is not there.
+fn expanded(path: &str) -> PathBuf {
+    let mut resolved = String::with_capacity(path.len());
+    let mut rest = path;
+    while let Some(start) = rest.find('%') {
+        let Some(end) = rest[start + 1..].find('%').map(|end| start + 1 + end) else {
+            break;
+        };
+        resolved.push_str(&rest[..start]);
+        match std::env::var(&rest[start + 1..end]) {
+            Ok(value) => resolved.push_str(&value),
+            // A variable that is not set is left as it was written, so the path
+            // stays recognisable in a log instead of collapsing to nothing.
+            Err(_) => resolved.push_str(&rest[start..=end]),
+        }
+        rest = &rest[end + 1..];
+    }
+    resolved.push_str(rest);
+    PathBuf::from(resolved)
+}
+
+/// The registry entries the two shims write, in the order worth reading.
+///
+/// `App Paths` names the executable itself; the uninstall entries name the
+/// folder it went into. Both are the app telling Windows where it is, which
+/// beats guessing at the three places an installer most often uses.
 #[cfg(windows)]
 fn from_uninstall_entries() -> Option<PathBuf> {
-    use std::os::windows::process::CommandExt;
-    use std::process::Command;
+    use windows_sys::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
 
-    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    const UNINSTALL: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall";
+    const UNINSTALL_32: &str = r"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall";
+    const APP_PATHS: &str = r"Software\Microsoft\Windows\CurrentVersion\App Paths";
 
-    for root in [
-        r"HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall",
-        r"HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall",
-        r"HKLM\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+    for (root, path) in [
+        (HKEY_CURRENT_USER, APP_PATHS),
+        (HKEY_LOCAL_MACHINE, APP_PATHS),
     ] {
-        let query = Command::new("reg")
-            .args(["query", root, "/s", "/f", BINARY, "/d"])
-            .creation_flags(CREATE_NO_WINDOW)
-            .output();
-        let Ok(query) = query else { continue };
-        if !query.status.success() {
+        let Some(key) = registry::open(root, &format!(r"{path}\{BINARY}")) else {
             continue;
-        }
-        let text = String::from_utf8_lossy(&query.stdout);
-        for line in text.lines() {
-            // `    DisplayIcon    REG_SZ    C:\...\reveric.exe,0`
-            let Some((_, value)) = line.split_once("REG_SZ") else {
-                continue;
-            };
-            // The value may name an icon index after a comma, and it is quoted
-            // when the folder has a space in it - which is the ordinary case.
-            let value = value.split(',').next().unwrap_or(value).trim();
-            let candidate = PathBuf::from(value.trim_matches('"'));
+        };
+        // App Paths keeps the executable in the key's default value.
+        if let Some(value) = registry::string(&key, "") {
+            let candidate = expanded(value.as_str());
             if candidate.is_file() {
                 return Some(candidate);
             }
         }
     }
+
+    let recognised = |text: &str| {
+        let text = text.to_lowercase();
+        ENTRY_MARKERS.iter().any(|marker| text.contains(marker))
+    };
+    for (root, path) in [
+        (HKEY_CURRENT_USER, UNINSTALL),
+        (HKEY_LOCAL_MACHINE, UNINSTALL),
+        (HKEY_LOCAL_MACHINE, UNINSTALL_32),
+    ] {
+        let Some(list) = registry::open(root, path) else {
+            continue;
+        };
+        for name in registry::children(&list) {
+            let Some(entry) = registry::open(root, &format!(r"{path}\{name}")) else {
+                continue;
+            };
+            let displayed = registry::string(&entry, "DisplayName").unwrap_or_default();
+            if !recognised(&name) && !recognised(&displayed) {
+                continue;
+            }
+            // `DisplayIcon`, when the entry has one, is the executable with an
+            // icon index after it.
+            if let Some(icon) = registry::string(&entry, "DisplayIcon") {
+                let candidate = expanded(&file_path(&icon));
+                if is_binary(&candidate) {
+                    return Some(candidate);
+                }
+            }
+            // `InstallLocation` is the folder, and the one value an Inno Setup
+            // entry fills in even when it has no icon to point at - which is
+            // exactly the entry this app's own installer writes.
+            if let Some(location) = registry::string(&entry, "InstallLocation") {
+                // The location may be quoted, and may end in the separator the
+                // installer wrote; joining is what makes either harmless.
+                let candidate = expanded(&file_path(&location)).join(BINARY);
+                if is_binary(&candidate) {
+                    return Some(candidate);
+                }
+            }
+        }
+    }
     None
+}
+
+/// The registry, through the API rather than through `reg.exe`.
+///
+/// Only what this module asks of it: open a key, list its children, read a
+/// string value. Kept here rather than beside the rest of the shell because the
+/// drama lookup is the only question it has for the registry - and because a
+/// machine that restricts `reg.exe` would otherwise lose the answer with no way
+/// to say why.
+#[cfg(windows)]
+mod registry {
+    use windows_sys::Win32::Foundation::{ERROR_NO_MORE_ITEMS, ERROR_SUCCESS};
+    use windows_sys::Win32::System::Registry::{
+        RegCloseKey, RegEnumKeyExW, RegOpenKeyExW, RegQueryValueExW, HKEY, KEY_READ, REG_EXPAND_SZ,
+        REG_SZ, REG_VALUE_TYPE,
+    };
+
+    /// An open key, closed when it goes out of scope - including on every early
+    /// return above, which is what this type is for.
+    pub struct Key(HKEY);
+
+    impl Drop for Key {
+        fn drop(&mut self) {
+            unsafe { RegCloseKey(self.0) };
+        }
+    }
+
+    fn wide(text: &str) -> Vec<u16> {
+        text.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    /// The key at `path` under `root`, if it is there.
+    pub fn open(root: HKEY, path: &str) -> Option<Key> {
+        let path = wide(path);
+        let mut key: HKEY = std::ptr::null_mut();
+        let status = unsafe { RegOpenKeyExW(root, path.as_ptr(), 0, KEY_READ, &mut key) };
+        (status == ERROR_SUCCESS).then_some(Key(key))
+    }
+
+    /// The names of an open key's children, in no particular order.
+    pub fn children(key: &Key) -> Vec<String> {
+        let mut names = Vec::new();
+        let mut buffer = vec![0u16; 512];
+        let mut index = 0;
+        loop {
+            let mut length = buffer.len() as u32;
+            let status = unsafe {
+                RegEnumKeyExW(
+                    key.0,
+                    index,
+                    buffer.as_mut_ptr(),
+                    &mut length,
+                    std::ptr::null(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                )
+            };
+            if status == ERROR_NO_MORE_ITEMS {
+                break;
+            }
+            if status == ERROR_SUCCESS {
+                names.push(String::from_utf16_lossy(&buffer[..length as usize]));
+            }
+            index += 1;
+        }
+        names
+    }
+
+    /// A string value of an open key, or the key's default value for `""`.
+    pub fn string(key: &Key, name: &str) -> Option<String> {
+        let name = wide(name);
+        let mut kind: REG_VALUE_TYPE = 0;
+        let mut size = 0u32;
+        let status = unsafe {
+            RegQueryValueExW(
+                key.0,
+                name.as_ptr(),
+                std::ptr::null(),
+                &mut kind,
+                std::ptr::null_mut(),
+                &mut size,
+            )
+        };
+        if status != ERROR_SUCCESS || size == 0 {
+            return None;
+        }
+        if kind != REG_SZ && kind != REG_EXPAND_SZ {
+            return None;
+        }
+        // A size in bytes, and UTF-16 needs two per character; the extra pair
+        // leaves room for a terminator the value may or may not carry.
+        let mut data = vec![0u8; size as usize + 2];
+        let mut written = size;
+        let status = unsafe {
+            RegQueryValueExW(
+                key.0,
+                name.as_ptr(),
+                std::ptr::null(),
+                &mut kind,
+                data.as_mut_ptr(),
+                &mut written,
+            )
+        };
+        if status != ERROR_SUCCESS {
+            return None;
+        }
+        let units: Vec<u16> = data[..written as usize]
+            .chunks_exact(2)
+            .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
+            .collect();
+        let text = String::from_utf16_lossy(&units);
+        let text = text.trim_end_matches('\0').trim();
+        (!text.is_empty()).then(|| text.to_owned())
+    }
 }
 
 #[cfg(not(windows))]
@@ -282,6 +488,39 @@ mod tests {
         // The reason this is validated at all: it becomes an argument.
         assert!(!valid_ticket(&format!("tk-{} {}", "a".repeat(30), "--flag")));
         assert!(!valid_ticket(&format!("tk-{};rm", "a".repeat(30))));
+    }
+
+    /// What the installers write into these values, and what it means.
+    ///
+    /// Spelled with forward slashes: it is the quoting and the icon index that
+    /// are being read here, and a test full of doubled backslashes would be
+    /// about Rust's string escapes instead.
+    #[test]
+    fn a_registry_value_naming_a_file_is_read_three_ways() {
+        assert_eq!(file_path("C:/Apps/reveric.exe"), "C:/Apps/reveric.exe");
+        assert_eq!(
+            file_path(r#""C:/Program Files/Unione AI Drama/reveric.exe",0"#),
+            "C:/Program Files/Unione AI Drama/reveric.exe"
+        );
+        assert_eq!(file_path("C:/Apps/reveric.exe,0"), "C:/Apps/reveric.exe");
+        // `InstallLocation` is a folder, quoted when it has spaces in it.
+        assert_eq!(file_path(r#""D:/aispace/UnioneAgent""#), "D:/aispace/UnioneAgent");
+    }
+
+    /// A variable a person's entry actually uses, and one nobody set.
+    #[test]
+    fn a_path_with_variables_in_it_is_resolved() {
+        let program_files = std::env::var("ProgramFiles").unwrap_or_else(|_| "C:/Program Files".to_owned());
+        assert_eq!(
+            expanded("%ProgramFiles%/Unione AI Drama").to_string_lossy(),
+            format!("{program_files}/Unione AI Drama")
+        );
+        // A variable that is not set stays as it was written, so the path is
+        // still recognisable in a log.
+        assert_eq!(
+            expanded("%UNIONE_NOTHING_SET_THIS%/app").to_string_lossy(),
+            "%UNIONE_NOTHING_SET_THIS%/app"
+        );
     }
 
     /// The candidates exist on the platform they are built for, spelled the way
