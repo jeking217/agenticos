@@ -107,6 +107,35 @@ class TestAlembicDriver:
         assert make_url(Settings().DATABASE_URL_SYNC).get_dialect().driver == "psycopg2"
 
 
+class TestCredentialEscaping:
+    """Credentials are percent-encoded into the DSN, both drivers alike.
+
+    A password containing `@` used to split the URL at the wrong place - the
+    connection reported `could not translate host name "db@base-postgresql"`,
+    which reads as a DNS fault and is not one."""
+
+    PASSWORD = "p@ss:w/rd?#[]"
+
+    def test_both_urls_carry_the_password_encoded(self):
+        settings = Settings(POSTGRES_USER="unione", POSTGRES_PASSWORD=self.PASSWORD)
+        for url in (settings.DATABASE_URL, settings.DATABASE_URL_SYNC):
+            assert "%40" in url
+            assert self.PASSWORD not in url
+
+    def test_the_host_still_parses_after_a_delimiter_in_the_password(self):
+        from sqlalchemy.engine import make_url
+
+        settings = Settings(
+            POSTGRES_HOST="base-postgresql",
+            POSTGRES_USER="unione",
+            POSTGRES_PASSWORD=self.PASSWORD,
+        )
+        for url in (settings.DATABASE_URL, settings.DATABASE_URL_SYNC):
+            parsed = make_url(url)
+            assert parsed.host == "base-postgresql"
+            assert parsed.username == "unione"
+
+
 class TestStoreTls:
     """Encrypted transport to the two stores, off by default (#1418)."""
 

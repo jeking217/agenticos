@@ -1,0 +1,214 @@
+# 部署到 unione 基础平台：Agent 集群不自带数据库与缓存，
+# PG 走基础环境的 base-postgresql，Redis 走 base-redis。
+#
+#   docker compose --env-file .env.deploy -f docker-compose-deploy.yml up -d
+#
+# 与 docker-compose-prod.yml 的差别只有一处是结构性的：那个文件自带
+# `db` / `redis` 两个服务，这个文件没有——它们已经在基础环境里跑着了，
+# 再起一份就是两个实例抢同一份数据，而共用实例的前提是把连接参数指对。
+#
+# 集群只包含四个容器：
+#
+#   agent-migrate  跑 alembic 迁移后退出，app / worker / front 等它成功
+#   agent-app      FastAPI / uvicorn
+#   agent-worker   后台任务（ingestion、定时清理、触发的触发器）
+#   agent-front    Next.js 控制台（BFF，服务端经集群网络找 agent-app）
+#
+# 前置条件（一次性）：
+#   1. 共享 PG 里有一个自己的库，不要把表建进平台自己的 `unione` 库：
+#        docker exec base-postgresql psql -U unione -d unione \
+#          -c "CREATE DATABASE unione_agent OWNER unione;"
+#      `unione` 是超级用户，`0143_pg_stat_statements` 那条迁移要 CREATE EXTENSION。
+#   2. `.env.deploy` 里有 BASE_PG_PASSWORD、BASE_REDIS_PASSWORD、API_KEY 三个值
+#      （模板见本文件末尾的注释）。生产模式下 Settings 会拒绝占位 API_KEY。
+#   3. 镜像：默认用本机构建的 `local` 标签；部署到别的机器时把 AGENTICOS_VERSION
+#      指向 registry 上的发布 tag，并先 `docker compose ... pull`。
+name: unione-agent
+
+# 日志封顶：json-file 不封顶的话一个忙的 API 能长到几百 MB，宿主机上没人替它轮转。
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 20m
+    max-file: "5"
+
+# 三个容器共用的连接与运行参数。放在这里而不是抄三遍，
+# 是为了让「改一次，迁移/接口/后台任务一起改」成立。
+x-agent-env: &agent-env
+  ENVIRONMENT: ${APP_ENV:-production}
+  DEBUG: "false"
+  # --- 共享 PG（基础环境 base-postgresql）---
+  POSTGRES_HOST: ${BASE_PG_HOST:-base-postgresql}
+  POSTGRES_PORT: ${BASE_PG_PORT:-5432}
+  POSTGRES_USER: ${BASE_PG_USER:-unione}
+  POSTGRES_PASSWORD: ${BASE_PG_PASSWORD:?BASE_PG_PASSWORD is required}
+  POSTGRES_DB: ${BASE_PG_DB:-unione_agent}
+  # 共享实例的 max_connections 是 100，且平台自己的服务也在用。
+  # 每个 API worker 会开两个池（会话池 + 向量库池），各占 POOL_SIZE + MAX_OVERFLOW，
+  # 所以 2 worker × 2 × 8 = 32，加 worker 自身 16，总共不到 50，留得下余量。
+  # 原来的 4 worker + 5/10 是 120，会直接把共享 PG 顶到 "too many clients"。
+  DB_POOL_SIZE: ${DB_POOL_SIZE:-4}
+  DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-4}
+  # --- 共享 Redis（基础环境 base-redis）---
+  REDIS_HOST: ${BASE_REDIS_HOST:-base-redis}
+  REDIS_PORT: ${BASE_REDIS_PORT:-6379}
+  REDIS_PASSWORD: ${BASE_REDIS_PASSWORD:?BASE_REDIS_PASSWORD is required}
+  # 与平台服务隔离：同一个实例上按库号分区，键长得再像也撞不到一起。
+  REDIS_DB: ${AGENT_REDIS_DB:-13}
+  # 生产模式（ENVIRONMENT=production）下占位值会被 Settings 拒绝启动。
+  API_KEY: ${API_KEY:?API_KEY is required}
+
+services:
+  # 跑完迁移就退出。app / worker 等它 completed_successfully，
+  # 所以迁移失败时表现为「接口没起来」，原因在 `docker logs agent-migrate`。
+  agent-migrate:
+    logging: *logging
+    container_name: agent-migrate
+    image: ghcr.io/vstorm-co/agenticos-backend:${AGENTICOS_VERSION:-local}
+    command: agenticos db upgrade
+    env_file:
+      - ./backend/.env
+    # 显式 environment 覆盖 env_file 里的同项，这一步就是把 dev 的
+    # localhost/postgres 换成基础环境里的实例。
+    environment:
+      <<: *agent-env
+    networks:
+      - unione-cloud
+    restart: "no"
+
+  agent-app:
+    logging: *logging
+    container_name: agent-app
+    image: ghcr.io/vstorm-co/agenticos-backend:${AGENTICOS_VERSION:-local}
+    stop_grace_period: 40s
+    volumes:
+      - media_data:/app/media
+    env_file:
+      - ./backend/.env
+    environment:
+      <<: *agent-env
+    # --ws websockets-sansio：uvicorn 的 auto 会挑旧实现，对 websockets>=14 握手失败，
+    # 聊天的 WS 在部署环境里和本地一样需要它。
+    command: >-
+      uvicorn app.main:app --host 0.0.0.0 --port 8000
+      --workers ${UVICORN_WORKERS:-2}
+      --timeout-worker-healthcheck ${UVICORN_WORKER_HEALTHCHECK_TIMEOUT:-60}
+      --ws websockets-sansio
+    ports:
+      # 默认只绑回环，由宿主机上的网关/反向代理接入；
+      # 端口可换是为了能和其他集群并存在一台机器上。
+      - "${BIND_HOST:-127.0.0.1}:${APP_HOST_PORT:-8000}:8000"
+    # 必须在基础网络里：POSTGRES_HOST / REDIS_HOST 填的是 base-postgresql、
+    # base-redis 这类容器名，只有同网络的内嵌 DNS 才解析得到。
+    networks:
+      - unione-cloud
+    depends_on:
+      agent-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+
+  agent-front:
+    logging: *logging
+    container_name: agent-front
+    image: ghcr.io/vstorm-co/agenticos-frontend:${AGENTICOS_VERSION:-local}
+    environment:
+      - NODE_ENV=production
+      # 服务端渲染与 BFF 走集群网络里的容器名，不出宿主机。
+      - BACKEND_URL=http://agent-app:8000
+      # PUBLIC_* 是给**浏览器**用的地址，必须是对外可达的那一个，
+      # 填容器名会得到「服务端正常、浏览器全错」的经典故障：
+      # SSR 走集群网络能通，客户端每个请求都打到不存在的主机上。
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:8000}
+      - PUBLIC_WS_URL=${PUBLIC_WS_URL:-ws://localhost:8000}
+      - PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-http://localhost:3000}
+      - ARTIFACT_ORIGIN=${ARTIFACT_ORIGIN:-}
+      - CHAT_MAX_UPLOAD_SIZE_MB=${CHAT_MAX_UPLOAD_SIZE_MB:-10}
+      # 基础环境里没有诊断采集端，默认关掉，免得每个页面都发没处收的埋点。
+      - DIAGNOSTICS_ENABLED=${DIAGNOSTICS_ENABLED:-false}
+      - OAUTH_PROVIDERS=${OAUTH_PROVIDERS:-google}
+    ports:
+      - "${BIND_HOST:-127.0.0.1}:${FRONT_HOST_PORT:-3000}:3000"
+    # 同 app：服务端要按容器名找到 agent-app。
+    networks:
+      - unione-cloud
+    depends_on:
+      agent-app:
+        condition: service_healthy
+      agent-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # oven/bun 镜像里没有 curl/wget，用 bun 自带的 fetch 探。
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+
+  agent-worker:
+    logging: *logging
+    container_name: agent-worker
+    image: ghcr.io/vstorm-co/agenticos-backend:${AGENTICOS_VERSION:-local}
+    stop_grace_period: 45s
+    volumes:
+      - media_data:/app/media
+    env_file:
+      - ./backend/.env
+    environment:
+      <<: *agent-env
+      # 一个 ingest 子进程：它是 worker 内存里最大的一块，和下面的上限一起调。
+      WORKER_INGEST_CHILDREN: ${WORKER_INGEST_CHILDREN:-1}
+    command: python -m app.worker
+    networks:
+      - unione-cloud
+    depends_on:
+      agent-migrate:
+        condition: service_completed_successfully
+    # 每次心跳写进数据库后 touch 这个文件，探针只判断它是否在 90 秒内被动过。
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, sys, time; sys.exit(time.time() - os.stat(os.environ.get('WORKER_HEALTH_FILE', '/tmp/agenticos-worker-alive')).st_mtime > 90)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2G
+
+networks:
+  # 基础平台的网络，由 unione-cloud 那套 compose 创建，这里只加入、不创建。
+  unione-cloud:
+    name: ${UNIONE_NETWORK:-unione-cloud_net}
+    external: true
+
+volumes:
+  # app 与 worker 共享的上传目录（compose 会自动加 unione-agent_ 前缀）。
+  media_data:
+
+# .env.deploy 模板（放在仓库根，已进 .git/info/exclude）：
+#
+#   AGENTICOS_VERSION=local
+#   APP_ENV=production
+#   BASE_PG_PASSWORD=<base-postgresql 的 POSTGRES_PASSWORD>
+#   BASE_REDIS_PASSWORD=<base-redis 的 --requirepass 值>
+#   API_KEY=<openssl rand -hex 32>
+#   APP_HOST_PORT=8000

@@ -5,7 +5,7 @@ import ipaddress
 from decimal import Decimal
 from pathlib import Path
 from typing import Literal
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from pydantic import Field, computed_field, field_validator, model_validator, ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -324,9 +324,18 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def DATABASE_URL(self) -> str:
-        """Build async PostgreSQL connection URL."""
+        """Build async PostgreSQL connection URL.
+
+        The credentials are percent-encoded before they go into the URL. A
+        password is a credential, not a URL fragment: an `@` in one used to split
+        the DSN at the wrong place, and the failure surfaced as
+        `could not translate host name "db@base-postgresql"` - a DNS problem that
+        was not one. `quote` rather than `quote_plus`, because a `+` in the
+        userinfo section means a literal plus, not a space.
+        """
         url = (
-            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"postgresql+asyncpg://{quote(self.POSTGRES_USER, safe='')}:"
+            f"{quote(self.POSTGRES_PASSWORD, safe='')}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
         # asyncpg's parameter is `ssl`, not libpq's `sslmode`.
@@ -338,10 +347,12 @@ class Settings(BaseSettings):
         """Build sync PostgreSQL connection URL (for Alembic).
 
         The driver is named because SQLAlchemy 2.1 resolves a bare `postgresql://`
-        to psycopg 3, which this project does not install.
+        to psycopg 3, which this project does not install. The credentials are
+        encoded for the same reason as `DATABASE_URL`.
         """
         url = (
-            f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"postgresql+psycopg2://{quote(self.POSTGRES_USER, safe='')}:"
+            f"{quote(self.POSTGRES_PASSWORD, safe='')}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
         # psycopg2 speaks libpq, whose parameter is `sslmode`.
