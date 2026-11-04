@@ -34,6 +34,13 @@ const BINARY: &str = "reveric.exe";
 #[cfg(not(windows))]
 const BINARY: &str = "reveric";
 
+/// The names the app has been installed under, newest first.
+///
+/// The installer used to spell the product `Reveric`, and an installation made
+/// then is still a perfectly good one to start - so a machine that upgraded the
+/// console but not the drama app is not told the app is missing.
+const APP_NAMES: [&str; 2] = [APP_NAME, "Reveric"];
+
 /// Where a person may point the shell at an app that is somewhere else - a
 /// development build, a portable copy, a second installation. Checked first so
 /// that a machine with two of them can say which one is meant.
@@ -93,24 +100,32 @@ fn install_candidates() -> Vec<PathBuf> {
                 continue;
             };
             let base = PathBuf::from(base);
-            candidates.push(base.join(APP_NAME).join(BINARY));
-            candidates.push(base.join("Programs").join(APP_NAME).join(BINARY));
+            for name in APP_NAMES {
+                candidates.push(base.join(name).join(BINARY));
+                candidates.push(base.join("Programs").join(name).join(BINARY));
+            }
         }
     } else if cfg!(target_os = "macos") {
-        candidates.push(
-            PathBuf::from("/Applications")
-                .join(format!("{APP_NAME}.app"))
-                .join("Contents/MacOS")
-                .join(BINARY),
-        );
+        for bundle in ["/Applications", "/Applications/Utilities"] {
+            for name in APP_NAMES {
+                candidates.push(
+                    PathBuf::from(bundle)
+                        .join(format!("{name}.app"))
+                        .join("Contents/MacOS")
+                        .join(BINARY),
+                );
+            }
+        }
         if let Some(home) = std::env::var_os("HOME") {
-            candidates.push(
-                PathBuf::from(home)
-                    .join("Applications")
-                    .join(format!("{APP_NAME}.app"))
-                    .join("Contents/MacOS")
-                    .join(BINARY),
-            );
+            for name in APP_NAMES {
+                candidates.push(
+                    PathBuf::from(home.as_os_str())
+                        .join("Applications")
+                        .join(format!("{name}.app"))
+                        .join("Contents/MacOS")
+                        .join(BINARY),
+                );
+            }
         }
     } else {
         for directory in ["/usr/local/bin", "/usr/bin", "/opt/reveric"] {
@@ -130,6 +145,55 @@ fn on_path(name: &str) -> Option<PathBuf> {
         .find(|candidate| candidate.is_file())
 }
 
+/// The executable the Windows uninstall entry says it installed.
+///
+/// The installer lets a person choose the folder, and with it the app can be
+/// anywhere - a second drive, a per-user install, a folder named by hand. The
+/// uninstall key is the app telling Windows where it put itself, which beats
+/// guessing at the three places an installer most often uses.
+#[cfg(windows)]
+fn from_uninstall_entries() -> Option<PathBuf> {
+    use std::os::windows::process::CommandExt;
+    use std::process::Command;
+
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+    for root in [
+        r"HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall",
+        r"HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall",
+        r"HKLM\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+    ] {
+        let query = Command::new("reg")
+            .args(["query", root, "/s", "/f", BINARY, "/d"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output();
+        let Ok(query) = query else { continue };
+        if !query.status.success() {
+            continue;
+        }
+        let text = String::from_utf8_lossy(&query.stdout);
+        for line in text.lines() {
+            // `    DisplayIcon    REG_SZ    C:\...\reveric.exe,0`
+            let Some((_, value)) = line.split_once("REG_SZ") else {
+                continue;
+            };
+            // The value may name an icon index after a comma, and it is quoted
+            // when the folder has a space in it - which is the ordinary case.
+            let value = value.split(',').next().unwrap_or(value).trim();
+            let candidate = PathBuf::from(value.trim_matches('"'));
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
+#[cfg(not(windows))]
+fn from_uninstall_entries() -> Option<PathBuf> {
+    None
+}
+
 /// The app's executable, if this computer has one.
 fn find_binary() -> Option<PathBuf> {
     if let Some(explicit) = std::env::var_os(OVERRIDE) {
@@ -139,9 +203,12 @@ fn find_binary() -> Option<PathBuf> {
         let path = PathBuf::from(explicit);
         return path.is_file().then_some(path);
     }
-    install_candidates()
-        .into_iter()
-        .find(|candidate| candidate.is_file())
+    from_uninstall_entries()
+        .or_else(|| {
+            install_candidates()
+                .into_iter()
+                .find(|candidate| candidate.is_file())
+        })
         .or_else(|| on_path(BINARY))
 }
 
@@ -230,5 +297,14 @@ mod tests {
                 candidate.display()
             );
         }
+        // Both the name the installer uses now and the one it used before, so
+        // the dialog does not claim the app is missing on a machine that has it.
+        let spelled = |name: &str| {
+            candidates
+                .iter()
+                .any(|candidate| candidate.to_string_lossy().contains(name))
+        };
+        assert!(spelled(APP_NAME));
+        assert!(spelled("Reveric"));
     }
 }
