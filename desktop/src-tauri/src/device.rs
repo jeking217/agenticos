@@ -542,7 +542,7 @@ async fn run(
             Ok(value)
         }
         other => Err((
-            format!("This computer's app does not do {other} yet. Update AgenticOS."),
+            format!("This computer's app does not do {other} yet. Update UnioneAgent."),
             "denied",
         )),
     }

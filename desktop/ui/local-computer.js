@@ -1,26 +1,31 @@
+import { t } from "./i18n.js";
+
 /** @typedef {(command: string, args?: Record<string, string>) => Promise<unknown>} Invoke */
 
+/**
+ * What the status card says for each answer `local_status` gives. The words are
+ * keys rather than sentences so the card speaks the page's language; `i18n.js`
+ * holds the Chinese and the English lives here.
+ */
 const VIEWS = {
   no_docker: {
-    title: "Install Docker to get started",
-    message: "Open Docker Desktop after installing it, then check again.",
+    title: "view.no_docker.title",
+    message: "view.no_docker.message",
     actions: ["docker", "open-docker", "check"],
   },
   docker_stopped: {
-    title: "Docker is ready to open",
-    message: "Start Docker Desktop, then check again to set up your workspace.",
+    title: "view.docker_stopped.title",
+    message: "view.docker_stopped.message",
     actions: ["open-docker", "check"],
   },
   running: {
-    title: "Your local workspace is ready",
-    message:
-      "AgenticOS is running on this computer. Connect to sign in and finish setting up desktop features.",
+    title: "view.running.title",
+    message: "view.running.message",
     actions: ["use", "create"],
   },
   ready: {
-    title: "Ready to create your workspace",
-    message:
-      "Create an instance for your organization and choose its owner account.",
+    title: "view.ready.title",
+    message: "view.ready.message",
     actions: ["create"],
   },
 };
@@ -50,8 +55,8 @@ export function localComputerStep(root, invoke, report) {
     overview.hidden = false;
     create.hidden = true;
     form.hidden = true;
-    heading.textContent = "AgenticOS on this computer";
-    lead.textContent = "A local workspace, managed from your menu bar.";
+    heading.textContent = t("local.heading");
+    lead.textContent = t("local.lead");
   }
   form
     .querySelector('[data-action="cancel-create"]')
@@ -67,9 +72,9 @@ export function localComputerStep(root, invoke, report) {
     create.hidden = false;
     form.hidden = false;
     heading.textContent = instance
-      ? "Finish setting up your instance"
-      : "Create a local instance";
-    lead.textContent = "Your own workspace, running on this computer.";
+      ? t("js.local.finishHeading")
+      : t("js.local.createHeading");
+    lead.textContent = t("js.local.createLead");
     form.querySelector("[name=instance-id]").value = instance?.id ?? "";
     form.querySelector("[name=instance-name]").value = instance?.name ?? "";
     form.querySelector("[name=instance-name]").focus();
@@ -90,7 +95,7 @@ export function localComputerStep(root, invoke, report) {
             typeof row.running !== "boolean",
         )
       )
-        throw new Error("The app could not read its local instances.");
+        throw new Error(t("js.unreadableInstances"));
       instances = answer;
       list.replaceChildren();
       for (const instance of instances) {
@@ -100,16 +105,21 @@ export function localComputerStep(root, invoke, report) {
         const name = document.createElement("strong");
         name.textContent = instance.name;
         const hint = document.createElement("p");
-        hint.textContent = `${instance.url} · ${!instance.installed ? "Setup unfinished" : instance.running ? "Running" : "Stopped"}`;
+        const state = !instance.installed
+          ? t("js.instance.unfinished")
+          : instance.running
+            ? t("js.instance.running")
+            : t("js.instance.stopped");
+        hint.textContent = `${instance.url} · ${state}`;
         description.append(name, hint);
         const button = document.createElement("button");
         button.type = "button";
         button.className = "secondary";
         button.textContent = !instance.installed
-          ? "Finish setup"
+          ? t("js.instance.finish")
           : instance.running
-            ? "Connect"
-            : "Start and connect";
+            ? t("js.connect")
+            : t("js.instance.startConnect");
         button.dataset.instance = instance.id;
         row.append(description, button);
         list.append(row);
@@ -136,7 +146,7 @@ export function localComputerStep(root, invoke, report) {
     connecting = true;
     root.inert = true;
     button.disabled = true;
-    button.textContent = "Connecting…";
+    button.textContent = t("js.connecting");
     try {
       await invoke("use_local", { instanceId: instance.id });
     } catch (error) {
@@ -145,7 +155,7 @@ export function localComputerStep(root, invoke, report) {
       connecting = false;
       root.inert = false;
       button.disabled = false;
-      button.textContent = "Retry connection";
+      button.textContent = t("js.instance.retry");
     }
   });
   let generation = 0;
@@ -169,25 +179,25 @@ export function localComputerStep(root, invoke, report) {
     showOverview();
     card.dataset.state = "checking";
     setBusy(true);
-    title.textContent = "Checking this computer";
-    message.textContent = "Looking for AgenticOS and Docker…";
+    title.textContent = t("local.checking.title");
+    message.textContent = t("local.checking.message");
     showActions([]);
     form.hidden = true;
     try {
       const status = await invoke("local_status");
       if (request !== generation || root.hidden) return;
       if (typeof status !== "string" || !Object.hasOwn(VIEWS, status))
-        throw new Error("The app could not read this computer's status.");
+        throw new Error(t("js.unreadableStatus"));
       void refreshInstances(request);
       const view = VIEWS[status];
       card.dataset.state = status;
-      title.textContent = view.title;
-      message.textContent = view.message;
+      title.textContent = t(view.title);
+      message.textContent = t(view.message);
       showActions(view.actions);
     } catch (error) {
       if (request !== generation || root.hidden) return;
       card.dataset.state = "error";
-      title.textContent = "Could not check this computer";
+      title.textContent = t("js.check.failedTitle");
       message.textContent = String(error);
       showActions(["check"]);
     } finally {
@@ -202,11 +212,10 @@ export function localComputerStep(root, invoke, report) {
     if (action === "create") showForm(null);
     if (action === "docker") {
       button.disabled = true;
-      message.textContent = "Downloading Docker Desktop…";
+      message.textContent = t("js.docker.downloading");
       try {
         await invoke("download_docker");
-        message.textContent =
-          "Finish installing Docker Desktop, then open it and check again.";
+        message.textContent = t("js.docker.finishInstall");
       } catch (error) {
         message.textContent = String(error);
         report(error);
@@ -217,8 +226,7 @@ export function localComputerStep(root, invoke, report) {
     if (action === "open-docker") {
       try {
         await invoke("open_docker");
-        message.textContent =
-          "Finish Docker Desktop's setup, then check again.";
+        message.textContent = t("js.docker.finishSetup");
       } catch (error) {
         message.textContent = String(error);
       }
@@ -229,7 +237,7 @@ export function localComputerStep(root, invoke, report) {
     button.disabled = true;
     root.querySelector("[data-go]").disabled = true;
     button.dataset.busy = "true";
-    button.textContent = "Connecting…";
+    button.textContent = t("js.connecting");
     setBusy(true);
     try {
       await invoke("use_local");
@@ -240,7 +248,7 @@ export function localComputerStep(root, invoke, report) {
       button.disabled = false;
       root.querySelector("[data-go]").disabled = false;
       delete button.dataset.busy;
-      button.textContent = "Connect and continue";
+      button.textContent = t("local.btn.use");
       setBusy(false);
     }
   });

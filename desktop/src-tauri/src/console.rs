@@ -265,7 +265,7 @@ pub fn set_window_preferences(app: AppHandle, preferences: WindowView) -> Result
     } else {
         autolaunch.disable()
     };
-    result.map_err(|e| format!("Cannot change whether AgenticOS opens at login: {e}"))?;
+    result.map_err(|e| format!("Cannot change whether UnioneAgent opens at login: {e}"))?;
     settings::update(&app, |settings| {
         settings.window = WindowPreferences {
             keep_running: preferences.keep_running,

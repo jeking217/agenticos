@@ -503,7 +503,7 @@ fn files_at(
         }
         other => Err(Refusal::new(
             "denied",
-            format!("This app does not do {other} yet. Update AgenticOS."),
+            format!("This app does not do {other} yet. Update UnioneAgent."),
         )),
     }
 }

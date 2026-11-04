@@ -12,7 +12,7 @@ pub async fn check(app: AppHandle) -> Result<(), String> {
     if !configured() {
         app.dialog()
             .message(
-                "This build has no update signing key. Download a newer installer from the AgenticOS GitHub releases.",
+                "This build has no update signing key. Download a newer installer from the UnioneAgent releases.",
             )
             .title("Updates unavailable")
             .show(|_| {});
@@ -26,7 +26,7 @@ pub async fn check(app: AppHandle) -> Result<(), String> {
         .map_err(|e| format!("Could not check for updates: {e}"))?;
     let Some(update) = update else {
         app.dialog()
-            .message("You are using the latest version of AgenticOS.")
+            .message("You are using the latest version of UnioneAgent.")
             .title("Up to date")
             .show(|_| {});
         return Ok(());
@@ -34,10 +34,10 @@ pub async fn check(app: AppHandle) -> Result<(), String> {
     let (send, receive) = tokio::sync::oneshot::channel();
     app.dialog()
         .message(format!(
-            "AgenticOS {} is available. Install it and restart the app? Finish any local work first.",
+            "UnioneAgent {} is available. Install it and restart the app? Finish any local work first.",
             update.version
         ))
-        .title("Update AgenticOS?")
+        .title("Update UnioneAgent?")
         .kind(MessageDialogKind::Info)
         .buttons(MessageDialogButtons::OkCancelCustom(
             "Install and restart".into(),

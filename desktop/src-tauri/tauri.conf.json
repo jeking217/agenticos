@@ -56,7 +56,7 @@
           "TradChinese"
         ],
         "displayLanguageSelector": false,
-        "startMenuFolder": "AgenticOS",
+        "startMenuFolder": "UnioneAgent",
         "sidebarImage": "installers/windows-sidebar.bmp",
         "headerImage": "installers/windows-header.bmp",
         "installerIcon": "icons/icon.ico",

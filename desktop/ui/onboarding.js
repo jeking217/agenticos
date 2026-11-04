@@ -1,12 +1,17 @@
+import { t, translate } from "./i18n.js";
 import { localComputerStep } from "./local-computer.js";
 import { permissionStep } from "./permissions.js";
 
 /**
- * The first-run onboarding: where AgenticOS lives for this person - a stack the
- * app sets up on this computer, or an organization's server - and getting there.
- * What comes after (blobby, shortcuts, notifications) is the console's own
- * connection review, `/desktop/readiness`, once a console answers.
+ * The first-run onboarding: where UnioneAgent lives for this person - a stack
+ * the app sets up on this computer, or an organization's server - and getting
+ * there. What comes after (blobby, shortcuts, notifications) is the console's
+ * own connection review, `/desktop/readiness`, once a console answers.
  */
+
+// Before anything else looks at the page: the strings are in the reader's
+// language from the first paint, not English followed by a flicker.
+translate();
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -70,14 +75,14 @@ serverForm.addEventListener("submit", async (event) => {
   const submit = serverForm.querySelector(".primary");
   submit.disabled = true;
   submit.dataset.busy = "true";
-  submit.textContent = "Connecting…";
+  submit.textContent = t("js.connecting");
   try {
     await invoke("connect", { url: serverField.value });
   } catch (message) {
     showError(serverForm, message);
     submit.disabled = false;
     delete submit.dataset.busy;
-    submit.textContent = "Connect";
+    submit.textContent = t("js.connect");
   }
 });
 
@@ -132,8 +137,15 @@ async function start() {
     if (payload && typeof payload.received === "number") {
       label.textContent =
         payload.total > 0
-          ? `Downloading Docker Desktop… ${Math.min(100, Math.floor((payload.received / payload.total) * 100))}%`
-          : `Downloading Docker Desktop… ${Math.floor(payload.received / 1024 / 1024)} MB`;
+          ? t("js.docker.downloadingPct", {
+              pct: Math.min(
+                100,
+                Math.floor((payload.received / payload.total) * 100),
+              ),
+            })
+          : t("js.docker.downloadingMb", {
+              mb: Math.floor(payload.received / 1024 / 1024),
+            });
     }
   });
   await listen("local:progress", ({ payload }) => {

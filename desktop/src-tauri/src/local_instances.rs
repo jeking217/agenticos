@@ -82,7 +82,7 @@ pub fn load(app: &AppHandle) -> Result<Vec<Instance>, String> {
     if legacy.exists() && !instances.iter().any(|i| i.id == "legacy") {
         instances.push(Instance {
             id: "legacy".into(),
-            name: "AgenticOS (existing installation)".into(),
+            name: "UnioneAgent (existing installation)".into(),
             frontend_port: 3000,
             api_port: 8000,
             installed: true,

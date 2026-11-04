@@ -78,7 +78,7 @@ pub(crate) fn stop(app: &AppHandle) {
 fn hold(app: &AppHandle) {
     if app.get_webview_window(OVERLAY).is_none() {
         let built = WebviewWindowBuilder::new(app, OVERLAY, WebviewUrl::App("screen-overlay.html".into()))
-            .title("AgenticOS is using this screen")
+            .title("UnioneAgent is using this screen")
             .transparent(true)
             .decorations(false)
             .always_on_top(true)
@@ -160,12 +160,12 @@ pub async fn run(
                 .map_err(|e| (e.to_string(), "io"))?
                 .map(|()| Map::new())
         }
-        other => Err((format!("This app does not do {other} yet. Update AgenticOS."), "denied")),
+        other => Err((format!("This app does not do {other} yet. Update UnioneAgent."), "denied")),
     }
 }
 
 const PERMISSIONS: &str = if cfg!(target_os = "macos") {
-    " Allow AgenticOS under System Settings → Privacy & Security → Screen Recording and Accessibility."
+    " Allow UnioneAgent under System Settings → Privacy & Security → Screen Recording and Accessibility."
 } else {
     ""
 };

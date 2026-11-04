@@ -141,7 +141,7 @@ pub fn validate(owner: &Owner) -> Result<(), String> {
         return Err("Name your organization - up to 100 characters.".to_owned());
     }
     if !PROVIDERS.contains(&owner.provider.as_str()) {
-        return Err(format!("{} is not a provider AgenticOS can start on.", owner.provider));
+        return Err(format!("{} is not a provider UnioneAgent can start on.", owner.provider));
     }
     if owner
         .instance_name
@@ -228,7 +228,7 @@ pub fn wait_for_console(console: &Url) -> Result<(), String> {
         std::thread::sleep(READY_POLL);
     }
     Err(
-        "AgenticOS did not start within ten minutes. `docker compose logs` in the app's data folder says why."
+        "UnioneAgent did not start within ten minutes. `docker compose logs` in the app's data folder says why."
             .to_owned(),
     )
 }
@@ -259,7 +259,7 @@ pub fn verify_instance_sessions(instance: &Instance) -> Result<(), String> {
             .await
             .map_err(|_| "The local frontend did not provide instance session settings.".to_string())?;
         if answer.session_cookie_namespace.as_deref() != Some(instance.id.as_str()) {
-            return Err("These AgenticOS images do not support isolated local instances yet. Update to images containing desktop multi-instance support, then retry setup.".into());
+            return Err("These UnioneAgent images do not support isolated local instances yet. Update to images containing desktop multi-instance support, then retry setup.".into());
         }
         Ok(())
     })
@@ -306,12 +306,12 @@ pub fn set_up(app: &AppHandle, owner: &Owner) -> Result<Url, String> {
     report(app, Step::Download, None);
     let mut pull = compose(&docker, &dir, &instance);
     pull.args(["pull", "--quiet"]);
-    run(pull, "download AgenticOS")?;
+    run(pull, "download UnioneAgent")?;
 
     report(app, Step::Start, None);
     let mut up = compose(&docker, &dir, &instance);
     up.args(["up", "--detach"]);
-    run(up, "start AgenticOS")?;
+    run(up, "start UnioneAgent")?;
     wait_for_console(&console)?;
     verify_instance_sessions(&instance)?;
 
@@ -363,12 +363,12 @@ pub fn control_instance(app: &AppHandle, instance: &Instance, control: Control) 
         Control::Start => {
             let mut up = compose(&docker, &dir, instance);
             up.args(["up", "--detach"]);
-            run(up, "start AgenticOS").map(|_| ())
+            run(up, "start UnioneAgent").map(|_| ())
         }
         Control::Stop => {
             let mut stop = compose(&docker, &dir, instance);
             stop.arg("stop");
-            run(stop, "stop AgenticOS").map(|_| ())
+            run(stop, "stop UnioneAgent").map(|_| ())
         }
         Control::Update => {
             let mut pull = compose(&docker, &dir, instance);
@@ -376,7 +376,7 @@ pub fn control_instance(app: &AppHandle, instance: &Instance, control: Control) 
             run(pull, "download the new version")?;
             let mut up = compose(&docker, &dir, instance);
             up.args(["up", "--detach"]);
-            run(up, "restart AgenticOS").map(|_| ())
+            run(up, "restart UnioneAgent").map(|_| ())
         }
     }
 }

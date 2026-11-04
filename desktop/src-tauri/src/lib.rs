@@ -426,8 +426,8 @@ fn window_title(loaded: &Url, server: Option<&Url>) -> String {
         || loaded.host_str().is_some_and(|host| host == "tauri.localhost")
         || server.is_some_and(|server| server.origin() == loaded.origin());
     match loaded.host_str() {
-        Some(host) if !ours => format!("{host} — AgenticOS"),
-        _ => "AgenticOS".to_owned(),
+        Some(host) if !ours => format!("{host} — UnioneAgent"),
+        _ => "UnioneAgent".to_owned(),
     }
 }
 
@@ -597,9 +597,9 @@ fn control_local(app: &AppHandle, control: local_stack::Control) {
     tauri::async_runtime::spawn_blocking(move || {
         let said = match local_stack::control(&handle, control) {
             Ok(()) => match control {
-                local_stack::Control::Start => "AgenticOS is starting.".to_owned(),
-                local_stack::Control::Stop => "AgenticOS is stopped.".to_owned(),
-                local_stack::Control::Update => "AgenticOS is up to date.".to_owned(),
+                local_stack::Control::Start => "UnioneAgent is starting.".to_owned(),
+                local_stack::Control::Stop => "UnioneAgent is stopped.".to_owned(),
+                local_stack::Control::Update => "UnioneAgent is up to date.".to_owned(),
             },
             Err(problem) => problem,
         };
@@ -768,7 +768,7 @@ fn open_window(app: &AppHandle, url: WebviewUrl) -> tauri::Result<WebviewWindow>
     let appearance = settings::current(app).appearance;
     let version = app.package_info().version.to_string();
     let mut builder = webview_profile::window(app, WINDOW, url)?
-        .title("AgenticOS")
+        .title("UnioneAgent")
         // The console uploads and moves files through DOM drop targets. Tauri's
         // native handler consumes these drops without forwarding them to the page.
         .disable_drag_drop_handler()
@@ -940,7 +940,7 @@ impl ShellMenu {
         let local = local_instances::selected(app).is_ok_and(|instance| instance.is_some());
         Ok(Self {
             blobby: blobby::BlobbyMenu::build(app, &settings.blobby)?,
-            open_console: MenuItem::with_id(app, OPEN_CONSOLE, "Open AgenticOS", true, None::<&str>)?,
+            open_console: MenuItem::with_id(app, OPEN_CONSOLE, "Open UnioneAgent", true, None::<&str>)?,
             new_chat: MenuItem::with_id(app, NEW_CHAT, "New Chat", true, Some("CmdOrCtrl+N"))?,
             quick_ask: MenuItem::with_id(app, QUICK_ASK, "Quick Ask", true, None::<&str>)?,
             screenshot: MenuItem::with_id(app, SCREENSHOT_CHAT, "Screenshot to New Chat", true, None::<&str>)?,
@@ -999,10 +999,10 @@ impl ShellMenu {
         let chat_with = (!agents.is_empty())
             .then(|| Submenu::with_items(app, "New Chat With", true, &agent_items))
             .transpose()?;
-        let quit = PredefinedMenuItem::quit(app, Some("Quit AgenticOS"))?;
+        let quit = PredefinedMenuItem::quit(app, Some("Quit UnioneAgent"))?;
         let check_updates = MenuItem::with_id(app, "check-updates", "Check for Updates…", true, None::<&str>)?;
         let [start, stop, update] = &self.local;
-        let local = Submenu::with_items(app, "AgenticOS on This Computer", true, &[start, stop, update])?;
+        let local = Submenu::with_items(app, "UnioneAgent on This Computer", true, &[start, stop, update])?;
         let (first, second, third) = (separator()?, separator()?, separator()?);
         let mut items: Vec<&dyn IsMenuItem<Wry>> = vec![&self.open_console, &self.new_chat];
         if let Some(chat_with) = &chat_with {
@@ -1032,10 +1032,10 @@ impl ShellMenu {
         let separator = || PredefinedMenuItem::separator(app);
         let app_menu = Submenu::with_items(
             app,
-            "AgenticOS",
+            "UnioneAgent",
             true,
             &[
-                &PredefinedMenuItem::about(app, Some("About AgenticOS"), None)?,
+                &PredefinedMenuItem::about(app, Some("About UnioneAgent"), None)?,
                 &separator()?,
                 &self.settings,
                 &MenuItem::with_id(app, "check-updates", "Check for Updates…", true, None::<&str>)?,
@@ -1114,7 +1114,7 @@ impl ShellMenu {
             &[&MenuItem::with_id(
                 app,
                 DOCUMENTATION,
-                "AgenticOS Documentation",
+                "UnioneAgent Documentation",
                 true,
                 None::<&str>,
             )?],
@@ -1174,7 +1174,7 @@ pub fn tray_badge(app: &AppHandle, count: Option<u32>) -> Result<(), String> {
     if cfg!(target_os = "macos") {
         tray.set_title(label.as_deref()).map_err(|e| e.to_string())
     } else {
-        let tooltip = label.map_or_else(|| "AgenticOS".to_owned(), |n| format!("AgenticOS ({n})"));
+        let tooltip = label.map_or_else(|| "UnioneAgent".to_owned(), |n| format!("UnioneAgent ({n})"));
         tray.set_tooltip(Some(tooltip)).map_err(|e| e.to_string())
     }
 }
@@ -1185,9 +1185,9 @@ pub fn tray_working(app: &AppHandle, working: bool) {
         return;
     };
     let tooltip = if working {
-        "AgenticOS - an agent is working on this computer"
+        "UnioneAgent - an agent is working on this computer"
     } else {
-        "AgenticOS"
+        "UnioneAgent"
     };
     if let Err(e) = tray.set_tooltip(Some(tooltip)) {
         eprintln!("tray tooltip: {e}");
@@ -1207,7 +1207,7 @@ fn install_menu(app: &AppHandle, settings: &Settings) -> tauri::Result<TrayIcon>
     let mut tray = TrayIconBuilder::with_id(TRAY)
         .menu(&shell_menu.tray(app)?)
         .show_menu_on_left_click(true)
-        .tooltip("AgenticOS");
+        .tooltip("UnioneAgent");
     match tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png")) {
         Ok(icon) => tray = tray.icon(icon).icon_as_template(true),
         Err(e) => {
@@ -1669,16 +1669,16 @@ mod tests {
     fn the_title_names_the_host_only_away_from_home() {
         let server = Url::parse("https://agenticos.acme.com/").unwrap();
         let at = |s: &str| super::window_title(&Url::parse(s).unwrap(), Some(&server));
-        assert_eq!(at("https://agenticos.acme.com/pl/chat"), "AgenticOS");
-        assert_eq!(at("tauri://localhost/settings.html"), "AgenticOS");
-        assert_eq!(at("http://tauri.localhost/index.html"), "AgenticOS");
+        assert_eq!(at("https://agenticos.acme.com/pl/chat"), "UnioneAgent");
+        assert_eq!(at("tauri://localhost/settings.html"), "UnioneAgent");
+        assert_eq!(at("http://tauri.localhost/index.html"), "UnioneAgent");
         assert_eq!(
             at("https://accounts.google.com/o/oauth2/auth"),
-            "accounts.google.com — AgenticOS"
+            "accounts.google.com — UnioneAgent"
         );
         assert_eq!(
             super::window_title(&Url::parse("https://x.example/").unwrap(), None),
-            "x.example — AgenticOS"
+            "x.example — UnioneAgent"
         );
     }
 

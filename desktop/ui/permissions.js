@@ -1,3 +1,5 @@
+import { t } from "./i18n.js";
+
 /** @typedef {{supported: boolean, screen_capture: boolean, accessibility: boolean}} PermissionStatus */
 
 /** @param {unknown} value @returns {PermissionStatus} */
@@ -38,11 +40,11 @@ export function permissionStep(root, invoke, unsupported) {
       const granted =
         key === "screen_capture" ? status.screen_capture : status.accessibility;
       row.querySelector("[data-permission-status]").textContent = granted
-        ? "Allowed"
-        : "Not enabled";
+        ? t("js.perm.allowed")
+        : t("js.perm.notEnabled");
       const button = row.querySelector("button");
       button.disabled = granted;
-      button.textContent = granted ? "Allowed" : "Open settings";
+      button.textContent = granted ? t("js.perm.allowed") : t("js.perm.open");
     }
   }
   async function refresh() {
