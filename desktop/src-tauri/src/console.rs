@@ -76,6 +76,14 @@ pub const GRANTS: &[(&str, &[&str])] = &[
             "core:event:allow-unlisten",
             "core:window:allow-start-dragging",
             "core:window:allow-internal-toggle-maximize",
+            // The window wears no title bar of its own on Windows, so the three
+            // controls it would have there are drawn on the page's header
+            // (frame.rs). Minimize, maximize, close: nothing it could not do by
+            // clicking where those buttons already are.
+            "core:window:allow-minimize",
+            "core:window:allow-toggle-maximize",
+            "core:window:allow-is-maximized",
+            "core:window:allow-close",
         ],
     ),
     (

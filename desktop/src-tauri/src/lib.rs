@@ -23,6 +23,7 @@ mod device;
 mod docker_install;
 mod drama;
 mod dropped;
+mod frame;
 mod local_browser;
 mod local_fs;
 mod local_instances;
@@ -809,6 +810,15 @@ fn open_window(app: &AppHandle, url: WebviewUrl) -> tauri::Result<WebviewWindow>
             .hidden_title(true)
             .traffic_light_position(tauri::LogicalPosition::new(TRAFFIC_LIGHTS.0, TRAFFIC_LIGHTS.1));
     }
+    // Windows: no title bar of its own, the same three buttons drawn on the
+    // page's header instead (#2331) - the console already has a header, and a
+    // strip of grey above it is a second one that says the same thing.
+    #[cfg(windows)]
+    {
+        builder = builder
+            .decorations(false)
+            .initialization_script(frame::script(WINDOW));
+    }
     if let Some(effects) = appearance::effects(Surface::Console, appearance.look) {
         builder = builder.effects(effects);
     }
@@ -1345,7 +1355,13 @@ pub fn run() {
             tauri_plugin_window_state::Builder::default()
                 .with_denylist(&[blobby::WINDOW, quick_ask::WINDOW])
                 .with_state_flags(
-                    tauri_plugin_window_state::StateFlags::all() & !tauri_plugin_window_state::StateFlags::VISIBLE,
+                    tauri_plugin_window_state::StateFlags::all()
+                        // Showing the window is the shell's business, and so is
+                        // the frame: a state saved before the title bar was
+                        // drawn by the page would otherwise ask Windows for one
+                        // back on the next launch.
+                        & !tauri_plugin_window_state::StateFlags::VISIBLE
+                        & !tauri_plugin_window_state::StateFlags::DECORATIONS,
                 )
                 .build(),
         )
