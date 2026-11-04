@@ -12065,7 +12065,7 @@
       "notInstalledBody": "AI-Drama läuft in einer eigenen Desktop-App, Unione AI Drama, die auf diesem Computer fehlt. Einmal installieren - danach öffnet dieser Eintrag sie angemeldet.",
       "stepDownload": "Das Installationspaket von Unione AI Drama beim Administrator oder unter der Adresse unten beziehen",
       "stepInstall": "Das Installationsprogramm ausführen und den Schritten folgen",
-      "stepRetry": "Zu AgenticOS zurückkehren und erneut {app} wählen",
+      "stepRetry": "Zu UnioneAgent zurückkehren und erneut {app} wählen",
       "noDownload": "Diese Installation nennt keine Download-Adresse. Bitte beim Administrator nach dem Installationspaket fragen.",
       "copyLink": "Download-Adresse kopieren",
       "copied": "Kopiert",

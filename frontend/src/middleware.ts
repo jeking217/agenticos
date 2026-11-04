@@ -22,10 +22,11 @@ const handleI18nRouting = createMiddleware(routing);
  * silently switched the UI back to English, which is what #285 saw as the choice
  * "reverting" on the next navigation.
  *
- * next-intl reads the cookie itself, but only under `localeDetection`, which also
- * turns on `accept-language` sniffing - and a Polish browser must still be served
- * English until somebody asks for Polish. So the cookie is read here and the header
- * is not.
+ * `localeDetection` is on, so next-intl resolves an unprefixed path from the
+ * cookie and then from `accept-language`. This runs first anyway: it is the one
+ * place where "the locale a person picked" is answered the same way for every
+ * path, and it keeps the redirect out of next-intl's hands when the two disagree
+ * about the default.
  */
 function restorePickedLocale(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;

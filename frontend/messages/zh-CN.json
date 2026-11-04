@@ -5510,7 +5510,7 @@
       "notInstalledBody": "AI 短剧在独立的桌面程序 Unione AI Drama 中运行，本机尚未安装。安装后即可从这里直接打开并自动登录。",
       "stepDownload": "获取 Unione AI Drama 安装包（由管理员提供，或从下方地址下载）",
       "stepInstall": "运行安装程序，按提示完成安装",
-      "stepRetry": "回到 AgenticOS，重新点击「{app}」",
+      "stepRetry": "回到 UnioneAgent，重新点击「{app}」",
       "noDownload": "当前部署未提供下载地址，请联系管理员获取安装包。",
       "copyLink": "复制下载地址",
       "copied": "已复制",

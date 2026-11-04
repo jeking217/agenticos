@@ -5510,7 +5510,7 @@
       "notInstalledBody": "AI Drama runs in a separate desktop app, Unione AI Drama, which is not on this computer. Install it once and this entry opens it - signed in - from then on.",
       "stepDownload": "Get the Unione AI Drama installer from your administrator, or from the address below",
       "stepInstall": "Run the installer and follow its steps",
-      "stepRetry": "Come back to AgenticOS and choose {app} again",
+      "stepRetry": "Come back to UnioneAgent and choose {app} again",
       "noDownload": "This deployment publishes no download address. Ask your administrator for the installer.",
       "copyLink": "Copy download address",
       "copied": "Copied",

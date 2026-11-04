@@ -56,8 +56,10 @@ describe("routing", () => {
     expect(routing.localeCookie).toMatchObject({ maxAge: 60 * 60 * 24 * 365 });
   });
 
-  it("leaves accept-language sniffing off", () => {
-    expect(routing.localeDetection).toBe(false);
+  it("follows the language the system already speaks", () => {
+    // The console opens in the reader's language instead of English; the path
+    // prefix and the switcher still win when somebody asks for another one.
+    expect(routing.localeDetection).toBe(true);
     expect(routing.localePrefix).toBe("as-needed");
   });
 });

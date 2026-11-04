@@ -12086,7 +12086,7 @@
       "notInstalledBody": "AI Drama działa w osobnej aplikacji desktopowej Unione AI Drama, której nie ma na tym komputerze. Po instalacji ten wpis będzie ją otwierał z zalogowaniem.",
       "stepDownload": "Pobierz instalator Unione AI Drama od administratora lub z adresu poniżej",
       "stepInstall": "Uruchom instalator i postępuj zgodnie z instrukcjami",
-      "stepRetry": "Wróć do AgenticOS i wybierz ponownie {app}",
+      "stepRetry": "Wróć do UnioneAgent i wybierz ponownie {app}",
       "noDownload": "Ta instalacja nie podaje adresu pobierania. Poproś administratora o instalator.",
       "copyLink": "Kopiuj adres pobierania",
       "copied": "Skopiowano",

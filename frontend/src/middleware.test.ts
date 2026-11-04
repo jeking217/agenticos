@@ -60,15 +60,27 @@ describe("the locale a visitor picked", () => {
 });
 
 describe("a visitor who picked nothing", () => {
-  it("is served the default locale, unprefixed", () => {
+  it("is served the default locale, unprefixed, when the browser asks for nothing", () => {
     expect(redirectedTo(middleware(request("/orgs")))).toBeNull();
   });
 
-  it("is served English even from a Polish browser", () => {
-    // `localeDetection: false` is deliberate - Polish is opted into, never sniffed.
-    // Reading the cookie by hand is what must not quietly reintroduce the header.
+  it("is served the language the system already speaks", () => {
+    // The console opens in the reader's language: a Chinese Windows does not have
+    // to find the switcher before it can read the first screen.
+    expect(redirectedTo(middleware(request("/orgs", { acceptLanguage: "zh-CN,zh;q=0.9" })))).toBe(
+      "/zh-CN/orgs",
+    );
+    expect(redirectedTo(middleware(request("/orgs", { acceptLanguage: "zh-TW,zh;q=0.9" })))).toBe(
+      "/zh-TW/orgs",
+    );
+    expect(redirectedTo(middleware(request("/orgs", { acceptLanguage: "pl-PL,pl;q=0.9" })))).toBe(
+      "/pl/orgs",
+    );
+  });
+
+  it("still lets a path that names a locale mean what it says", () => {
     expect(
-      redirectedTo(middleware(request("/orgs", { acceptLanguage: "pl-PL,pl;q=0.9" }))),
+      redirectedTo(middleware(request("/zh-CN/orgs", { acceptLanguage: "en-US,en;q=0.9" }))),
     ).toBeNull();
   });
 

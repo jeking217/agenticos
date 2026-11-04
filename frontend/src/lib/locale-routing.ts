@@ -24,16 +24,21 @@ export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
  * `localePrefix: "as-needed"` - English, the default, has no prefix; every other
  * locale lives under its own, `/pl/...` and `/de/...`.
  *
- * `localeDetection: false` because it gates the `accept-language` header as well
- * as the cookie, and a visitor with a Polish browser must still be served English
- * at the root until they ask for Polish. The cookie half is therefore kept by hand
- * in `src/middleware.ts`; see the notes there.
+ * `localeDetection: true` because the product's language is the one the system
+ * already speaks: a Chinese Windows or a Polish browser opens the console in its
+ * own language instead of English, and the switcher remains for anybody who wants
+ * another one. next-intl resolves the `accept-language` header against `locales`
+ * by best fit, so `zh-Hans-CN` lands on `zh-CN` and `zh-TW` on `zh-TW`.
+ *
+ * A locale in the path still wins over both the cookie and the header - the URL
+ * is what a shared link means - and `src/middleware.ts` keeps the cookie half for
+ * the unprefixed paths that next-intl does not write, see the notes there.
  */
 export const routing = defineRouting({
   locales,
   defaultLocale,
   localePrefix: "as-needed",
-  localeDetection: false,
+  localeDetection: true,
   localeCookie: { name: LOCALE_COOKIE_NAME, maxAge: LOCALE_COOKIE_MAX_AGE },
 });
 
