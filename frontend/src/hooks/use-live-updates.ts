@@ -30,7 +30,7 @@ export function useLiveUpdates(): void {
   const activeOrgId = useOrgStore((state) => state.activeOrgId);
   const accessToken = useAuthStore((state) => state.accessToken);
   const principal = useAuthStore((state) => state.user?.id);
-  const { wsUrl: wsOrigin } = usePublicConfig();
+  const { wsBaseUrl: wsOrigin } = usePublicConfig();
   const url = useMemo(
     () => `${wsOrigin}/api/v1/ws/events?organization_id=${encodeURIComponent(activeOrgId ?? "")}`,
     [wsOrigin, activeOrgId],

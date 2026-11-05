@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User } from "@/types";
+import { withBasePath } from "@/lib/base-path";
 import { clearNativeAccount } from "@/lib/desktop/account-cleanup";
 import { reportShellFailure } from "@/lib/desktop/shell";
 
@@ -77,7 +78,7 @@ export const useAuthStore = create<AuthState>()(
       checkAuth: async () => {
         try {
           set({ isLoading: true });
-          const response = await fetch("/api/auth/me");
+          const response = await fetch(withBasePath("/api/auth/me"));
           if (response.ok) {
             const user = await response.json();
             set({ user, isAuthenticated: true, isLoading: false });

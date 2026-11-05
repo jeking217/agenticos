@@ -131,7 +131,7 @@ async def explain_unavailable(
         return None
     try:
         missing = await missing_endpoints(client, base_url)
-    except httpx.HTTPError, ValueError:
+    except (httpx.HTTPError, ValueError):
         return None
     if not missing:
         return None

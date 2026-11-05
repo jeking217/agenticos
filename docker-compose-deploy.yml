@@ -60,6 +60,10 @@ x-agent-env: &agent-env
   REDIS_DB: ${AGENT_REDIS_DB:-13}
   # 生产模式（ENVIRONMENT=production）下占位值会被 Settings 拒绝启动。
   API_KEY: ${API_KEY:?API_KEY is required}
+  # 网关把这一套挂在某个路径段下时填这里（本机是 /agent）。接口会在
+  # /api/v1 和 <前缀>/api/v1 两处同时应答：网关保留前缀或剥掉前缀都能工作，
+  # 而容器之间（前端 BFF、worker）继续走不带前缀的那份。
+  API_PATH_PREFIX: ${API_PATH_PREFIX:-}
 
 services:
   # 跑完迁移就退出。app / worker 等它 completed_successfully，
@@ -135,11 +139,22 @@ services:
       - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:8000}
       - PUBLIC_WS_URL=${PUBLIC_WS_URL:-ws://localhost:8000}
       - PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-http://localhost:3000}
+      # 与后端同一个段：浏览器据此把 `<origin>/agent` 拼在 `/api/v1/...` 前面，
+      # 得到 `/agent/api/v1/...`。留空即部署在根路径。
+      - PUBLIC_API_PATH_PREFIX=${API_PATH_PREFIX:-}
+      # basePath 在构建期就编进了路由与静态资源（`--build-arg
+      # NEXT_PUBLIC_BASE_PATH=/agent`），这里再传一份是给服务端的
+      # Route Handler 读：BFF 剥离路径、容器内健康检查都用它。
+      - NEXT_PUBLIC_BASE_PATH=${FRONTEND_BASE_PATH:-}
       - ARTIFACT_ORIGIN=${ARTIFACT_ORIGIN:-}
       - CHAT_MAX_UPLOAD_SIZE_MB=${CHAT_MAX_UPLOAD_SIZE_MB:-10}
       # 基础环境里没有诊断采集端，默认关掉，免得每个页面都发没处收的埋点。
       - DIAGNOSTICS_ENABLED=${DIAGNOSTICS_ENABLED:-false}
-      - OAUTH_PROVIDERS=${OAUTH_PROVIDERS:-google}
+      # Sign-in methods: empty means no third-party buttons at all. Unione is not
+      # one of them - the backend's UNIONE_AUTH_ENABLED decides that form, and the
+      # page asks for it at run time. Left unset, compose's default is `google`,
+      # which draws a button nothing on a self-hosted box can complete.
+      - OAUTH_PROVIDERS=${OAUTH_PROVIDERS:-}
     ports:
       - "${BIND_HOST:-127.0.0.1}:${FRONT_HOST_PORT:-3000}:3000"
     # 同 app：服务端要按容器名找到 agent-app。
@@ -152,7 +167,7 @@ services:
         condition: service_completed_successfully
     healthcheck:
       # oven/bun 镜像里没有 curl/wget，用 bun 自带的 fetch 探。
-      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000${FRONTEND_BASE_PATH:-}/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -281,16 +296,60 @@ volumes:
 
 # .env.deploy 模板（放在仓库根，已进 .git/info/exclude）：
 #
-#   AGENTICOS_VERSION=local
+#   AGENTICOS_VERSION=subpath
 #   APP_ENV=production
 #   BASE_PG_PASSWORD=<base-postgresql 的 POSTGRES_PASSWORD>
 #   BASE_REDIS_PASSWORD=<base-redis 的 --requirepass 值>
 #   API_KEY=<openssl rand -hex 32>
 #   APP_HOST_PORT=8010
 #   FRONT_HOST_PORT=3010
-#   PUBLIC_API_URL=http://localhost:8010
-#   PUBLIC_WS_URL=ws://localhost:8010
-#   PUBLIC_SITE_URL=http://localhost:3010
+#
+#   # 前端挂在 <host>/agent，后端在 <host>/agent/api：
+#   API_PATH_PREFIX=/agent
+#   FRONTEND_BASE_PATH=/agent
+#   PUBLIC_API_URL=https://online.unione.cloud
+#   PUBLIC_WS_URL=wss://online.unione.cloud
+#   PUBLIC_SITE_URL=https://online.unione.cloud/agent
+#
+# 三个 PUBLIC_* 是**浏览器**用的地址，必须是对外可达的那一条：填容器名，
+# 会得到「SSR 正常、浏览器全错」。
+#
+# PUBLIC_API_URL / PUBLIC_WS_URL 只写**源**，不写路径 —— `/agent/api` 那段
+# 由上面的 API_PATH_PREFIX 拼上去（前端自己拼）。写进 URL 里就成了
+# `<源>/agent/api` + `/agent` = `/agent/api/agent/api/v1/...`，CSP 和每个
+# 请求都会带着这个双前缀。只有 PUBLIC_SITE_URL 是完整的站点地址，
+# 因为它就是页面自己的地址，没有第二个变量替它补前缀。
+#
+# --- 网关怎么转 ---
+#
+# 前端必须**原样转发，不要 strip**：basePath 已经编进页面里的每个链接和
+# `_next/static` 的每个资源路径，剥掉之后浏览器按带前缀的地址去取，
+# 网关却按没有前缀的路径找，整站白屏。
+#
+#   location /agent/ { proxy_pass http://agent-front:3000/agent/; }
+#
+# 但前端与后端现在**共用 `/agent` 这一层**：前端的页面和 BFF 在 `/agent/*`
+# （BFF 即 `/agent/api/*`），后端在 `/agent/api/v1/*`，两者只差 `v1` 一段。
+# 所以网关必须把更长的后端前缀单独摘出来，否则浏览器的 BFF 请求会被送进
+# 后端，变成 `/api/v1/api/v1/...` 这样的双前缀：
+#
+#   location ^~ /agent/api/v1/ { proxy_pass http://agent-app:8000/agent/api/v1/; }
+#   location /agent/           { proxy_pass http://agent-front:3000/agent/; }
+#
+# 后端两种都行 —— 它在 `<前缀>/api/v1` 和 `/api/v1` 上都应答，上面这条是
+# 保留前缀的写法；换成 `proxy_pass http://agent-app:8000/api/v1/;` 亦可。
+#
+# 聊天走 WebSocket，网关要放行升级头，否则对话只发不收：
+#
+#   proxy_http_version 1.1;
+#   proxy_set_header Upgrade $http_upgrade;
+#   proxy_set_header Connection "upgrade";
+#
+# 前端镜像必须用同一个前缀构建一次（basePath 是构建期的，运行时改不了）：
+#
+#   docker build -f frontend/Dockerfile \
+#     --build-arg NEXT_PUBLIC_BASE_PATH=/agent \
+#     -t ghcr.io/vstorm-co/agenticos-frontend:subpath frontend
 #
 # 下面两个有默认值，一般不用写：
 #   SANDBOX_WORKSPACE_ROOT=/tmp/agenticos-sandbox-workspaces

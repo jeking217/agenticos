@@ -109,8 +109,22 @@ fn http() -> Result<reqwest::Client, String> {
 }
 
 async fn endpoints(client: &reqwest::Client, server: &Url) -> Result<Endpoints, String> {
+    // Two candidates, because the base the person typed may be the deployment's
+    // segment (`https://host/agent`) or a page under it. The first that
+    // answers decides; a deployment at the host's root answers the second.
+    let mut refusal = "The server did not say where its API is.".to_owned();
+    for url in Endpoints::discovery_urls(server) {
+        match ask(client, url).await {
+            Ok(endpoints) => return Ok(endpoints),
+            Err(reason) => refusal = reason,
+        }
+    }
+    Err(refusal)
+}
+
+async fn ask(client: &reqwest::Client, url: Url) -> Result<Endpoints, String> {
     let answer: EndpointsAnswer = client
-        .get(Endpoints::discovery_url(server))
+        .get(url)
         .send()
         .await
         .and_then(reqwest::Response::error_for_status)

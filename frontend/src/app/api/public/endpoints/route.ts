@@ -13,7 +13,7 @@ import { readPublicConfig } from "@/lib/public-config";
  * this frontend image can isolate sessions for a managed desktop instance.
  */
 export function GET() {
-  const { apiUrl, wsUrl } = readPublicConfig(process.env);
+  const { apiBaseUrl: apiUrl, wsBaseUrl: wsUrl } = readPublicConfig(process.env);
   return NextResponse.json(
     {
       api_url: apiUrl,

@@ -465,7 +465,7 @@ async def embedding_models_at(base_url: str) -> tuple[CatalogModel, ...] | None:
     spec = replace(LISTINGS["openrouter"], url=f"{endpoint}/models?output_modalities=embeddings")
     try:
         models = await _listed(f"openrouter:embeddings:{endpoint}", spec, None, custom=True)
-    except httpx.HTTPError, ValueError:
+    except (httpx.HTTPError, ValueError):
         # Unreachable, refused, or answered with something that is not a
         # catalog - the endpoint's problem, and an unanswered question. Anything
         # else is a defect here and propagates: read as "unconfirmed" it would

@@ -4,6 +4,7 @@ import { BookOpen, Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { DOCS } from "@/lib/constants";
+import { withBasePath } from "@/lib/base-path";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CopyCode } from "@/components/settings/copy-code";
 
@@ -53,7 +54,7 @@ export function ApiReferenceIntro({
           {t("guide")}
         </a>
         <a
-          href="/api/public/openapi.json"
+          href={withBasePath("/api/public/openapi.json")}
           download="agenticos-openapi.json"
           className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 underline underline-offset-2"
         >

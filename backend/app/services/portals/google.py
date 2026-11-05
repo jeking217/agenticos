@@ -86,7 +86,7 @@ def _body_text(part: dict[str, Any]) -> str:
         return ""
     try:
         return base64.urlsafe_b64decode(data + "=" * (-len(data) % 4)).decode("utf-8", "replace")
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         return ""
 
 
@@ -97,7 +97,7 @@ def _received_at(message: dict[str, Any]) -> str:
         return ""
     try:
         return datetime.fromtimestamp(int(raw) / 1000, UTC).isoformat()
-    except OverflowError, OSError, ValueError:
+    except (OverflowError, OSError, ValueError):
         return ""
 
 

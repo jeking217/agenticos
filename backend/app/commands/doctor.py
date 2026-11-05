@@ -246,7 +246,7 @@ async def _private_network() -> tuple[str, str]:
     ):
         try:
             answers = await asyncio.to_thread(socket.getaddrinfo, host, None)
-        except OSError, UnicodeError:
+        except (OSError, UnicodeError):
             continue
         for answer in answers:
             address = ipaddress.ip_address(str(answer[4][0]))
@@ -418,7 +418,7 @@ async def _probe_connection(
             (await client.get(f"{base}/healthz")).raise_for_status()
             try:
                 missing: list[str] | None = await missing_endpoints(client, base)
-            except httpx.HTTPError, ValueError:
+            except (httpx.HTTPError, ValueError):
                 # `/healthz` answered, so a failure here does not make the
                 # service unreachable, and the credential is still worth checking.
                 missing = None

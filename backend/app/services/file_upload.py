@@ -189,7 +189,7 @@ def _decode_declared(data: bytes) -> str | None:
     if match:
         try:
             return data.decode(match.group(1).decode("ascii"))
-        except LookupError, UnicodeDecodeError:
+        except (LookupError, UnicodeDecodeError):
             return None
     return None
 
@@ -527,7 +527,7 @@ class DocumentText:
             if charset:
                 try:
                     return data.decode(charset)
-                except LookupError, UnicodeDecodeError:
+                except (LookupError, UnicodeDecodeError):
                     return None
             return None
 

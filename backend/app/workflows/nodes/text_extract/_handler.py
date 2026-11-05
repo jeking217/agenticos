@@ -105,7 +105,7 @@ async def handle(config: BaseModel | None, node_input: BaseModel | None) -> Node
         )
     except _documents.DocumentEncrypted:
         return files.failed("DOCUMENT_ENCRYPTED", "This document is protected by a password")
-    except _documents.DocumentCorrupt, ParseError:
+    except (_documents.DocumentCorrupt, ParseError):
         return files.failed("DOCUMENT_CORRUPT", "This document is damaged or not what it claims")
     if isinstance(result, Failed):
         return result

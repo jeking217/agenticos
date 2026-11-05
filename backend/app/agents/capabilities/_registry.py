@@ -737,6 +737,7 @@ def load_builtins() -> None:
         thinking,
         tool_output_limits,
         tool_search,
+        unione_cms,
         video_generation,
         virtual_tables,
         visuals,

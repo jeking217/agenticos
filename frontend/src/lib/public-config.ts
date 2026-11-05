@@ -30,13 +30,27 @@ export interface PublicConfig {
   diagnosticsUrl?: string;
   /** The API origin the browser calls directly: OAuth login, embed uploads, `/docs`. */
   apiUrl: string;
+  /**
+   * The path the API is mounted at on that origin, e.g. `/agent/api`.
+   *
+   * Empty when the API answers at the root. Kept apart from `apiUrl` because
+   * the origin is what a URL is built on and the prefix is what a deployment
+   * behind a gateway adds to it - and because every call site already writes
+   * the version prefix after the base, so putting `/agent/api` in `apiUrl`
+   * would make each of them `/agent/api/api/v1`, a path nothing answers.
+   */
+  apiPathPrefix: string;
+  /** `apiUrl` with `apiPathPrefix` appended: what `${…}/api/v1/…` is built from. */
+  apiBaseUrl: string;
+  /** `wsUrl` with `apiPathPrefix` appended, for the same reason. */
+  wsBaseUrl: string;
   /** The WebSocket origin the browser opens for chat and the hosted embed. */
   wsUrl: string;
   /**
-   * Where a published artifact's page is framed from: `ARTIFACT_ORIGIN` when the
-   * deployment moved it to a domain of its own, the API's origin otherwise.
-   * The same variable the backend reads, so the address it signs and the origin
-   * `frame-src` allows cannot name two places.
+   * Where a published artifact's content is framed from: `ARTIFACT_ORIGIN` when
+   * the deployment moved it to a domain of its own, the API's origin otherwise -
+   * plus the path prefix, because the backend builds the same address from the
+   * same variables and a frame that names a different path never loads.
    */
   artifactUrl: string;
   /** This app's own canonical origin, for metadata, robots and the sitemap. */
@@ -83,6 +97,9 @@ export interface PublicConfig {
 export const DEFAULT_PUBLIC_CONFIG: PublicConfig = {
   diagnosticsUrl: "https://analytics-agenticos.testapp.ovh",
   apiUrl: "http://localhost:8000",
+  apiPathPrefix: "",
+  apiBaseUrl: "http://localhost:8000",
+  wsBaseUrl: "ws://localhost:8000",
   wsUrl: "ws://localhost:8000",
   artifactUrl: "http://localhost:8000",
   siteUrl: "http://localhost:3000",
@@ -107,6 +124,12 @@ function isSignInProvider(value: string): value is SignInProvider {
 function origin(value: string | undefined, fallback: string): string {
   const trimmed = value?.trim();
   return trimmed ? trimmed.replace(/\/+$/, "") : fallback;
+}
+
+function pathPrefix(value: string | undefined): string {
+  const trimmed = value?.trim().replace(/\/+$/, "") ?? "";
+  if (!trimmed || trimmed === "/") return "";
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
 function megabytes(value: string | undefined, fallback: number): number {
@@ -140,18 +163,21 @@ function icon(value: string | undefined): AuthProvider | null {
  * deployment turns the buttons off.
  */
 export function readPublicConfig(env: Readonly<Record<string, string | undefined>>): PublicConfig {
+  const apiUrl = origin(env.PUBLIC_API_URL, DEFAULT_PUBLIC_CONFIG.apiUrl);
+  const wsUrl = origin(env.PUBLIC_WS_URL, DEFAULT_PUBLIC_CONFIG.wsUrl);
+  const apiPathPrefix = pathPrefix(env.PUBLIC_API_PATH_PREFIX);
   return {
     diagnosticsUrl: ["false", "0", "off", "no"].includes(
       env.DIAGNOSTICS_ENABLED?.trim().toLowerCase() ?? "",
     )
       ? undefined
       : origin(env.DIAGNOSTICS_PUBLIC_URL, "https://analytics-agenticos.testapp.ovh"),
-    apiUrl: origin(env.PUBLIC_API_URL, DEFAULT_PUBLIC_CONFIG.apiUrl),
-    wsUrl: origin(env.PUBLIC_WS_URL, DEFAULT_PUBLIC_CONFIG.wsUrl),
-    artifactUrl: origin(
-      env.ARTIFACT_ORIGIN,
-      origin(env.PUBLIC_API_URL, DEFAULT_PUBLIC_CONFIG.artifactUrl),
-    ),
+    apiUrl,
+    wsUrl,
+    apiPathPrefix,
+    apiBaseUrl: `${apiUrl}${apiPathPrefix}`,
+    wsBaseUrl: `${wsUrl}${apiPathPrefix}`,
+    artifactUrl: `${origin(env.ARTIFACT_ORIGIN, apiUrl)}${apiPathPrefix}`,
     siteUrl: origin(env.PUBLIC_SITE_URL, DEFAULT_PUBLIC_CONFIG.siteUrl),
     chatMaxUploadSizeMb: megabytes(
       env.CHAT_MAX_UPLOAD_SIZE_MB,

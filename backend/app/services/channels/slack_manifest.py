@@ -44,7 +44,9 @@ def slack_manifest(bot: ChannelBot) -> dict[str, Any]:
 
     def at(field: str, kind: str) -> dict[str, str]:
         """`{field: url}` for a bot Slack calls; nothing for one that connects out."""
-        return {} if socket else {field: f"{base}{SLACK_PATHS[kind].format(bot_id=bot.id)}"}
+        return {} if socket else {
+            field: f"{base}{settings.API_PATH_PREFIX.rstrip('/')}{SLACK_PATHS[kind].format(bot_id=bot.id)}"
+        }
 
     console_host = urlparse(settings.FRONTEND_URL).netloc
     return {

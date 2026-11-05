@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   // The browser follows this redirect, so it is the public API origin the
   // deployment names at runtime, read per request like every other public URL (#1544).
-  const { apiUrl } = readPublicConfig(process.env);
+  const { apiBaseUrl: apiUrl } = readPublicConfig(process.env);
   const target = new URL(`${apiUrl}${startPath(provider)}`);
   const flow = request.nextUrl.searchParams.get(INVITATION_FLOW_PARAM);
   const handle = isInvitationFlow(flow) ? request.cookies.get(stageCookieName(flow))?.value : null;

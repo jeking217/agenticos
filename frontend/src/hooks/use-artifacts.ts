@@ -514,7 +514,7 @@ function useDataRead(
 
 /** Opening a public link that asks for a password, from the stranger's browser. */
 export function usePublicArtifactUnlock(publicKey: string) {
-  const { apiUrl } = usePublicConfig();
+  const { apiBaseUrl: apiUrl } = usePublicConfig();
   return useMutation({
     mutationFn: (password: string) => unlockPublicArtifact(apiUrl, publicKey, password),
   });

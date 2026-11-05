@@ -32,7 +32,7 @@ async def send_frame(websocket: WebSocket, frame: ServerFrame) -> bool:
     """
     try:
         await websocket.send_text(frame.model_dump_json(exclude_unset=True))
-    except WebSocketDisconnect, RuntimeError:
+    except (WebSocketDisconnect, RuntimeError):
         return False
     return True
 
@@ -41,6 +41,6 @@ async def send_audio_frame(websocket: WebSocket, data: bytes) -> bool:
     """Send one binary frame of the agent's audio (the relay). `False` when the socket is gone."""
     try:
         await websocket.send_bytes(data)
-    except WebSocketDisconnect, RuntimeError:
+    except (WebSocketDisconnect, RuntimeError):
         return False
     return True

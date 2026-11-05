@@ -24,7 +24,7 @@ def delivery_url(adapter: ExposureAdapter, exposure_id: UUID) -> str | None:
     door = {ExposureAdapter.WEBHOOK: "workflow-webhooks", ExposureAdapter.GITHUB: "workflow-github"}
     if adapter not in door:
         return None
-    return f"{settings.PUBLIC_BASE_URL.rstrip('/')}/api/v1/{door[adapter]}/{exposure_id}"
+    return f"{settings.PUBLIC_BASE_URL.rstrip('/')}{settings.PUBLIC_API_PATH}/{door[adapter]}/{exposure_id}"
 
 
 class WorkflowExposureUpdate(BaseSchema):
@@ -139,7 +139,7 @@ class WebhookTestListening(BaseSchema):
     def url(self) -> str:
         """Where to send the test call, on the deployment's public address."""
         base = settings.PUBLIC_BASE_URL.rstrip("/")
-        return f"{base}/api/v1/workflow-webhook-tests/{self.test_token}"
+        return f"{base}{settings.PUBLIC_API_PATH}/workflow-webhook-tests/{self.test_token}"
 
 
 class WebhookTestCaptured(BaseSchema):

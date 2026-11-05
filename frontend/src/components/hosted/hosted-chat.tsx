@@ -359,7 +359,7 @@ export function HostedChat({ config }: { config: HostedPageConfig }) {
   const t = useTranslations("hosted");
   const tDictation = useTranslations("hosted.dictation");
   const tVoice = useTranslations("hosted.voice");
-  const { apiUrl, wsUrl } = usePublicConfig();
+  const { apiBaseUrl: apiUrl, wsBaseUrl: wsUrl } = usePublicConfig();
   // Same origin, not the address the API gave. `img-src 'self' blob: data: https:`
   // excludes an API on plain `http`, which is every development checkout and any
   // deployment that terminates TLS elsewhere - so the header and every turn's

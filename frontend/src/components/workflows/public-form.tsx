@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, ArrowRight, ClipboardList } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { MarkdownContent } from "@/components/chat/markdown-content";
+import { withBasePath } from "@/lib/base-path";
 import { formButtonStyle, type FormAppearance } from "./form-surface";
 import { Button } from "@/components/ui";
 import { RunField } from "@/components/workflows/runs/run-field";
@@ -96,7 +97,7 @@ export function PublicForm({ page, token, onSubmitValues, preview = false }: Pub
         setThanks(await onSubmitValues(answers.input));
         return;
       }
-      const response = await fetch(`/api/forms/${encodeURIComponent(token ?? "")}`, {
+      const response = await fetch(withBasePath(`/api/forms/${encodeURIComponent(token ?? "")}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ values: answers.input, website: website || null }),

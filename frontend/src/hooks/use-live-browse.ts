@@ -50,7 +50,7 @@ const CLOSED: Record<number, LiveBrowseStatus> = {
  * browse. `enabled` false holds the socket closed.
  */
 export function useLiveBrowse(runId: string, callId: string, enabled = true) {
-  const { wsUrl } = usePublicConfig();
+  const { wsBaseUrl: wsUrl } = usePublicConfig();
   const accessToken = useAuthStore((state) => state.accessToken);
   const principal = useAuthStore((state) => state.user?.id);
   const scope = `${principal ?? ""}:${runId}:${callId}`;

@@ -198,13 +198,13 @@ async def close_view(view: DirectView, session: BrowseSession | None) -> None:
     if session is not None:
         try:
             url, title = await session.page.location()
-        except DomainRefused, EndpointError:
+        except (DomainRefused, EndpointError):
             # A failed/closed page keeps its last confirmed location on teardown.
             logger.debug("Browser location unavailable during teardown", exc_info=True)
     if view.preview and session is not None:
         try:
             image = await session.page.screenshot()
-        except DomainRefused, EndpointError:
+        except (DomainRefused, EndpointError):
             image = None
         if image is not None:
             await view.emit(

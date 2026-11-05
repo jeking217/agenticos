@@ -34,6 +34,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
+import { BASE_PATH, stripBasePath } from "@/lib/base-path";
 import { CONSOLE_TAB_HEADER } from "@/lib/console-tab";
 import { bffRefusal } from "@/lib/server-api";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/session-cookie";
@@ -127,7 +128,9 @@ export function platformProxy(): ProxyHandlers {
       return bffRefusal("NOT_AUTHENTICATED", 401);
     }
 
-    const path = request.nextUrl.pathname.replace(/^\/api/, "");
+    // The request path may carry the segment this build is mounted under
+    // (`/agent/api/...`); the backend never hears about that segment.
+    const path = stripBasePath(request.nextUrl.pathname).replace(/^\/api/, "");
     const url = `${BACKEND_URL}/api/v1${path}${request.nextUrl.search}`;
 
     const organizationId = request.headers.get(ORG_HEADER);
@@ -145,6 +148,12 @@ export function platformProxy(): ProxyHandlers {
         ...(contentType ? { "Content-Type": contentType } : {}),
         ...(organizationId ? { [ORG_HEADER]: organizationId } : {}),
         ...(consoleTab ? { [CONSOLE_TAB_HEADER]: consoleTab } : {}),
+        // Where this console is mounted, for the replies that have to name a URL
+        // the browser will follow: the CMS preview's iframe link and the `<base>`
+        // its HTML is rewritten against. Both are built by the backend, which
+        // cannot read a basePath compiled into this bundle. Sent only when there
+        // is one - an empty prefix would look like "configured as root".
+        ...(BASE_PATH ? { "X-Forwarded-Prefix": BASE_PATH } : {}),
       },
       // Bytes, not text, and buffered rather than streamed. Reading the body as
       // an ArrayBuffer keeps a PDF's bytes intact, and keeping it buffered is

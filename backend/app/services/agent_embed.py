@@ -582,7 +582,7 @@ class AgentEmbedService:
         if await self._logo_file(embed, config) is None:
             return None
         base = settings.PUBLIC_BASE_URL.rstrip("/")
-        return f"{base}/api/v1/embed/{embed.public_key}/logo"
+        return f"{base}{settings.PUBLIC_API_PATH}/embed/{embed.public_key}/logo"
 
     async def find_public(self, public_key: str) -> AgentEmbed | None:
         """The widget a key names, with no origin check.
@@ -907,7 +907,7 @@ class AgentEmbedService:
         """
         if agent is not None and await self._stored(agent.avatar_url):
             base = settings.PUBLIC_BASE_URL.rstrip("/")
-            return f"{base}/api/v1/embed/{embed.public_key}/avatar", None
+            return f"{base}{settings.PUBLIC_API_PATH}/embed/{embed.public_key}/avatar", None
         face = f"{settings.FRONTEND_URL.rstrip('/')}/api/public/face?" + urlencode(
             {"seed": agent.slug if agent else embed.public_key}
             | ({"slot": str(agent.avatar_color)} if agent and agent.avatar_color else {})
@@ -1166,7 +1166,7 @@ class AgentEmbedService:
         if embed.kind != "widget":
             return None
         base = settings.PUBLIC_BASE_URL.rstrip("/")
-        tag = f'<script src="{base}/api/v1/embed/{embed.public_key}/widget.js" async></script>'
+        tag = f'<script src="{base}{settings.PUBLIC_API_PATH}/embed/{embed.public_key}/widget.js" async></script>'
         declared = [str(variable.get("name", "")) for variable in (embed.context_variables or [])]
         if not any(declared):
             return tag
@@ -1210,4 +1210,4 @@ class AgentEmbedService:
         base = settings.PUBLIC_BASE_URL.rstrip("/")
         scheme = "wss" if base.startswith("https://") else "ws"
         _, _, rest = base.partition("://")
-        return f"{scheme}://{rest}/api/v1/embed/{embed.public_key}/ws"
+        return f"{scheme}://{rest}{settings.PUBLIC_API_PATH}/embed/{embed.public_key}/ws"

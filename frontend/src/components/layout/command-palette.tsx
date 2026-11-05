@@ -67,7 +67,7 @@ export function CommandPalette() {
   const t = useTranslations("nav");
   const { user, logout } = useAuth();
   const { can } = usePermissions();
-  const { apiUrl } = usePublicConfig();
+  const { apiBaseUrl: apiUrl } = usePublicConfig();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const admin = isAppAdmin(user);

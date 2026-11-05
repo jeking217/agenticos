@@ -237,7 +237,7 @@ async def _create(
         response = await request
     except _NOT_SENT:
         raise
-    except httpx.HTTPError, asyncio.CancelledError:
+    except (httpx.HTTPError, asyncio.CancelledError):
         call.reached("sent")
         raise
     _raise_for(call, response)

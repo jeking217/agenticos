@@ -266,7 +266,7 @@ def parse_web_search(result: str) -> WebSearchResults | None:
     """
     try:
         payload = json.loads(result)
-    except json.JSONDecodeError, TypeError:
+    except (json.JSONDecodeError, TypeError):
         return None
     if not isinstance(payload, dict) or payload.get("kind") != "web_search":
         return None

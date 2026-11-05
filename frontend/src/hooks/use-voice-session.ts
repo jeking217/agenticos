@@ -128,7 +128,7 @@ export function useVoiceSession(
   const [call, dispatch] = useReducer(callReducer, initialCall);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const { wsUrl } = usePublicConfig();
+  const { wsBaseUrl: wsUrl } = usePublicConfig();
   const pushToTalk = useVoiceCallStore((state) => state.pushToTalk);
 
   const socketRef = useRef<WebSocket | null>(null);

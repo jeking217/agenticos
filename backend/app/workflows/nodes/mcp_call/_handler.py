@@ -252,7 +252,7 @@ def _credential_forms(headers: dict[str, str]) -> tuple[str, ...]:
             if scheme.lower() == "basic":
                 try:
                     decoded = base64.b64decode(credential, validate=True).decode()
-                except binascii.Error, UnicodeDecodeError:
+                except (binascii.Error, UnicodeDecodeError):
                     continue
                 forms.add(decoded)
                 password = decoded.partition(":")[2]

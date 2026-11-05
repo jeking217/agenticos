@@ -634,7 +634,7 @@ def build_toolset(
                         if not url or urlsplit(url).scheme not in ("http", "https"):
                             continue
                         state = await session.page.capture_sign_in()
-                    except DomainRefused, EndpointError:
+                    except (DomainRefused, EndpointError):
                         logger.warning("Browser checkpoint skipped an unavailable page")
                         continue
                     tabs.append(_sessions.SavedTab(id=tab_id, url=url, sign_in=state))

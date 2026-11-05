@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 
 import { ApiError, getErrorMessage, parseErrorMessage } from "@/lib/api-error";
+import { withBasePath } from "@/lib/base-path";
 import { ErrorState } from "@/components/states";
 import {
   InviteLinkDialog,
@@ -192,7 +193,7 @@ export default function OrgMembersPage({ params }: PageProps) {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch(`/api/orgs/${id}/avatar`, { method: "POST", body: fd });
+      const res = await fetch(withBasePath(`/api/orgs/${id}/avatar`), { method: "POST", body: fd });
       if (!res.ok) {
         const body: unknown = await res.json().catch(() => null);
         throw new ApiError(res.status, parseErrorMessage(body, t("uploadFailed2")), body);

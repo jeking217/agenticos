@@ -13,6 +13,7 @@
  * and only one of them is success.
  */
 
+import { withBasePath } from "@/lib/base-path";
 import { invokeShell, ShellError } from "@/lib/desktop/shell";
 
 export type DramaLaunchOutcome =
@@ -43,7 +44,7 @@ function messageOf(reason: unknown): string {
 
 /** A ticket minted for the caller, or the reason there is none. */
 async function mintTicket(): Promise<string> {
-  const response = await fetch("/api/drama/ticket", {
+  const response = await fetch(withBasePath("/api/drama/ticket"), {
     method: "POST",
     cache: "no-store",
     headers: { Accept: "application/json" },

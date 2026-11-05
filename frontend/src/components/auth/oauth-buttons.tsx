@@ -1,6 +1,7 @@
 "use client";
 
 import { INVITATION_FLOW_PARAM, invitationFlowFrom } from "@/lib/invitation-links";
+import { withBasePath } from "@/lib/base-path";
 import { rememberReturnTo } from "@/lib/oauth-return";
 
 import { KeyRound, Network, Ticket, type LucideIcon } from "lucide-react";
@@ -129,9 +130,11 @@ function OAuthButtons({ providers, variant, returnTo, onDirectorySignIn }: OAuth
             </button>
           );
         }
-        const url = flow
-          ? `/api/oauth/${provider}/login?${INVITATION_FLOW_PARAM}=${flow}`
-          : `/api/oauth/${provider}/login`;
+        const url = withBasePath(
+          flow
+            ? `/api/oauth/${provider}/login?${INVITATION_FLOW_PARAM}=${flow}`
+            : `/api/oauth/${provider}/login`,
+        );
         return (
           <a
             key={provider}

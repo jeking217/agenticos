@@ -323,7 +323,7 @@ class WebPushService:
                 extra={"subscription_id": str(subscription.id), "status": exc.status_code},
             )
             return "failed"
-        except TimeoutError, aiohttp.ClientError:
+        except (TimeoutError, aiohttp.ClientError):
             logger.warning("web_push_unreachable", extra={"subscription_id": str(subscription.id)})
             return "failed"
         await push_repo.mark_sent(self.db, subscription.id, datetime.now(UTC))

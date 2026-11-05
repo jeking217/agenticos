@@ -74,7 +74,7 @@ async def stored_file_response(
     # 404 rather than a stream that dies mid-body.
     try:
         chunks = await storage.open_stream(storage_path)
-    except FileNotFoundError, ValueError:
+    except (FileNotFoundError, ValueError):
         return None
     return StreamingResponse(chunks, media_type=media_type, headers=header_map)
 
@@ -116,5 +116,5 @@ async def _load(storage_path: str) -> bytes | None:
     """
     try:
         return await get_file_storage().load(storage_path)
-    except FileNotFoundError, ValueError:
+    except (FileNotFoundError, ValueError):
         return None

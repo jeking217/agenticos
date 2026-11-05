@@ -92,7 +92,7 @@ class _RpcError(Exception):
 
 def endpoint_url(agent_id: UUID) -> str:
     """Where an agent's A2A requests go."""
-    return f"{settings.PUBLIC_BASE_URL.rstrip('/')}{settings.API_V1_STR}/a2a/{agent_id}"
+    return f"{settings.PUBLIC_BASE_URL.rstrip('/')}{settings.PUBLIC_API_PATH}/a2a/{agent_id}"
 
 
 class A2AServerService:

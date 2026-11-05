@@ -163,7 +163,7 @@ async def read(bot_id: UUID | str) -> ChannelConnection | None:
     try:
         payload = json.loads(raw)
         state = payload["state"]
-    except json.JSONDecodeError, KeyError, TypeError:
+    except (json.JSONDecodeError, KeyError, TypeError):
         return None
     if state not in ("up", "down"):
         return None

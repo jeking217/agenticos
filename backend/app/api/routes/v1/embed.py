@@ -57,6 +57,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+def _embed_base() -> str:
+    """The origin the widget scripts prepend to their own paths.
+
+    The templates write `BASE + "/api/v1/embed/..."`, so the deployment segment
+    belongs here rather than in each of them: a widget served from behind a
+    gateway that mounts this app at `/agent` has to call back to
+    `/agent/api/v1/embed/...`, and a script whose every request 404s is a
+    widget that never appears.
+    """
+    return f"{settings.PUBLIC_BASE_URL.rstrip('/')}{settings.API_PATH_PREFIX.rstrip('/')}"
+
+
 # Close codes the widget reads. 4003 is deliberately the same for every refusal:
 # a page that is not on the allow-list learns that it is not allowed, and
 # nothing about whether a token would have helped.
@@ -228,7 +241,7 @@ async def embed_widget(public_key: str, db: DBSession) -> Response:
 
     body = (
         WIDGET_JS.replace("__PUBLIC_KEY__", embed.public_key)
-        .replace("__BASE_URL__", settings.PUBLIC_BASE_URL.rstrip("/"))
+        .replace("__BASE_URL__", _embed_base())
         .replace("__VOICE_VERSION__", VOICE_JS_VERSION)
     )
     return Response(
@@ -277,7 +290,7 @@ async def embed_voice_script(
         raise HTTPException(status_code=404, detail="Unknown widget")
 
     body = VOICE_JS.replace("__PUBLIC_KEY__", embed.public_key).replace(
-        "__BASE_URL__", settings.PUBLIC_BASE_URL.rstrip("/")
+        "__BASE_URL__", _embed_base()
     )
     cache = (
         "public, max-age=31536000, immutable" if v == VOICE_JS_VERSION else "public, max-age=300"
@@ -554,7 +567,7 @@ async def embed_voice_socket(
                 token=token,
                 visitor_key=visitor_key,
             )
-        except EmbedDenied, BadRequestError:
+        except (EmbedDenied, BadRequestError):
             await websocket.accept()
             await websocket.close(code=WS_DENIED, reason="Calls are not available here")
             return

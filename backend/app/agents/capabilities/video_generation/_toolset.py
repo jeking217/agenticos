@@ -158,7 +158,7 @@ async def _frame_bytes(ctx: RunContext[AgentDeps], source: str) -> bytes | str:
                 if entry.size is not None and entry.size > MAX_FRAME_BYTES:
                     return _too_large(source)
                 return await ctx.workspace.read_bytes(path)
-            except FileNotFoundError, IsADirectoryError, NotADirectoryError:
+            except (FileNotFoundError, IsADirectoryError, NotADirectoryError):
                 continue
             except PermissionError:
                 return f"Reading {source!r} from your workspace was refused."

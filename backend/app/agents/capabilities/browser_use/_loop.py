@@ -984,7 +984,7 @@ async def _finish(
         await preview.close()
         try:
             image = await session.page.screenshot()
-        except DomainRefused, EndpointError:
+        except (DomainRefused, EndpointError):
             image = None
         if image is not None:
             await emit(

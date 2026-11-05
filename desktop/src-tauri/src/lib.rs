@@ -54,7 +54,8 @@ use std::sync::{mpsc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use agenticos_shell_core::{
-    external_sign_in_url, is_oauth_start, mint_nonce, parse_server_url, PendingSignIn, SignInProof,
+    external_sign_in_url, is_oauth_start, mint_nonce, parse_server_url, under, PendingSignIn,
+    SignInProof, DEFAULT_SERVER,
 };
 use base64::Engine;
 
@@ -221,7 +222,7 @@ fn reachable(server: &Url) -> Result<(), String> {
 /// session in its cookies, and opening on the form made a signed-in person sign
 /// in again on every launch. Somebody signed out is sent on to the form from here.
 fn home(server: &Url) -> Url {
-    server.join("dashboard").unwrap_or_else(|_| server.clone())
+    under(server, "dashboard")
 }
 
 /// The stored server when it answers; otherwise the connect page, with the reason.
@@ -473,7 +474,7 @@ async fn arrive(app: &AppHandle, window: &WebviewWindow, server: Url, deployment
     })?;
     // Granted before the page loads: the welcome asks the shell for its state as it mounts.
     console::grant(app, &server)?;
-    let landing = server.join(CONNECTION_SETUP).map_err(|e| e.to_string())?;
+    let landing = under(&server, CONNECTION_SETUP);
     window.navigate(landing).map_err(|e| e.to_string())?;
     retarget_companions(app, &server)?;
     start_companions(app, &server, &settings);
@@ -488,6 +489,12 @@ struct OnboardingState {
     server_url: Option<Url>,
     deployment: Option<Deployment>,
     platform: &'static str,
+    /// What the address field starts with when nothing is configured yet.
+    ///
+    /// Kept apart from `server_url`: that one means "this shell is connected",
+    /// and the welcome shows a connected server's screen differently. This is
+    /// only a prefilled answer to a question the person still has to submit.
+    suggested_server: &'static str,
 }
 
 #[tauri::command]
@@ -497,6 +504,7 @@ fn onboarding_state(app: AppHandle) -> OnboardingState {
         server_url: settings.server_url,
         deployment: settings.deployment,
         platform: appearance::platform(),
+        suggested_server: DEFAULT_SERVER,
     }
 }
 
@@ -675,7 +683,7 @@ pub fn open_in_console_at(app: &AppHandle, path: &str) -> Result<(), String> {
     let server = settings::current(app)
         .server_url
         .ok_or("No server yet - connect the console to one first.")?;
-    let url = server.join(path).map_err(|e| e.to_string())?;
+    let url = under(&server, path);
     let Some(console) = app.get_webview_window(WINDOW) else {
         reachable(&server)?;
         return open_window(app, WebviewUrl::External(url))
@@ -684,10 +692,14 @@ pub fn open_in_console_at(app: &AppHandle, path: &str) -> Result<(), String> {
     };
     let on_console = console.url().is_ok_and(|shown| shown.origin() == server.origin());
     if on_console {
+        // The console's own router puts the deployment's segment back on a
+        // path, so the hook is handed the bare one. `location.assign` does not,
+        // which is why the fallback gets the address the shell worked out.
         let literal = serde_json::to_string(path).map_err(|e| e.to_string())?;
+        let absolute = serde_json::to_string(url.as_str()).map_err(|e| e.to_string())?;
         console
             .eval(format!(
-                "window.__agenticosNavigate ? window.__agenticosNavigate({literal}) : location.assign({literal})"
+                "window.__agenticosNavigate ? window.__agenticosNavigate({literal}) : location.assign({absolute})"
             ))
             .map_err(|e| e.to_string())?;
     } else {
@@ -702,7 +714,7 @@ fn chat_url(app: &AppHandle) -> Result<Url, String> {
         .server_url
         .ok_or("No server yet - connect the console to one first.")?;
     reachable(&server)?;
-    server.join("chat").map_err(|e| e.to_string())
+    Ok(under(&server, "chat"))
 }
 
 fn open_console_at(app: &AppHandle, url: Url) -> Result<(), String> {
@@ -898,7 +910,7 @@ fn open_window(app: &AppHandle, url: WebviewUrl) -> tauri::Result<WebviewWindow>
 fn retarget_companions<R: tauri::Runtime>(app: &AppHandle<R>, server: &Url) -> Result<(), String> {
     for (label, path) in [(blobby::WINDOW, blobby::PATH), (quick_ask::WINDOW, quick_ask::PATH)] {
         if let Some(window) = app.get_webview_window(label) {
-            let page = server.join(path).map_err(|e| e.to_string())?;
+            let page = under(server, path);
             if label == quick_ask::WINDOW {
                 window.hide().map_err(|e| e.to_string())?;
             }
@@ -1642,11 +1654,14 @@ mod tests {
             "http://localhost:3000/pl/",
             "https://next.example/",
             "http://localhost:3000/",
+            // A console mounted on a segment keeps it: both companions are pages
+            // of the console, not of the host it shares.
+            "https://online.unione.cloud/agent",
         ] {
             let server = Url::parse(address).unwrap();
             super::retarget_companions(app.handle(), &server).unwrap();
             for (window, path) in windows.iter().zip([super::blobby::PATH, super::quick_ask::PATH]) {
-                assert_eq!(window.url().unwrap(), server.join(path).unwrap());
+                assert_eq!(window.url().unwrap(), super::under(&server, path));
                 assert_eq!(app.get_webview_window(window.label()).unwrap(), *window);
             }
         }
@@ -1753,6 +1768,16 @@ mod tests {
     fn the_console_opens_on_its_dashboard_not_the_sign_in_form() {
         let server = Url::parse("https://agenticos.acme.com/").unwrap();
         assert_eq!(super::home(&server).as_str(), "https://agenticos.acme.com/dashboard");
+    }
+
+    #[test]
+    fn the_dashboard_is_a_page_under_the_segment_the_console_is_mounted_on() {
+        // `/dashboard` at the host's root is the platform's, not ours.
+        let server = Url::parse("https://online.unione.cloud/agent").unwrap();
+        assert_eq!(
+            super::home(&server).as_str(),
+            "https://online.unione.cloud/agent/dashboard"
+        );
     }
 
     #[test]

@@ -1657,7 +1657,7 @@ class ChannelMessageRouter:
             email = await get_adapter(incoming.platform).vouched_email(
                 unseal_bot_token(bot), incoming
             )
-        except httpx.HTTPError, ChannelNotConfigured, ValueError:
+        except (httpx.HTTPError, ChannelNotConfigured, ValueError):
             logger.warning(
                 "channel_vouched_email_failed",
                 extra={"platform": incoming.platform, "bot_id": incoming.bot_id},

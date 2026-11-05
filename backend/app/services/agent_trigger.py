@@ -2061,7 +2061,7 @@ class AgentTriggerService:
 
         try:
             agent = await self.agents.get(ctx, trigger.agent_id, perm=Perm.AGENTS_RUN)
-        except NotFoundError, AuthorizationError:
+        except (NotFoundError, AuthorizationError):
             # The grants-aware pre-check, mirroring the run path's own
             # `resolve_access`. A creator who kept a role with `agents:run` but
             # lost the grant on *this* agent is refused here, before a run is
@@ -2116,7 +2116,7 @@ class AgentTriggerService:
                     else None
                 ),
             )
-        except NotFoundError, AuthorizationError:
+        except (NotFoundError, AuthorizationError):
             # Access was withdrawn between the pre-check and the run. Same verdict:
             # disable, do not raise into a retry.
             await self._disable(trigger, reason="creator_cannot_run_agent")

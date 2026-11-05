@@ -102,7 +102,7 @@ def is_time_zone(name: str) -> bool:
     """Whether `name` is an IANA zone this deployment knows."""
     try:
         ZoneInfo(name)
-    except ZoneInfoNotFoundError, ValueError:
+    except (ZoneInfoNotFoundError, ValueError):
         return False
     return True
 

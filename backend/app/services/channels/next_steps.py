@@ -72,7 +72,7 @@ def next_steps_of(called: list[RecordedToolCall]) -> list[str]:
             continue
         try:
             steps = json.loads(call.result).get("steps")
-        except ValueError, AttributeError:
+        except (ValueError, AttributeError):
             return []
         return [step for step in steps if isinstance(step, str)] if isinstance(steps, list) else []
     return []

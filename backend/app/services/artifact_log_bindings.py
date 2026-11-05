@@ -241,7 +241,7 @@ def _kind_name(node: dict[str, Any]) -> str | None:
         return _registry.get(
             str(node.get("definition_id")), int(node.get("definition_version", 1))
         ).name
-    except BadRequestError, ValueError:
+    except (BadRequestError, ValueError):
         return None
 
 

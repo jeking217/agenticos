@@ -36,7 +36,7 @@ export function useWorkflowChat({
   createConversation,
   onConversationCreated,
 }: UseWorkflowChatOptions) {
-  const { wsUrl } = usePublicConfig();
+  const { wsBaseUrl: wsUrl } = usePublicConfig();
   const activeOrgId = useOrgStore((state) => state.activeOrgId);
   const sockets = useRef(new Set<WebSocket>());
 

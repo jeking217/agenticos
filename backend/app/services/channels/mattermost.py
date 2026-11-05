@@ -101,7 +101,7 @@ def trigger_presser(trigger_id: str, public_key_der: bytes, *, now: datetime) ->
         minted = datetime.fromtimestamp(int(parts[2]) / 1000, UTC)
         signature = base64.b64decode(parts[-1], validate=True)
         key = serialization.load_der_public_key(public_key_der)
-    except binascii.Error, UnicodeDecodeError, ValueError, IndexError:
+    except (binascii.Error, UnicodeDecodeError, ValueError, IndexError):
         return None
     if len(parts) < 4 or abs(now - minted) > TRIGGER_MAX_AGE:
         return None
@@ -145,7 +145,7 @@ def decode_webhook_body(raw: str) -> dict[str, Any]:
     """
     try:
         parsed = json.loads(raw)
-    except json.JSONDecodeError, TypeError:
+    except (json.JSONDecodeError, TypeError):
         return {key: values[0] for key, values in parse_qs(raw).items()}
     return parsed if isinstance(parsed, dict) else {}
 
@@ -1106,7 +1106,7 @@ class MattermostAdapter(ChannelAdapter):
         """Handle one event. A malformed frame is skipped, never fatal."""
         try:
             payload = json.loads(frame)
-        except json.JSONDecodeError, TypeError:
+        except (json.JSONDecodeError, TypeError):
             return
         if payload.get("event") != "posted":
             return
@@ -1163,7 +1163,7 @@ class MattermostAdapter(ChannelAdapter):
         data = payload.get("data") or {}
         try:
             post = json.loads(data.get("post", "{}"))
-        except json.JSONDecodeError, TypeError:
+        except (json.JSONDecodeError, TypeError):
             return None
 
         # A bot's own posts come back down the same socket. Answering them is an
@@ -1238,7 +1238,7 @@ class MattermostAdapter(ChannelAdapter):
             return False
         try:
             mentioned = json.loads(raw) if isinstance(raw, str) else raw
-        except json.JSONDecodeError, TypeError:
+        except (json.JSONDecodeError, TypeError):
             return False
         return own in mentioned if isinstance(mentioned, list) else False
 
@@ -1373,7 +1373,7 @@ class MattermostAdapter(ChannelAdapter):
         # Beside the transport's own failures: an answer that is not an object
         # has no `.get` (AttributeError), and a `size` that is a word, a list or
         # not finite does not convert (ValueError, TypeError, OverflowError).
-        except httpx.HTTPError, ValueError, TypeError, OverflowError, AttributeError:
+        except (httpx.HTTPError, ValueError, TypeError, OverflowError, AttributeError):
             logger.warning(
                 "Could not look up a Mattermost file's details: file=%s",
                 attachment.filename,

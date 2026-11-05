@@ -17,6 +17,8 @@ use std::sync::{Arc, Mutex};
 
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, Url, WebviewUrl, WebviewWindow};
 
+use agenticos_shell_core::under;
+
 use crate::appearance::{self, Appearance, Surface};
 
 pub const WINDOW: &str = "quick-ask";
@@ -61,7 +63,7 @@ pub fn prepare(app: &AppHandle, server: &Url, appearance: Appearance) -> tauri::
 }
 
 fn prepare_named(app: &AppHandle, server: &Url, appearance: Appearance, label: &str) -> tauri::Result<WebviewWindow> {
-    let page = server.join(PATH).map_err(|e| tauri::Error::Anyhow(e.into()))?;
+    let page = under(server, PATH);
     let version = app.package_info().version.to_string();
     let mut builder = crate::webview_profile::window(app, label, WebviewUrl::External(page))?
         .title("Quick ask")

@@ -146,7 +146,7 @@ def measure(content: bytes) -> float | None:
         return None
     try:
         seconds = reader(content, _Budget())
-    except _Malformed, struct.error, IndexError:
+    except (_Malformed, struct.error, IndexError):
         return None
     if seconds is None or not math.isfinite(seconds) or seconds < 0:
         return None

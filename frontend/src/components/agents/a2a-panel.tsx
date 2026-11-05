@@ -24,7 +24,7 @@ export function a2aAddresses(apiUrl: string, agentId: string): { card: string; e
  */
 export function A2aPanel({ agent, canManage }: { agent: Agent; canManage: boolean }) {
   const t = useTranslations("agents");
-  const { apiUrl } = usePublicConfig();
+  const { apiBaseUrl: apiUrl } = usePublicConfig();
   const { setA2a } = useAgent(agent.id);
   const published = agent.current_version_id !== null;
   const enabled = agent.a2a_enabled === true;

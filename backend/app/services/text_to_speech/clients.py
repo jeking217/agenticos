@@ -196,7 +196,7 @@ def _gemini_audio(call: SpeechCall, response: httpx.Response) -> bytes:
             if content.get("type") == "audio"
         ]
         audio = base64.b64decode(blocks[-1], validate=True)
-    except ValueError, KeyError, IndexError, AttributeError, TypeError, binascii.Error:
+    except (ValueError, KeyError, IndexError, AttributeError, TypeError, binascii.Error):
         logger.warning("Gemini returned no audio for model %s", call.model, exc_info=True)
         raise SpeechProviderError(SpeechFailure.UNAVAILABLE, provider=call.provider) from None
     return _audio(call, audio)

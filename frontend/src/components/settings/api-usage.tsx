@@ -12,7 +12,7 @@ import { DOCS, ROUTES } from "@/lib/constants";
 /** Where the API is, how a key authenticates, and the two places that say what it can do. */
 export function ApiUsage() {
   const t = useTranslations("apiUsage");
-  const { apiUrl } = usePublicConfig();
+  const { apiBaseUrl: apiUrl } = usePublicConfig();
   return (
     <section className="border-border bg-card rounded-xl border" data-tour="api-usage">
       <header className="border-border border-b px-5 py-4">

@@ -128,7 +128,7 @@ async def answer(url: str, document: bytes) -> Answer:
                 return Answer(body=None)
             try:
                 data, media_type = await tile_proxy.tile(*map(int, found.groups()))
-            except NotFoundError, ExternalServiceError:
+            except (NotFoundError, ExternalServiceError):
                 return Answer(body=None)
             return Answer(body=data, content_type=media_type)
     return Answer(body=None)

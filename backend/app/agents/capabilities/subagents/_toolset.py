@@ -218,7 +218,7 @@ class DelegatingToolset(WrapperToolset[AgentDeps]):
                 return await self.wrapped.call_tool(
                     name, {**tool_args, "mode": delegation.mode}, ctx, tool
                 )
-        except ApprovalRequired, CallDeferred:
+        except (ApprovalRequired, CallDeferred):
             # A delegate that stopped for a person, on its way to parking the
             # parent's own call. Stashed and re-raised unchanged: the signal is how
             # Pydantic AI suspends a run, and swallowing it would report unfinished

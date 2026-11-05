@@ -575,6 +575,22 @@ OS for your agents.
 
     app.include_router(api_router, prefix=settings.API_V1_STR)
 
+    # The same routes again, under the segment a gateway mounts this deployment
+    # at (`/agent/api/v1` when `API_PATH_PREFIX=/agent`). Kept out of the schema:
+    # it is the same surface, and listing it twice would suggest two APIs.
+    #
+    # Mounted in addition to, not instead of, the unprefixed copy above: the
+    # gateway in front of this may forward the prefix untouched or strip it, and
+    # the service cannot tell which. Answering on both makes either work, and
+    # leaves every in-cluster caller (the console's BFF, the worker) on the path
+    # it already uses.
+    if settings.API_PATH_PREFIX:
+        app.include_router(
+            api_router,
+            prefix=settings.PUBLIC_API_PATH,
+            include_in_schema=False,
+        )
+
     # The platform's own MCP server (#2058), served beside the API rather than
     # under its prefix: an MCP client is pointed at `<host>/mcp`, and the OAuth
     # metadata path it discovers is fixed by the spec.

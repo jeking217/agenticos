@@ -3,6 +3,8 @@
 import { createContext, useContext } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+import { withBasePath } from "@/lib/base-path";
+
 import { apiClient } from "@/lib/api-client";
 import { qk } from "@/lib/query-keys";
 
@@ -58,7 +60,7 @@ interface CustomMarkProps {
  * it: every caller prints the name it accompanies.
  */
 export function CustomMark({ name, className }: CustomMarkProps) {
-  const mask = `url("/api/catalog/icons/${name}")`;
+  const mask = `url("${withBasePath(`/api/catalog/icons/${name}`)}")`;
   return (
     <span
       aria-hidden

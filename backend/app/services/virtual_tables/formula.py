@@ -169,7 +169,7 @@ def _parse(formula: str, labels: Sequence[str]) -> ast.Expression:
     source = _REFERENCE.sub(placeholder, formula).strip()
     try:
         return ast.parse(_spreadsheet_words(source), mode="eval")
-    except SyntaxError, tokenize.TokenError:
+    except (SyntaxError, tokenize.TokenError):
         raise FormulaProblem("The formula is not written correctly") from None
 
 
@@ -335,7 +335,7 @@ def work_out(formula: str, columns: Sequence[ColumnDef], record: Mapping[str, Va
     values = [_as_read(by_label[label], record.get(str(by_label[label].id))) for label in named]
     try:
         result = _evaluate(tree, values)
-    except ArithmeticError, TypeError, ValueError, IndexError:
+    except (ArithmeticError, TypeError, ValueError, IndexError):
         return None
     if isinstance(result, float):
         if not math.isfinite(result):

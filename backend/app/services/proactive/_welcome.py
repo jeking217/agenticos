@@ -170,7 +170,7 @@ async def _greet(bot: ChannelBot, email: str, text: str, places: list[str]) -> b
                 api_base_url=bot.api_base_url,
                 places=places,
             )
-    except httpx.HTTPError, ChannelNotConfigured, ValueError, KeyError:
+    except (httpx.HTTPError, ChannelNotConfigured, ValueError, KeyError):
         # The vendor's own text stays in the log; the next platform still tries.
         logger.exception("welcome_failed", extra={"bot_id": str(bot.id), "platform": bot.platform})
         return False

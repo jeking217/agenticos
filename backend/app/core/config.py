@@ -57,6 +57,23 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "UnioneAgent"
     API_V1_STR: str = "/api/v1"
+    API_PATH_PREFIX: str = ""
+    """The segment a shared gateway mounts this deployment under.
+
+    Empty at the root - what a local `make dev` and every test assume. A
+    deployment behind one host with other applications sets its own segment
+    (`/agent`), and the API then answers on two paths:
+
+    - `/api/v1/...` - what the containers use with each other, unchanged;
+    - `/agent/api/v1/...` - what the browser and the gateway use.
+
+    Both are mounted, deliberately. A gateway may forward the prefix as it
+    received it or strip it before proxying, and neither behaviour is something
+    this service can observe; answering on both means an operator does not have
+    to know which one theirs does. URLs handed out to third parties
+    (`PUBLIC_API_PATH`) carry the prefix, because those are resolved from
+    outside.
+    """
     UPDATE_AGENT_SOCKET: Path | None = None
     UPDATE_PIPELINE_URL: str | None = None
 
@@ -323,6 +340,18 @@ class Settings(BaseSettings):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
+    def PUBLIC_API_PATH(self) -> str:
+        """The API's path as the outside world addresses it.
+
+        `API_PATH_PREFIX` in front of `API_V1_STR`, so `/agent` + `/api/v1`
+        reads `/agent/api/v1`. Used only where a URL leaves this service - a
+        webhook a provider posts to, a logo an embed loads - because those are
+        resolved by somebody outside the network this runs in.
+        """
+        return f"{self.API_PATH_PREFIX.rstrip('/')}{self.API_V1_STR}"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
     def DATABASE_URL(self) -> str:
         """Build async PostgreSQL connection URL.
 
@@ -366,6 +395,24 @@ class Settings(BaseSettings):
     # load suite's recovery phase failed 65-78% at 30 s and 5-20% at 5 s (#2219).
     # The handler answers the timeout `503` with `Retry-After`.
     DB_POOL_TIMEOUT: int = 5
+
+    # -- Unione CMS Web programming ---------------------------------------
+    CMS_BASE_URL: str = ""
+    """Where the CMS answers, e.g. `https://cms.example.com`.
+
+    Empty disables the whole Web-site module: the console hides its entry and
+    the capability is not buildable. A half-configured CMS - a URL with no
+    secret, or the reverse - is worse than none, because the failure arrives
+    as a 500 on a page somebody is already using.
+    """
+    CMS_PREVIEW_SECRET: str = ""
+    """Signs preview links. Empty falls back to `SECRET_KEY`.
+
+    Its own setting because a preview link is handed to a browser: rotating it
+    should not mean rotating every other thing this deployment signs.
+    """
+    CMS_WORKSPACE_DIR: Path | None = None
+    """Where site workspaces live. Empty means `MEDIA_DIR/cms`."""
 
     SECRET_KEY: str = "change-me-in-production-use-openssl-rand-hex-32"
 

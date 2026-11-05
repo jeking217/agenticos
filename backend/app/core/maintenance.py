@@ -46,6 +46,7 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.clients.redis import RedisClient
+from app.core.config import settings
 from app.core.update_gate import draining
 from app.db.session import get_db_context
 from app.repositories import deployment_settings_repo
@@ -65,16 +66,35 @@ under it.
 
 RETRY_AFTER_SECONDS = 120
 
-_ALLOWED_PREFIXES = (
-    "/health",
-    "/api/v1/health",
-    "/api/v1/branding",
-    "/api/v1/auth/",
-    "/api/v1/admin/",
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-)
+
+def _allowed_prefixes() -> tuple[str, ...]:
+    """Every path that stays reachable while maintenance mode is on.
+
+    Built rather than written out because the API answers on two paths when a
+    gateway mounts it under a segment: `/api/v1` for the containers and
+    `<prefix>/api/v1` for the browser. A health check or a sign-in reachable on
+    only one of them goes dark the moment the switch is turned on - which is
+    exactly when somebody is watching.
+    """
+    api_paths = (settings.API_V1_STR, settings.PUBLIC_API_PATH)
+    paths = [
+        "/health",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    ]
+    for api in api_paths:
+        paths += [
+            f"{api}/health",
+            f"{api}/branding",
+            f"{api}/auth/",
+            f"{api}/admin/",
+        ]
+    # A prefix of "" makes PUBLIC_API_PATH equal API_V1_STR; keep one of each.
+    return tuple(dict.fromkeys(paths))
+
+
+_ALLOWED_PREFIXES = _allowed_prefixes()
 
 _redis: RedisClient | None = None
 

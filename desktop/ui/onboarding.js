@@ -156,7 +156,10 @@ async function start() {
     invoke("onboarding_state"),
     invoke("startup_notice"),
   ]);
-  if (state.server_url) serverField.value = state.server_url;
+  // A configured server wins; otherwise the build's own deployment is offered,
+  // so a first run against the production address is one click rather than
+  // typing a path the person would have to look up.
+  serverField.value = state.server_url || state.suggested_server || "";
   // Somebody who has been through it - "Change Server…", or a server that
   // stopped answering - is asked where, not welcomed again.
   if (notice) {

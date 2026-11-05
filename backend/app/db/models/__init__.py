@@ -14,6 +14,7 @@ from app.db.models.conversation_favourite import ConversationFavourite
 from app.db.models.conversation_last_read import ConversationLastRead
 from app.db.models.browser_sign_in import BrowserSignIn
 from app.db.models.drama_ticket import DramaTicket
+from app.db.models.cms import CmsSessionToken, CmsSiteBinding
 from app.db.models.conversation_share import ConversationShare
 from app.db.models.channel_bot import ChannelBot
 from app.db.models.channel_identity import ChannelIdentity

@@ -1252,7 +1252,7 @@ export function useChat(options: UseChatOptions = {}) {
   useLayoutEffect(() => {
     pendingNextSteps.current.clear();
   }, [queueAccountId, tenantId, activeOrgId]);
-  const { wsUrl: wsOrigin } = usePublicConfig();
+  const { wsBaseUrl: wsOrigin } = usePublicConfig();
   const wsUrl = useMemo(() => {
     const base = `${wsOrigin}/api/v1/ws/agent`;
     return activeOrgId ? `${base}?organization_id=${encodeURIComponent(activeOrgId)}` : base;

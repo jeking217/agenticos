@@ -13,6 +13,37 @@ use base64::Engine;
 use sha2::{Digest, Sha256};
 use url::Url;
 
+/// The deployment this build talks to unless the person names another.
+///
+/// A deployment may sit on a segment of a shared host (`/agent` for the
+/// console, `/agent/api` for the API), so the address is a path, not an origin.
+/// Whether the field is prefilled is the shell's call; this is the value.
+pub const DEFAULT_SERVER: &str = "https://online.unione.cloud/agent";
+
+/// A path appended to a base that may itself sit on a segment.
+///
+/// `Url::set_path` and `Url::join` both **replace** the base's path: on a
+/// console mounted at `/agent`, `set_path("/api/public/endpoints")` lands on
+/// the host's root and `join("chat")` lands on `/agent/chat` - neither is this
+/// deployment, and both answer 404. Every address this shell derives from the
+/// server goes through here instead, so a sub-path deployment works the same as
+/// one at the root.
+pub fn under(base: &Url, path: &str) -> Url {
+    let (path, query) = match path.split_once('?') {
+        Some((path, query)) => (path, Some(query)),
+        None => (path, None),
+    };
+    let mut url = base.clone();
+    url.set_path(&format!(
+        "{}/{}",
+        url.path().trim_end_matches('/'),
+        path.trim_start_matches('/')
+    ));
+    url.set_query(query);
+    url.set_fragment(None);
+    url
+}
+
 /// The address a person typed, as the URL the webview will be pointed at.
 ///
 /// A bare host is the common spelling (`agenticos.acme.com`), so a missing scheme
@@ -83,9 +114,7 @@ pub struct Pairing {
 impl Pairing {
     /// Where the phone's webview goes to redeem it: the console's own page.
     pub fn redeem_url(&self) -> Url {
-        let mut url = self.server.clone();
-        url.set_path("/auth/pair");
-        url.set_query(None);
+        let mut url = under(&self.server, "/auth/pair");
         url.query_pairs_mut().append_pair("code", &self.code);
         url
     }
@@ -443,9 +472,7 @@ pub fn deep_link_return(server: Option<&Url>, expected: Option<&str>, link: &str
     if code.is_empty() {
         return None;
     }
-    let mut destination = server?.clone();
-    destination.set_path("/auth/callback");
-    destination.set_query(None);
+    let mut destination = under(server?, "/auth/callback");
     destination.query_pairs_mut().append_pair("code", &code);
     Some(destination)
 }

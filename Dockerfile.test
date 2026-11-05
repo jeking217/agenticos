@@ -1,0 +1,4 @@
+FROM agenticos_backend:dev
+USER root
+RUN /app/.venv/bin/python -m ensurepip --upgrade >/dev/null 2>&1 || true
+RUN /app/.venv/bin/python -m pip install -q pytest anyio pytest-mock

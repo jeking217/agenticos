@@ -7,6 +7,7 @@
 import { blobatarUri } from "blobatar/uri";
 
 import { avatarHue } from "@/lib/avatar-color";
+import { withBasePath } from "@/lib/base-path";
 import { invokeShell, ShellError } from "@/lib/desktop/shell";
 
 /** An adaptive icon's 108dp at the density launchers ask for. */
@@ -43,7 +44,7 @@ export async function agentIcon(agent: PinnableAgent): Promise<string> {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("no canvas to draw the agent's face on");
   if (agent.hasAvatar) {
-    const response = await fetch(`/api/agents/${agent.id}/avatar`);
+    const response = await fetch(withBasePath(`/api/agents/${agent.id}/avatar`));
     // i18n-exempt: a developer's message, logged by reportShellFailure
     if (!response.ok) throw new Error(`the agent's picture answered ${response.status}`);
     const picture = await load(URL.createObjectURL(await response.blob()));

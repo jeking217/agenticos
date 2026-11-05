@@ -1269,7 +1269,7 @@ async def _resolve(cdp_url: str) -> str | None:  # pragma: no cover - needs a re
     except ValueError:
         try:
             found = await asyncio.get_running_loop().getaddrinfo(host, None)
-        except OSError, UnicodeError:
+        except (OSError, UnicodeError):
             # `UnicodeError`: the IDNA codec refuses an empty or over-long
             # label before any query is made (#2352).
             return None

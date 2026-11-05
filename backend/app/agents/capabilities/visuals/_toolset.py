@@ -464,7 +464,7 @@ class VisualsToolset:
         if ctx.workspace.attached:
             try:
                 return await ctx.workspace.read_bytes(source)
-            except FileNotFoundError, IsADirectoryError, NotADirectoryError:
+            except (FileNotFoundError, IsADirectoryError, NotADirectoryError):
                 pass
             except PermissionError as refused:
                 raise VisualError(f"Reading {source!r} was refused: {refused}") from refused

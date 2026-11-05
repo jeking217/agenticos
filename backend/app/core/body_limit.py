@@ -120,7 +120,14 @@ def _widget_cors(scope: Scope, path: str) -> dict[str, str] | None:
     before anything has read the embed and the answer is the same for every
     origin: there is nothing about the embed in it to learn.
     """
-    if not (path.startswith("/api/v1/embed/") and path.endswith("/dictation")):
+    # Both mountings, for the reason `maintenance._allowed_prefixes` gives: the
+    # gateway in front may forward its segment untouched or strip it, and a
+    # widget's 413 that arrives as a CORS failure reads as "offline".
+    embed_prefixes = (
+        f"{settings.API_V1_STR}/embed/",
+        f"{settings.PUBLIC_API_PATH}/embed/",
+    )
+    if not (path.startswith(embed_prefixes) and path.endswith("/dictation")):
         return None
     for name, value in scope.get("headers", []):
         if name == b"origin":

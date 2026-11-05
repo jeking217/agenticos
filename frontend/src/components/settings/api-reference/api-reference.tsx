@@ -21,7 +21,7 @@ export function ApiReference() {
   const t = useTranslations("apiReference");
   const tc = useTranslations("common");
   const ts = useTranslations("states");
-  const { apiUrl } = usePublicConfig();
+  const { apiBaseUrl: apiUrl } = usePublicConfig();
   const { document, isLoading, error, refetch } = usePublicOpenApi();
   const [query, setQuery] = useState("");
 

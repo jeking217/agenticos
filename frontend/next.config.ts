@@ -60,8 +60,27 @@ const MOVED_ROUTES: readonly { from: string; to: string }[] = [
   { from: "/workspaces/:id", to: "/documents/:id" },
 ];
 
+/**
+ * The segment this build is mounted under, or `undefined` at the root.
+ *
+ * Next fixes `basePath` when the bundle is built: it is compiled into every
+ * route, every `_next/static` URL and every redirect. Unlike the deployment
+ * settings in `src/lib/public-config.ts` - which are read per request so one
+ * image serves every deployment - this one cannot be a runtime value. A
+ * deployment under a shared host's segment (`/agent`) therefore needs its
+ * own build, and the published image stays at the root.
+ */
+function basePathOf(value: string | undefined): string | undefined {
+  const trimmed = (value ?? "").trim().replace(/\/+$/, "");
+  if (!trimmed || trimmed === "/") return undefined;
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
 const nextConfig: NextConfig = {
   output: "standalone",
+  // `--build-arg NEXT_PUBLIC_BASE_PATH=/agent` for a deployment mounted
+  // beside other applications; unset for a deployment at the root.
+  basePath: basePathOf(process.env.NEXT_PUBLIC_BASE_PATH),
   // next-intl owns locale rewrites; Next must preserve their internal paths.
   skipProxyUrlNormalize: true,
   pageExtensions: ["ts", "tsx"],

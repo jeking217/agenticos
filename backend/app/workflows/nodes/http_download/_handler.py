@@ -167,7 +167,7 @@ async def handle(config: BaseModel | None, node_input: BaseModel | None) -> Node
                 )
     except UrlRefusedError as exc:
         return failed("URL_REFUSED", str(exc))
-    except httpx2.ConnectError, httpx2.ConnectTimeout:
+    except (httpx2.ConnectError, httpx2.ConnectTimeout):
         return failed("HTTP_UNREACHABLE", "The server could not be reached", retryable=True)
     except httpx2.HTTPError:
         return failed("HTTP_NO_RESPONSE", "The download started and did not finish", retryable=True)

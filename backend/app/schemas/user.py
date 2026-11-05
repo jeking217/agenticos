@@ -150,7 +150,7 @@ class UserUpdate(BaseSchema):
             return None
         try:
             ZoneInfo(value)
-        except ZoneInfoNotFoundError, ValueError:
+        except (ZoneInfoNotFoundError, ValueError):
             raise ValueError("Not an IANA time zone, such as Europe/Warsaw") from None
         return value
 

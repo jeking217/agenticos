@@ -140,7 +140,7 @@ class VoiceCallStarter:
             raise VoiceRefused("no_agent", "Pick an agent to call.")
         try:
             agent = await AgentRegistryService(self.db).get(ctx, agent_id, perm=Perm.AGENTS_RUN)
-        except NotFoundError, AuthorizationError:
+        except (NotFoundError, AuthorizationError):
             raise VoiceRefused("forbidden", "This agent cannot take your call.") from None
         voice_settings = VoiceSettingsService(self.db)
         spec = await voice_settings.published_spec(agent)

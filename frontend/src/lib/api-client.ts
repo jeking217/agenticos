@@ -6,6 +6,7 @@
 
 import { ApiError, parseErrorMessage } from "@/lib/api-error";
 import { markRefreshed, refreshedRecently, withAuthLock } from "@/lib/auth-lock";
+import { withBasePath } from "@/lib/base-path";
 import { CONSOLE_TAB, CONSOLE_TAB_HEADER } from "@/lib/console-tab";
 import { useAuthStore, useOrgStore } from "@/stores";
 
@@ -165,7 +166,7 @@ function refreshAccessToken(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = withAuthLock(() => {
       if (refreshedRecently()) return Promise.resolve(true);
-      return fetch(`/api${REFRESH_ENDPOINT}`, {
+      return fetch(withBasePath(`/api${REFRESH_ENDPOINT}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       }).then(async (res) => {
@@ -209,7 +210,11 @@ class ApiClient {
   ): Promise<Response> {
     const { params, body, onProgress, ...fetchOptions } = options;
 
-    let url = `/api${endpoint}`;
+    // Absolute, but only for one segment: a deployment mounted under `/agent`
+    // serves this proxy under that segment too, and an unprefixed path would
+    // resolve against the host root instead - a different application's address,
+    // which there answers with a page rather than a 404 and so fails quietly.
+    let url = withBasePath(`/api${endpoint}`);
 
     if (params) {
       const searchParams = new URLSearchParams(params);

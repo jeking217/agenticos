@@ -291,7 +291,7 @@ class ChildPool:
                 if loop.time() >= deadline:
                     await self._stop(child)
                     return Failed(f"timed out after {timeout}; the child process was stopped")
-        except BrokenPipeError, ConnectionResetError:
+        except (BrokenPipeError, ConnectionResetError):
             return await self._died(child)
         except asyncio.CancelledError:
             await self._stop(child)
@@ -362,7 +362,7 @@ class ChildPool:
         while not self._closed:
             try:
                 child = await self._spawn()
-            except ChildStartFailed, OSError:
+            except (ChildStartFailed, OSError):
                 # `OSError` too: under resource pressure `create_subprocess_exec`
                 # raises EMFILE or EAGAIN, and a replacement that gave up there
                 # left the pool a slot short for good while the worker stayed

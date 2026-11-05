@@ -65,7 +65,7 @@ export function CreateApiKeyDialog({
   const tErrors = useTranslations("errors");
   // The API's own origin, not this console's: a key is sent straight to the
   // backend, and the console's `/api` is a proxy that only carries a session.
-  const { apiUrl } = usePublicConfig();
+  const { apiBaseUrl: apiUrl } = usePublicConfig();
   const choice = useScopeChoice(catalog);
   const [name, setName] = useState("");
   const [expiry, setExpiry] = useState<Expiry>("90");

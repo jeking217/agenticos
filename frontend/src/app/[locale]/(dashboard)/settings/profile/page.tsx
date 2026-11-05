@@ -6,6 +6,7 @@ import { Camera } from "lucide-react";
 import { toast } from "sonner";
 
 import { ApiError, getErrorMessage, parseErrorMessage } from "@/lib/api-error";
+import { withBasePath } from "@/lib/base-path";
 import { AvatarColorPicker, Button, FormField, Input } from "@/components/ui";
 import { AvatarFace } from "@/components/ui/avatar-face";
 import { ActiveSessions } from "@/components/dashboard/active-sessions";
@@ -91,7 +92,7 @@ export default function ProfileSettingsPage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/users/me/avatar", { method: "POST", body: formData });
+      const res = await fetch(withBasePath("/api/users/me/avatar"), { method: "POST", body: formData });
       if (!res.ok) {
         const body: unknown = await res.json().catch(() => null);
         throw new ApiError(res.status, parseErrorMessage(body, t("uploadFailed4")), body);

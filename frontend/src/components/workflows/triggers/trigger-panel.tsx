@@ -119,7 +119,7 @@ function LiveTrigger({
   canEdit,
 }: LiveTriggerProps) {
   const t = useTranslations("pages.workflows");
-  const { apiUrl } = usePublicConfig();
+  const { apiBaseUrl: apiUrl } = usePublicConfig();
   const table = draftConfig?.["table"];
   const tableId =
     table !== null && typeof table === "object" && "table_id" in table

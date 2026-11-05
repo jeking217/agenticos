@@ -1078,7 +1078,7 @@ class WorkflowExposureService:
         try:
             node = self._pinned_graph(version).node_by_id[exposure.node_instance_id]
             return config_model.model_validate(node.config)
-        except ValidationError, KeyError:
+        except (ValidationError, KeyError):
             logger.warning(
                 "workflow_mail_trigger_config_invalid",
                 extra={"exposure_id": str(exposure.id), "source": source},

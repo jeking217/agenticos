@@ -342,7 +342,7 @@ class VoiceCallSession:
             return audio if isinstance(audio, bytes) else None
         try:
             return _FRAMES.validate_python(json.loads(text))
-        except ValidationError, ValueError:
+        except (ValidationError, ValueError):
             return None
 
     async def run(self) -> None:

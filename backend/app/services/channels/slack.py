@@ -380,7 +380,7 @@ class SlackAdapter(ChannelAdapter):
         """
         try:
             return datetime.fromtimestamp(float(ts), UTC)
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return None
 
     async def channel_details(

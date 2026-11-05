@@ -29,7 +29,7 @@ def valid_time_zone(value: str | None) -> str | None:
         return None
     try:
         ZoneInfo(value)
-    except ZoneInfoNotFoundError, ValueError:
+    except (ZoneInfoNotFoundError, ValueError):
         raise ValueError("Not an IANA time zone, such as Europe/Warsaw") from None
     return value
 
@@ -393,7 +393,9 @@ def webhook_url(event_source: str, trigger_id: UUID) -> str:
     against: the two must be the same string, byte for byte.
     """
     base = settings.PUBLIC_BASE_URL.rstrip("/")
-    return f"{base}/api/v1/webhooks/triggers/{event_source}/{trigger_id}"
+    # The path the provider must post to, not the one the containers use: a
+    # deployment behind a gateway lives under its own segment.
+    return f"{base}{settings.PUBLIC_API_PATH}/webhooks/triggers/{event_source}/{trigger_id}"
 
 
 # Read from a connected account rather than posted to - no webhook, no secret.

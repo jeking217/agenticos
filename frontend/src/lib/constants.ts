@@ -72,6 +72,8 @@ export const ROUTES = {
   // no ingestion, and the buttons would fit half the rows.
   DATASETS: "/datasets",
   DATASET_BASE: (id: string) => `/datasets/${id}`,
+  SITES: "/sites",
+  SITE_DETAIL: (id: string | number) => `/sites/${id}`,
   PROJECTS: "/projects",
   PROJECT_DETAIL: (id: string) => `/projects/${id}`,
   /** A new chat in a project, starting with its default agent. */

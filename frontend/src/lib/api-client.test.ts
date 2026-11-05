@@ -66,6 +66,26 @@ describe("apiClient", () => {
     });
   });
 
+  it("keeps its requests under the segment this build is mounted at", async () => {
+    // `/api/...` is an absolute path, so the browser resolves it against the
+    // host root - where nginx serves whatever else lives there, and answers with
+    // a page rather than a 404. On a sub-path deployment every call then fails,
+    // and the login page quietly falls back to the local form because the
+    // "is the platform bridge on?" question never got an answer.
+    vi.resetModules();
+    vi.stubEnv("NEXT_PUBLIC_BASE_PATH", "/agent");
+    try {
+      const fresh = await import("./api-client");
+
+      await fresh.apiClient.get("/auth/unione/config");
+
+      expect(fetchMock.mock.calls[0]![0]).toBe("/agent/api/auth/unione/config");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
   it("sends each verb with its own body handling", async () => {
     await apiClient.get("/agents");
     await apiClient.post("/agents", { name: "Support" });

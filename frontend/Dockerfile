@@ -18,9 +18,16 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# No build arguments: the public URLs and limits the browser needs are runtime
+# No build arguments for the addresses the browser uses: those are runtime
 # environment, read on every request, so one image serves every deployment
 # (see src/lib/public-config.ts).
+#
+# `basePath` is the one exception, and it has to be: Next compiles it into every
+# route and every `_next/static` URL at build time, so a deployment mounted under
+# a segment of a shared host (`/agent`) needs an image built for it. Empty -
+# the default - builds the root-mounted app the published image carries.
+ARG NEXT_PUBLIC_BASE_PATH=""
+ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
 
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED=1

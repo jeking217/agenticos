@@ -111,7 +111,7 @@ def inline_image_supported(content: bytes, mime_type: str) -> bool:
     try:
         with Image.open(io.BytesIO(content)) as image:
             return image.format == formats[mime_type] and max(image.size) <= INLINE_IMAGE_MAX_SIDE
-    except UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError:
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
         return False
 
 
@@ -519,7 +519,7 @@ class TeamsAdapter(ChannelAdapter):
             return
         try:
             await self._post_activity(credentials, msg.platform_chat_id, {"type": "typing"})
-        except httpx.HTTPError, ChannelNotConfigured:
+        except (httpx.HTTPError, ChannelNotConfigured):
             logger.debug("teams_typing_failed", exc_info=True)
 
     async def send_prompt(self, bot_token: str, prompt: PromptMessage) -> None:

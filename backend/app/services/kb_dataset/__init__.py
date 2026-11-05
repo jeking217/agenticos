@@ -656,7 +656,7 @@ class DatasetService:
         if dataset is None:
             try:
                 dataset = await self.dataset(uuid.UUID(name), ctx)
-            except ValueError, NotFoundError:
+            except (ValueError, NotFoundError):
                 dataset = None
         if dataset is None or dataset.knowledge_base_id != kb.id:
             raise NotFoundError(message=f"No dataset named `{name}` in this knowledge base")

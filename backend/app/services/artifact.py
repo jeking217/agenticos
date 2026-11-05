@@ -545,12 +545,12 @@ def _library_source() -> str:
 
 def content_address(rest: str) -> str:
     """An address under the content route, on the content origin - where a frame loads from."""
-    return f"{_content_origin()}{settings.API_V1_STR}/artifact-content/{rest}"
+    return f"{_content_origin()}{settings.PUBLIC_API_PATH}/artifact-content/{rest}"
 
 
 def tile_source() -> str:
     """Where a page loads map tiles: this deployment's tile path, as a source expression."""
-    return f"{_content_origin()}{settings.API_V1_STR}/artifact-content/tiles/"
+    return f"{_content_origin()}{settings.PUBLIC_API_PATH}/artifact-content/tiles/"
 
 
 def content_security_policy(*, embed_origins: Sequence[str] = ()) -> str:

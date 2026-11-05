@@ -50,7 +50,7 @@ async def post_to_teams(db: AsyncSession, conversation_id: UUID, text: str) -> b
         await adapter.send_message(
             unseal_bot_token(bot), OutgoingMessage(platform_chat_id=row.key, text=text)
         )
-    except httpx.HTTPError, ChannelNotConfigured, ValueError:
+    except (httpx.HTTPError, ChannelNotConfigured, ValueError):
         logger.warning(
             "teams_post_failed",
             extra={"teams_conversation_id": str(conversation_id), "bot_id": str(bot.id)},

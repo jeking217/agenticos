@@ -5,6 +5,7 @@ import {
   Boxes,
   NotebookTabs,
   FolderKanban,
+  Globe2,
   Files,
   Inbox,
   Waypoints,
@@ -135,6 +136,16 @@ export const NAV_GROUPS: NavGroup[] = [
         href: ROUTES.ROUTINES,
         icon: TimerReset,
         permission: Perm.agentsView,
+      },
+      // Web-site programming: a CMS site's code, its live preview and its
+      // publish button. Gated on `projects:view` because that is the permission
+      // that already means "may work in a shared workspace" - the CMS's own
+      // roles decide what a person may change once they are inside.
+      {
+        labelKey: "sites",
+        href: ROUTES.SITES,
+        icon: Globe2,
+        permission: Perm.projectsView,
       },
       {
         labelKey: "artifacts",

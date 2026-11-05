@@ -112,7 +112,7 @@ async def _reserve_deliveries(ctx: AuthContext, count: int) -> WorkflowError | N
                             )
         finally:
             await client.close()
-    except RedisError, OSError, TimeoutError:
+    except (RedisError, OSError, TimeoutError):
         logger.warning("workflow_email_allowance_unavailable")
         return WorkflowError(
             code="EMAIL_ALLOWANCE_UNAVAILABLE",

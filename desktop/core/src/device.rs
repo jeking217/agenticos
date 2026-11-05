@@ -12,7 +12,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use url::Url;
 
-use crate::is_loopback;
+use crate::{is_loopback, under};
+
+/// The console's own answer to "where is this deployment's API" (#2305).
+const DISCOVERY: &str = "/api/public/endpoints";
+
+/// The device hub's socket, under whatever segment the API answers at.
+const DEVICE_SOCKET: &str = "/api/v1/ws/device";
 
 /// Where a deployment's API and sockets answer, as its console reported them.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,13 +35,25 @@ pub struct EndpointsAnswer {
 }
 
 impl Endpoints {
-    /// Where the console asks: its own origin, whatever path the app opened it at.
-    pub fn discovery_url(server: &Url) -> Url {
-        let mut url = server.clone();
-        url.set_path("/api/public/endpoints");
-        url.set_query(None);
-        url.set_fragment(None);
-        url
+    /// Where the console might answer the discovery question, likeliest first.
+    ///
+    /// A deployment may be mounted on a segment of a shared host
+    /// (`https://host/agent`), and then the answer lives under that segment,
+    /// so the typed base is where the route is appended. A person who pasted a
+    /// page instead of the entry (`…/agent/login`) would ask
+    /// `/login/api/public/endpoints`, hence the second candidate: the same route
+    /// at the host's root, which is where a console with no segment has always
+    /// answered it.
+    pub fn discovery_urls(server: &Url) -> Vec<Url> {
+        let mut candidates = vec![under(server, DISCOVERY)];
+        let mut root = server.clone();
+        root.set_path(DISCOVERY);
+        root.set_query(None);
+        root.set_fragment(None);
+        if !candidates.contains(&root) {
+            candidates.push(root);
+        }
+        candidates
     }
 
     /// Read and check the console's answer.
@@ -62,20 +80,18 @@ impl Endpoints {
         Ok(Self { api, ws })
     }
 
-    /// An API route, at the API's origin.
+    /// An API route, under whatever segment the API is mounted on.
+    ///
+    /// The console answers with `<origin>/agent` for an API behind a gateway, so
+    /// the route is appended rather than written over the path: `set_path` here
+    /// would drop the segment and every device call would 404.
     pub fn api_route(&self, path: &str) -> Url {
-        let mut url = self.api.clone();
-        url.set_path(path);
-        url.set_query(None);
-        url
+        under(&self.api, path)
     }
 
     /// The device hub's socket.
     pub fn device_socket(&self) -> Url {
-        let mut url = self.ws.clone();
-        url.set_path("/api/v1/ws/device");
-        url.set_query(None);
-        url
+        under(&self.ws, DEVICE_SOCKET)
     }
 }
 
@@ -167,11 +183,68 @@ mod tests {
     }
 
     #[test]
-    fn the_console_is_asked_at_its_own_origin() {
-        let server = Url::parse("https://console.acme.test/chat?x=1#top").unwrap();
+    fn the_console_is_asked_under_the_segment_it_is_mounted_on() {
+        // The production console answers at /agent, so the question has to
+        // be asked there; the host's root belongs to the platform's gateway.
+        let server = Url::parse("https://console.acme.test/agent").unwrap();
+        let candidates = Endpoints::discovery_urls(&server);
         assert_eq!(
-            Endpoints::discovery_url(&server).as_str(),
+            candidates[0].as_str(),
+            "https://console.acme.test/agent/api/public/endpoints"
+        );
+        assert_eq!(
+            candidates[1].as_str(),
             "https://console.acme.test/api/public/endpoints"
+        );
+        // A configured query and fragment are not part of the question.
+        assert!(!candidates[0].as_str().contains('?'));
+        assert!(!candidates[0].as_str().contains('#'));
+    }
+
+    #[test]
+    fn a_console_at_the_root_is_asked_at_the_root() {
+        let server = Url::parse("https://console.acme.test/?x=1#top").unwrap();
+        assert_eq!(
+            Endpoints::discovery_urls(&server)
+                .iter()
+                .map(Url::as_str)
+                .collect::<Vec<_>>(),
+            vec!["https://console.acme.test/api/public/endpoints"]
+        );
+    }
+
+    #[test]
+    fn a_pasted_page_falls_back_to_the_hosts_root() {
+        // Somebody who copied the address bar still gets an answer: the second
+        // candidate is the route every console without a segment answers on.
+        let server = Url::parse("https://console.acme.test/agent/login").unwrap();
+        let candidates = Endpoints::discovery_urls(&server);
+        assert_eq!(
+            candidates[0].as_str(),
+            "https://console.acme.test/agent/login/api/public/endpoints"
+        );
+        assert_eq!(
+            candidates[1].as_str(),
+            "https://console.acme.test/api/public/endpoints"
+        );
+    }
+
+    #[test]
+    fn an_api_on_a_segment_keeps_it_in_every_route() {
+        // The console reports its API as <origin>/agent (apiBaseUrl), and the
+        // device's routes and socket must stay under that segment.
+        let endpoints = Endpoints::from_answer(&answer(
+            "https://console.acme.test/agent",
+            "wss://console.acme.test/agent",
+        ))
+        .unwrap();
+        assert_eq!(
+            endpoints.api_route("/api/v1/auth/refresh").as_str(),
+            "https://console.acme.test/agent/api/v1/auth/refresh"
+        );
+        assert_eq!(
+            endpoints.device_socket().as_str(),
+            "wss://console.acme.test/agent/api/v1/ws/device"
         );
     }
 

@@ -67,6 +67,28 @@ describe("platformProxy", () => {
     expect(backend.forwarded().url).toBe(`${BACKEND}/api/v1/agents/abc/versions?limit=5`);
   });
 
+  it("tells the backend which sub-path this console is mounted under", async () => {
+    // The preview's `<base>` and its iframe link are built by the backend, which
+    // has no way to know this build's basePath. Without the header they resolve
+    // against the host root, where nginx serves a different application - and it
+    // answers with a page, so the frame looks loaded and is showing the wrong
+    // site. Re-imported under a stubbed env because `BASE_PATH` is a build-time
+    // constant, read once when the module loads.
+    vi.resetModules();
+    vi.stubEnv("NEXT_PUBLIC_BASE_PATH", "/agent");
+    try {
+      const fresh = await import("./platform-proxy");
+      const backend = backendReplies("{}");
+
+      await fresh.platformProxy().GET(request("/api/cms/sites/7/preview-url"));
+
+      expect(backend.forwarded().init.headers["X-Forwarded-Prefix"]).toBe("/agent");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
   it("sends the access token from the cookie, never from the client", async () => {
     const backend = backendReplies("{}");
 

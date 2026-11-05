@@ -37,7 +37,7 @@ const CLIENT_ICON: Record<McpClient, ComponentType<{ className?: string }>> = {
  */
 export function McpConnect() {
   const t = useTranslations("mcpConnect");
-  const { apiUrl } = usePublicConfig();
+  const { apiBaseUrl: apiUrl } = usePublicConfig();
   const [auth, setAuth] = useState<McpAuth>("browser");
   const url = `${apiUrl}/mcp`;
 

@@ -587,7 +587,7 @@ class _Render:
                     await self.connection.send(
                         "Target.disposeBrowserContext", {"browserContextId": self.context_id}
                     )
-        except CdpError, TimeoutError:
+        except (CdpError, TimeoutError):
             logger.warning("artifact_render_context_not_disposed", exc_info=True)
         finally:
             await self.connection.close()

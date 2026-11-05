@@ -8,10 +8,27 @@ import {
   pickedLocale,
   routing,
 } from "./lib/locale-routing";
+import { BASE_PATH, stripBasePath } from "./lib/base-path";
 import { readPublicConfig } from "./lib/public-config";
 import { contentSecurityPolicyHeader } from "./lib/security-headers";
 
 const handleI18nRouting = createMiddleware(routing);
+
+/**
+ * Redirect to a path that already carries the deployment's segment.
+ *
+ * Not `request.nextUrl.clone()`: a cloned URL keeps `basePath` on its own and
+ * puts it back on the way out, so assigning a pathname that *also* starts with
+ * the segment produced `/agent/agent/en`. Composing from the origin
+ * emits the path verbatim, which is what a caller that has prefixed it wants.
+ */
+function redirectTo(request: NextRequest, path: string): NextResponse {
+  // The query goes back on too: `?create=1` on a link next-intl has to
+  // re-prefix is part of what the visitor asked for.
+  return NextResponse.redirect(
+    new URL(`${path}${request.nextUrl.search}`, request.nextUrl.origin),
+  );
+}
 
 /**
  * Send a request whose URL carries no locale to the one the visitor picked.
@@ -29,15 +46,18 @@ const handleI18nRouting = createMiddleware(routing);
  * about the default.
  */
 function restorePickedLocale(request: NextRequest): NextResponse | null {
-  const { pathname } = request.nextUrl;
+  const pathname = stripBasePath(request.nextUrl.pathname);
   if (localePrefixOf(pathname)) return null;
 
   const picked = pickedLocale(request.cookies.get(LOCALE_COOKIE_NAME)?.value);
   if (!picked) return null;
 
-  const url = request.nextUrl.clone();
-  url.pathname = `/${picked}${pathname === "/" ? "" : pathname}`;
-  return NextResponse.redirect(url);
+  // `pathname` here is the application-internal one; the address the browser
+  // ends up on carries the deployment's segment, so it goes back on the way out.
+  return redirectTo(
+    request,
+    `${BASE_PATH}/${picked}${pathname === "/" ? "" : pathname}`,
+  );
 }
 
 /**
@@ -57,7 +77,7 @@ function restorePickedLocale(request: NextRequest): NextResponse | null {
 function rememberPrefixedLocale(request: NextRequest, response: NextResponse): void {
   if ((request.headers.get("sec-fetch-dest") ?? "document") !== "document") return;
 
-  const named = localePrefixOf(request.nextUrl.pathname);
+  const named = localePrefixOf(stripBasePath(request.nextUrl.pathname));
   if (!named || request.cookies.get(LOCALE_COOKIE_NAME)?.value === named) return;
 
   response.cookies.set(LOCALE_COOKIE_NAME, named, {
@@ -106,18 +126,59 @@ export default function middleware(request: NextRequest): NextResponse {
   // the render, not only set on the response. `x-nonce` rides along for a server
   // component that renders a <script> of its own. next-intl forwards the headers
   // of the request it is handed, so the render sees both.
-  const forwardedHeaders = new Headers(request.headers);
-  forwardedHeaders.set("x-nonce", nonce);
-  forwardedHeaders.set("Content-Security-Policy", csp);
-  const routedRequest = new NextRequest(request, { headers: forwardedHeaders });
+  request.headers.set("x-nonce", nonce);
+  request.headers.set("Content-Security-Policy", csp);
 
-  const response = handleI18nRouting(routedRequest);
+  // Next hands middleware a pathname that still carries the deployment's
+  // segment (`/agent/login`), while next-intl works on the
+  // application-internal path and reads `nextUrl.basePath` to put the segment
+  // back on every URL it emits. Leaving it in made next-intl read `agent` as
+  // the locale and rewrite to `/en/agent/en/login` - every page 404.
+  //
+  // The request is edited in place rather than copied into a new NextRequest:
+  // a fresh instance loses `nextUrl.basePath`, and then every redirect next-intl
+  // emits drops the segment (`/agent/en/login` -> `/login`).
+  if (BASE_PATH) {
+    const internal = stripBasePath(request.nextUrl.pathname);
+
+    // The bare segment is the one path next-intl cannot resolve for itself: it
+    // builds its candidate URL from `new URL("/", request.url)`, which drops
+    // the basePath, and then decides the rewrite it wants is the request
+    // itself and emits none. Next is left with "/", and `[locale]` has no
+    // match without a segment - a 404 on the deployment's own entry point.
+    //
+    // Rewritten, not redirected: `localePrefix: "as-needed"` sends a prefixed
+    // `/en` straight back to `/`, so redirecting the entry point at the default
+    // locale bounces between the two forever. A rewrite serves that page at the
+    // address the visitor typed, which is what next-intl does for every other
+    // unprefixed path.
+    if (internal === "/") {
+      return withContentSecurityPolicy(
+        NextResponse.rewrite(
+          new URL(
+            `${BASE_PATH}/${routing.defaultLocale}${request.nextUrl.search}`,
+            request.nextUrl.origin,
+          ),
+        ),
+        csp,
+      );
+    }
+
+    request.nextUrl.pathname = internal;
+  }
+
+  const response = handleI18nRouting(request);
   rememberPrefixedLocale(request, response);
   return withContentSecurityPolicy(response, csp);
 }
 
 export const config = {
   matcher: [
+    // The bare root, listed on its own: under a `basePath` Next matches the
+    // matcher against the path with the segment removed, and "/" then falls
+    // outside the pattern below - so the entry point skipped middleware
+    // entirely and 404'd instead of resolving a locale.
+    "/",
     // Match all pathnames except for:
     // - /api (API routes)
     // - /_next (Next.js internals)
