@@ -6652,7 +6652,7 @@
     "whatsNewDone": "知道了",
     "datasets": "資料集",
     "drama": "AI 短劇",
-    "sites": "Web 站點"
+    "sites": "Web 應用"
   },
   "notifications": {
     "markAllRead": "全部標為已讀",
@@ -12621,28 +12621,28 @@
     "archiveDescription": "新的提問不再看到它。已發佈的版本仍可讀取，且可從封存中還原。"
   },
   "sites": {
-    "title": "Web 站點",
+    "title": "Web 應用",
     "pageDescription": "編輯 CMS 站點的前端程式碼，即時預覽草稿，確認後再發布。",
-    "nav": "Web 站點",
-    "loadFailed": "站點載入失敗",
+    "nav": "Web 應用",
+    "loadFailed": "應用載入失敗",
     "retry": "重試",
-    "unavailableTitle": "站點程式設計暫不可用",
+    "unavailableTitle": "Web 應用暫不可用",
     "unavailableHint": "請聯絡管理員接入 CMS，或改用平台帳號登入。",
-    "emptyTitle": "還沒有可編輯的站點",
+    "emptyTitle": "還沒有可編輯的應用",
     "emptyDescription": "你在 CMS 裡有權限的站點會出現在這裡。",
     "openEditor": "編輯程式碼",
-    "openSite": "開啟站點",
-    "siteGone": "這個站點已經不對你開放",
-    "editorTitle": "站點編輯器",
+    "openSite": "開啟應用",
+    "siteGone": "這個應用已經不對你開放",
+    "editorTitle": "應用編輯器",
     "files": "檔案",
-    "noFiles": "還沒拉取程式碼，先點「拉取站點」。",
+    "noFiles": "還沒拉取程式碼，先點「拉取程式碼」。",
     "pickFile": "選擇一個檔案",
     "preview": "預覽",
     "previewHint": "編輯態，未發布",
-    "noPreview": "這個站點暫時無法預覽。",
+    "noPreview": "這個應用暫時無法預覽。",
     "branch": "分支 {branch}",
     "unsaved": "{count} 個未儲存",
-    "pull": "拉取站點",
+    "pull": "拉取程式碼",
     "saveDraft": "儲存草稿",
     "verify": "校驗樣板",
     "publish": "發布",
@@ -12670,11 +12670,8 @@
     "mobile": "手機",
     "discard": "放棄改動",
     "discarded": "已放棄 {count} 個檔案的改動",
-    "connectTitle": "連接你的 CMS 權杖",
-    "connectDescription": "從已登入的 CMS 後台複製請求標頭裡的 token，貼到這裡。只需一次，之後會加密保存。",
-    "connectPlaceholder": "貼上 token",
-    "connectAction": "連接",
-    "connecting": "連接中…",
-    "connectHint": "僅用於代表你存取 CMS"
+    "signInAgainTitle": "需要重新登入",
+    "signInAgainDescription": "平台權杖隨登入一起保存。這次登入沒有帶上來，重新登入一次就會自動帶上，不必再手動貼上。",
+    "signInAgain": "重新登入"
   }
 }

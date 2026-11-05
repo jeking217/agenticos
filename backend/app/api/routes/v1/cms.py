@@ -1,9 +1,9 @@
-"""Web-site programming: the console's API over the CMS.
+"""Web apps: the console's API over the CMS.
 
-Seven endpoints, and the shape of each is the flow's: `pull` then `diff` then
-`verify` then `push` then `release`. They are separate routes rather than one
-`sync` because the console shows the diff before anything is written, and
-because an approval gate can only sit between two calls.
+The shape of each route is the flow's: `pull` then `diff` then `verify` then
+`push` then `release`. They are separate routes rather than one `sync` because the
+console shows the diff before anything is written, and because an approval gate
+can only sit between two calls.
 
 Two of them deserve a note.
 
@@ -37,7 +37,6 @@ from app.core.config import settings
 from app.schemas.cms import (
     BindSiteRequest,
     CmsStatusRead,
-    CmsTokenRequest,
     DiffRead,
     DiscardRead,
     DiscardRequest,
@@ -99,33 +98,14 @@ async def module_status(user: CurrentUser, db: DBSession) -> Any:
     )
 
 
-@router.post("/session", response_model=CmsStatusRead)
-async def connect_session(body: CmsTokenRequest, ctx: Auth, user: CurrentUser, db: DBSession) -> Any:
-    """Keep the platform token this person pasted, after the CMS has accepted it.
-
-    A POST rather than something the sign-in flow does on its own: the platform's
-    sign-in spends its token on the identity it names and keeps none, so there is
-    nothing to forward. The person is already signed in to both systems; this is
-    the one step that connects them, and it is deliberately explicit.
-    """
-    service = _service(db)
-    try:
-        await service.connect(user, ctx.organization_id, body.token)
-    except CmsError as exc:
-        _raise(exc)
-    access = service.access_for(user)
-    return CmsStatusRead(
-        configured=access.configured,
-        platform_linked=access.platform_linked,
-        can_use=access.can_use,
-        has_token=True,
-        reason=access.reason,
-    )
-
-
 @router.delete("/session", status_code=status.HTTP_204_NO_CONTENT)
 async def forget_session(user: CurrentUser, db: DBSession) -> Response:
-    """Drop the stored token - on sign-out, or to replace a wrong account's."""
+    """Drop the stored token - on sign-out, or when the CMS has stopped accepting it.
+
+    There is no matching `POST`: the token is kept by the sign-in that obtained it
+    (see `app/api/routes/v1/unione_auth.py`), so a person never copies one by hand
+    and this route only ever removes one.
+    """
     await _service(db).forget_token(user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

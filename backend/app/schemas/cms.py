@@ -21,17 +21,12 @@ class CmsStatusRead(BaseModel):
     can_use: bool = Field(description="Both of the above, so the module may be opened")
     has_token: bool = Field(
         default=False,
-        description="A token worth trying is on file, so the console need not ask for one",
+        description=(
+            "The platform token kept at sign-in is still worth trying, so the console "
+            "goes straight to the site list instead of asking for a fresh sign-in"
+        ),
     )
     reason: str | None = Field(default=None, description="Why not, in the person's words")
-
-    model_config = {"extra": "forbid"}
-
-
-class CmsTokenRequest(BaseModel):
-    """A platform token, handed over once by the person who owns it."""
-
-    token: str = Field(min_length=1, max_length=4000)
 
     model_config = {"extra": "forbid"}
 

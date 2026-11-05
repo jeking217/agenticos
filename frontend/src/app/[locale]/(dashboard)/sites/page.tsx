@@ -1,14 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, Globe2, KeyRound, Lock, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui";
 import { EmptyState, ErrorState, LoadingState } from "@/components/states";
+import { useAuth } from "@/hooks";
 import {
-  connectCmsToken,
   forgetCmsToken,
   getCmsStatus,
   listSites,
@@ -21,76 +21,23 @@ import { useRouter } from "@/lib/locale-navigation";
 import { cn } from "@/lib/utils";
 
 /**
- * The one step that connects the two systems.
- *
- * Signing in here spends the platform's token on the identity it names and keeps
- * none, so there is nothing to forward: the person is signed in to both already,
- * and this asks for the CMS's own `token` header once. Kept as a form rather than
- * a silent redirect because the token is a password - it is pasted deliberately,
- * and it can be replaced when it expires.
- */
-function ConnectForm({ onConnected }: { onConnected: () => void }) {
-  const t = useTranslations("sites");
-  const tErrors = useTranslations("errors");
-  const [token, setToken] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!token.trim() || busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await connectCmsToken(token.trim());
-      setToken("");
-      onConnected();
-    } catch (cause) {
-      setError(getErrorMessage(cause, tErrors));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <form onSubmit={submit} className="border-border bg-card max-w-xl rounded-xl border p-4">
-      <div className="mb-1 flex items-center gap-2">
-        <KeyRound className="h-4 w-4" />
-        <h2 className="text-sm font-semibold">{t("connectTitle")}</h2>
-      </div>
-      <p className="text-muted-foreground mb-3 text-xs">{t("connectDescription")}</p>
-      <input
-        type="password"
-        value={token}
-        onChange={(event) => setToken(event.target.value)}
-        placeholder={t("connectPlaceholder")}
-        autoComplete="off"
-        spellCheck={false}
-        className="border-border bg-background focus:ring-ring w-full rounded-lg border px-3 py-2 font-mono text-xs focus:ring-2 focus:outline-none"
-      />
-      {error ? <p className="text-destructive mt-2 text-xs">{error}</p> : null}
-      <div className="mt-3 flex items-center gap-2">
-        <Button type="submit" size="sm" disabled={busy || !token.trim()}>
-          {busy ? t("connecting") : t("connectAction")}
-        </Button>
-        <span className="text-muted-foreground text-[11px]">{t("connectHint")}</span>
-      </div>
-    </form>
-  );
-}
-
-/**
- * The sites this person may open.
+ * The apps this person may open.
  *
  * A card per site, with its cover, its address and one door: edit. The door is
  * disabled - with the reason on it - when the CMS will refuse the write, which
  * is decided by the server (`editable`) rather than guessed here. A page of
  * buttons that fail on click is the thing this avoids.
+ *
+ * A session with no platform token cannot speak to the CMS at all, and there is
+ * nothing this page can do about it: the token is kept by the sign-in that
+ * obtained it, so the one repair is signing in again - which is what the page
+ * offers, instead of a box to paste a token into.
  */
 export default function SitesPage() {
   const t = useTranslations("sites");
   const tErrors = useTranslations("errors");
   const router = useRouter();
+  const { logout } = useAuth();
   const [status, setStatus] = useState<CmsStatus | null>(null);
   const [sites, setSites] = useState<SiteCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,10 +54,10 @@ export default function SitesPage() {
       const ready = answer.can_use && answer.has_token;
       setSites(ready ? await listSites() : []);
     } catch (cause) {
-      // A stored token the CMS no longer honours leaves this page with nothing
-      // it can do: the app cannot renew a CMS session, and "session expired"
-      // would describe a session the person never had here. Drop the token and
-      // let the form ask again, which is the one action that fixes it.
+      // A token the CMS no longer honours leaves this page with nothing it can
+      // do: the app cannot renew a CMS session, and "session expired" would
+      // describe a session the person never had here. Drop the token so the page
+      // asks for a sign-in - the one action that mints a fresh one.
       if (cause instanceof ApiError && cause.code === "cms_token_expired") {
         await forgetCmsToken().catch(() => undefined);
         setStatus((current) => (current ? { ...current, has_token: false } : current));
@@ -168,7 +115,12 @@ export default function SitesPage() {
     return (
       <>
         {header}
-        <ConnectForm onConnected={() => void load()} />
+        <EmptyState
+          icon={KeyRound}
+          title={t("signInAgainTitle")}
+          description={t("signInAgainDescription")}
+          cta={{ label: t("signInAgain"), onClick: () => void logout() }}
+        />
       </>
     );
   }
@@ -192,7 +144,10 @@ export default function SitesPage() {
       {header}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {sites.map((site) => (
-          <article key={site.id} className="border-border bg-card flex flex-col overflow-hidden rounded-xl border">
+          <article
+            key={site.id}
+            className="border-border bg-card flex flex-col overflow-hidden rounded-xl border"
+          >
             <div className="bg-muted relative aspect-[16/9] w-full overflow-hidden">
               {site.cover_url ? (
                 // eslint-disable-next-line @next/next/no-img-element - a CMS cover, not a Next asset

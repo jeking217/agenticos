@@ -142,7 +142,7 @@
     "whatsNewDone": "Rozumiem",
     "datasets": "Zestawy danych",
     "drama": "Dramat AI",
-    "sites": "Strony WWW"
+    "sites": "Aplikacje webowe"
   },
   "auth": {
     "agreeToTerms": "Tworząc konto, akceptujesz nasz <terms>Regulamin</terms> i <privacy>Politykę prywatności</privacy>.",
@@ -12397,28 +12397,28 @@
     "archiveDescription": "Nowe pytania przestaną go widzieć. Opublikowane wersje pozostają czytelne, a zestaw można przywrócić z archiwum."
   },
   "sites": {
-    "title": "Strony WWW",
+    "title": "Aplikacje webowe",
     "pageDescription": "Edytuj kod strony w CMS, oglądaj wersje robocze na żywo i publikuj, gdy będziesz gotowy.",
-    "nav": "Strony WWW",
-    "loadFailed": "Nie udało się wczytać Twoich stron",
+    "nav": "Aplikacje webowe",
+    "loadFailed": "Nie udało się wczytać Twoich aplikacji",
     "retry": "Spróbuj ponownie",
-    "unavailableTitle": "Programowanie stron nie jest jeszcze dostępne",
+    "unavailableTitle": "Aplikacje webowe nie są jeszcze dostępne",
     "unavailableHint": "Poproś administratora o podłączenie CMS lub zaloguj się kontem platformy.",
-    "emptyTitle": "Brak stron",
+    "emptyTitle": "Brak aplikacji",
     "emptyDescription": "Tutaj pojawią się strony, które możesz edytować w CMS.",
     "openEditor": "Edytuj kod",
-    "openSite": "Otwórz stronę",
-    "siteGone": "Ta strona nie jest już dla Ciebie dostępna",
-    "editorTitle": "Edytor strony",
+    "openSite": "Otwórz aplikację",
+    "siteGone": "Ta aplikacja nie jest już dla Ciebie dostępna",
+    "editorTitle": "Edytor aplikacji",
     "files": "Pliki",
-    "noFiles": "Nic jeszcze nie pobrano — najpierw pobierz stronę.",
+    "noFiles": "Nic jeszcze nie pobrano — najpierw pobierz kod.",
     "pickFile": "Wybierz plik",
     "preview": "Podgląd",
     "previewHint": "stan edycji, nieopublikowany",
-    "noPreview": "Podgląd dla tej strony jest niedostępny.",
+    "noPreview": "Podgląd dla tej aplikacji jest niedostępny.",
     "branch": "gałąź {branch}",
     "unsaved": "{count} niezapisanych",
-    "pull": "Pobierz stronę",
+    "pull": "Pobierz kod",
     "saveDraft": "Zapisz wersję roboczą",
     "verify": "Sprawdź szablony",
     "publish": "Opublikuj",
@@ -12446,11 +12446,8 @@
     "mobile": "Telefon",
     "discard": "Odrzuć zmianę",
     "discarded": "Przywrócono {count} plików",
-    "connectTitle": "Połącz token CMS",
-    "connectDescription": "Skopiuj nagłówek token z zalogowanej sesji CMS i wklej go tutaj. Wystarczy raz – jest przechowywany zaszyfrowany.",
-    "connectPlaceholder": "Wklej token",
-    "connectAction": "Połącz",
-    "connecting": "Łączenie…",
-    "connectHint": "Używany wyłącznie do działania w CMS w Twoim imieniu"
+    "signInAgainTitle": "Zaloguj się ponownie",
+    "signInAgainDescription": "Token platformy jest zapisywany przy logowaniu. Ta sesja go nie przyniosła, więc zaloguj się jeszcze raz — zostanie przeniesiony automatycznie. Niczego nie trzeba wklejać.",
+    "signInAgain": "Zaloguj się ponownie"
   }
 }

@@ -1,26 +1,23 @@
-"""Where a person's CMS token comes from, and what happens when it is wrong.
+"""Where a person's CMS token comes from, and what happens when there is none.
 
-The module is useless without a platform token, and the sign-in flow deliberately
-does not keep one: the platform's token is spent on the identity it named and the
-local session that follows is a different thing entirely. So the token is handed
-over once, by the person, and stored encrypted - which makes this small path the
-one that decides whether the whole feature can open at all.
-
-Two rules it has to keep, and both are about what a stored token costs when it is
-wrong. It is checked with the CMS before it is kept, because a stored bad token
-turns the next page load into "your session expired" - a sentence that sends the
-person looking for a password that is not the problem. And it is never stored in
-a form that can be read back out of the database by anyone who can read it.
+The module is useless without a platform token, and the platform hands one out
+exactly once: alongside the identity it names, during sign-in. So the token is
+kept there rather than asked for later - the person never copies one out of a
+browser tab - and what this file holds the store to is the two things that costs
+when it is wrong. It is never kept in a form that can be read back out of the
+database by anyone who can read it, and a row that cannot work (revoked, expired)
+answers "no token" rather than sending the console down a path that will 401.
 """
 
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
 
-from app.cms.errors import TOKEN_EXPIRED, UNREACHABLE, CmsError
+from app.cms.errors import TOKEN_EXPIRED, CmsError
 from app.services.cms_sites import CmsSitesService
 
 
@@ -51,21 +48,6 @@ class FakeDb:
         self.flushes += 1
 
 
-class FakeClient:
-    """A CMS that answers one question, so the check can be tested on its own."""
-
-    def __init__(self, *, accepts: bool) -> None:
-        self.accepts = accepts
-        self.closed = False
-        self.seen_token = ""
-
-    async def is_authed(self) -> bool:
-        return self.accepts
-
-    async def aclose(self) -> None:
-        self.closed = True
-
-
 def user(**overrides):
     base = dict(
         id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
@@ -76,97 +58,104 @@ def user(**overrides):
     return SimpleNamespace(**base)
 
 
-def service(monkeypatch, *, accepts: bool = True):
-    db = FakeDb()
-    flow = CmsSitesService(db)
-
-    def fake_client(token: str) -> FakeClient:
-        client = FakeClient(accepts=accepts)
-        client.seen_token = token
-        return client
-
-    monkeypatch.setattr(flow, "_client", fake_client)
-    return flow, db
+def service(row=None) -> tuple[CmsSitesService, FakeDb]:
+    db = FakeDb(row)
+    return CmsSitesService(db), db
 
 
 @pytest.mark.anyio
-async def test_a_working_token_is_kept_encrypted(monkeypatch):
-    flow, db = service(monkeypatch)
+async def test_the_platform_token_is_kept_encrypted():
+    flow, db = service()
 
-    await flow.connect(user(), None, "tenant@user@hash")
+    await flow.remember_token(user(), None, "tenant@user@hash")
 
-    assert len(db.added) == 1, "one row, not one per attempt"
+    assert len(db.added) == 1, "one row, not one per sign-in"
     stored = db.added[0]
     assert "tenant@user@hash" not in stored.token_cipher
     assert flow._cipher().unseal(stored.token_cipher) == "tenant@user@hash"
 
 
 @pytest.mark.anyio
-async def test_the_token_is_checked_before_it_is_kept(monkeypatch):
-    """A stored bad token is worse than no token: it reads as an expired session."""
-    flow, db = service(monkeypatch, accepts=False)
+async def test_the_tenant_is_read_from_the_identity_not_the_token():
+    """So a deployment bound to the wrong platform is visible, rather than silent."""
+    flow, db = service()
 
-    with pytest.raises(CmsError) as caught:
-        await flow.connect(user(), None, "typo")
+    await flow.remember_token(user(), None, "tenant@user@hash")
 
-    assert caught.value.code == TOKEN_EXPIRED
+    assert db.added[0].tenant_id == 100
+
+
+@pytest.mark.anyio
+async def test_signing_in_again_replaces_the_token_in_place():
+    flow, db = service()
+    await flow.remember_token(user(), None, "old-token")
+
+    await flow.remember_token(user(), None, "new-token")
+
+    assert len(db.added) == 1, "a second row would leave the old token usable"
+    assert flow._cipher().unseal(db.row.token_cipher) == "new-token"
+
+
+@pytest.mark.anyio
+async def test_an_empty_token_is_refused():
+    flow, db = service()
+
+    with pytest.raises(ValueError):
+        await flow.remember_token(user(), None, "")
+
     assert db.added == []
 
 
 @pytest.mark.anyio
-async def test_a_cms_that_is_down_is_not_reported_as_a_bad_token(monkeypatch):
-    """The two send a person to different places: one retypes, one waits.
-
-    `is_authed` answers False only for the refusals that mean "this token", and
-    lets a network failure through - this is the test that keeps it that way.
-    """
-    db = FakeDb()
-    flow = CmsSitesService(db)
-
-    class Unreachable(FakeClient):
-        async def is_authed(self) -> bool:
-            raise CmsError(UNREACHABLE, "the CMS did not answer")
-
-    monkeypatch.setattr(flow, "_client", lambda _token: Unreachable(accepts=False))
-
-    with pytest.raises(CmsError) as caught:
-        await flow.connect(user(), None, "tenant@user@hash")
-
-    assert caught.value.code == UNREACHABLE
-    assert db.added == []
-
-
-@pytest.mark.anyio
-async def test_surrounding_whitespace_is_not_part_of_the_token(monkeypatch):
-    """It arrives by copy-paste, and a trailing newline fails as "wrong token"."""
-    flow, db = service(monkeypatch)
-
-    await flow.connect(user(), None, "  tenant@user@hash\n")
-
-    assert flow._cipher().unseal(db.added[0].token_cipher) == "tenant@user@hash"
-
-
-@pytest.mark.anyio
-async def test_an_empty_token_is_refused_before_the_cms_is_asked(monkeypatch):
-    flow, db = service(monkeypatch)
-
-    with pytest.raises(CmsError) as caught:
-        await flow.connect(user(), None, "   ")
-
-    assert caught.value.code == TOKEN_EXPIRED
-    assert db.added == []
-
-
-@pytest.mark.anyio
-async def test_a_person_with_no_stored_token_is_told_so(monkeypatch):
-    flow, _ = service(monkeypatch)
+async def test_a_person_with_no_stored_token_is_told_so():
+    flow, _ = service()
 
     assert await flow.has_token(user()) is False
 
 
 @pytest.mark.anyio
-async def test_a_person_with_a_stored_token_is_told_so(monkeypatch):
-    flow, db = service(monkeypatch)
-    await flow.connect(user(), None, "tenant@user@hash")
+async def test_a_person_with_a_stored_token_is_told_so():
+    flow, _ = service()
+    await flow.remember_token(user(), None, "tenant@user@hash")
 
     assert await flow.has_token(user()) is True
+
+
+@pytest.mark.anyio
+async def test_a_revoked_token_does_not_count():
+    """Signing out forgets it, and a forgotten token is not a token to try."""
+    flow, _ = service()
+    await flow.remember_token(user(), None, "tenant@user@hash")
+
+    await flow.forget_token(user())
+
+    assert await flow.has_token(user()) is False
+
+
+@pytest.mark.anyio
+async def test_an_expired_token_does_not_count():
+    flow, _ = service()
+    await flow.remember_token(
+        user(), None, "tenant@user@hash", expires_at=datetime.now(UTC) - timedelta(minutes=1)
+    )
+
+    assert await flow.has_token(user()) is False
+
+
+@pytest.mark.anyio
+async def test_the_token_is_handed_back_in_the_clear():
+    """The CMS needs the real value; the sealing is only about the database."""
+    flow, _ = service()
+    await flow.remember_token(user(), None, "tenant@user@hash")
+
+    assert await flow.token_for(user()) == "tenant@user@hash"
+
+
+@pytest.mark.anyio
+async def test_a_session_without_a_token_is_asked_to_sign_in_again():
+    flow, _ = service()
+
+    with pytest.raises(CmsError) as caught:
+        await flow.token_for(user())
+
+    assert caught.value.code == TOKEN_EXPIRED

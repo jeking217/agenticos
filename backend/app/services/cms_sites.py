@@ -54,7 +54,7 @@ class CmsAccess:
         if not self.configured:
             return "这个部署还没有配置 CMS 地址（CMS_BASE_URL）"
         if not self.platform_linked:
-            return "请用 Unione 平台账号登录后再使用站点编程"
+            return "请用 Unione 平台账号登录后再使用 Web 应用"
         return None
 
 
@@ -118,7 +118,15 @@ class CmsSitesService:
         *,
         expires_at: datetime | None = None,
     ) -> None:
-        """Store the person's platform token, replacing whatever was there."""
+        """Store the person's platform token, replacing whatever was there.
+
+        Called from the Unione sign-in, which is the one place the platform's token
+        exists: it is handed out once, alongside the identity it names, and there is
+        no endpoint to ask for another one later. Nothing here checks it against the
+        CMS first - the token came from the platform's own `LoginResult`, and a
+        round trip at sign-in would only delay the login to learn something the
+        first real call already answers.
+        """
         if not token:
             raise ValueError("there is no empty token to remember")
         identity = platform_identity(user)
@@ -141,41 +149,12 @@ class CmsSitesService:
             row.organization_id = organization_id or row.organization_id
         await self._db.flush()
 
-    async def connect(self, user: User, organization_id: uuid.UUID | None, token: str) -> None:
-        """Take a platform token the person handed over, check it, keep it encrypted.
-
-        The token comes from a signed-in browser session on the CMS itself, so it
-        is copy-pasted rather than obtained here - the platform's own sign-in
-        spends its token on the identity it names and keeps nothing, which is the
-        right default for a password and the wrong one for a token that has to be
-        presented again later.
-
-        Checked before it is stored. A stored token the CMS rejects does not read
-        as "wrong token"; it reads as "your session expired", which sends the
-        person to sign in again - to a system that will hand them the same token,
-        and the page will fail the same way.
-        """
-        cleaned = token.strip()
-        if not cleaned:
-            raise CmsError(TOKEN_EXPIRED, "请粘贴 CMS 的平台令牌")
-        client = self._client(cleaned)
-        try:
-            accepted = await client.is_authed()
-        finally:
-            await client.aclose()
-        if not accepted:
-            raise CmsError(TOKEN_EXPIRED, "这个令牌 CMS 不认，请从已登录的 CMS 页面重新复制")
-        # No expiry of our own: the token's lifetime is the CMS's to decide, and
-        # the first request it refuses is a better signal than any guess at the
-        # shape of its payload.
-        await self.remember_token(user, organization_id, cleaned)
-
     async def has_token(self, user: User) -> bool:
-        """Whether there is a token worth trying, so the console can stop asking.
+        """Whether there is a token worth trying, so the console knows what to say.
 
         An expired one counts as absent: the only thing the console does with this
-        answer is decide whether to draw the "paste your token" form, and a form
-        that stays hidden for a token that cannot work is a dead end.
+        answer is decide whether to go straight to the site list or ask for a fresh
+        sign-in, and it would be asking for one that a token on file cannot avoid.
         """
         row = await self._token_row(user.id)
         if row is None or row.revoked_at is not None:

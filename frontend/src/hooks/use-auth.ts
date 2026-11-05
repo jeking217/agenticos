@@ -17,6 +17,7 @@ import type {
   UnioneSmsLoginRequest,
 } from "@/types";
 import { goToDestination, postSignInDestination } from "@/lib/auth-landing";
+import { forgetCmsToken } from "@/lib/cms-api";
 import { ROUTES } from "@/lib/constants";
 import { INVITATION_FLOW_PARAM } from "@/lib/invitation-links";
 import { isNetworkFailure, offlineAvailable } from "@/lib/offline/device-cache";
@@ -383,6 +384,10 @@ export function useAuth() {
 
   const handleLogout = useCallback(async () => {
     try {
+      // The CMS token is sealed beside this session and belongs to it alone:
+      // leaving it on file would keep a platform credential for somebody who has
+      // asked to leave. Sent before the sign-out, while it can still be accepted.
+      await forgetCmsToken().catch(() => undefined);
       await apiClient.post("/auth/logout");
     } catch {
       // Ignore logout errors

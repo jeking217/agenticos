@@ -41,6 +41,8 @@ from app.schemas.unione import (
     UnioneSmsLogin,
     UnioneTicketLogin,
 )
+from app.services.cms_sites import CmsSitesService
+from app.services.unione.client import UnioneIdentity
 
 logger = logging.getLogger(__name__)
 
@@ -76,15 +78,22 @@ async def _issue_session(
     session_service: SessionSvc,
     user: User,
     action: str,
-    subject: str,
+    identity: UnioneIdentity,
 ) -> Token:
     """Mint this deployment's tokens for an account the platform vouched for.
 
-    The platform's token is not part of this: it was spent on the identity it named
-    and is gone by now. What is issued here is an ordinary local session, which is
-    what makes pairing, API keys, sockets and the OAuth server work unchanged - none
-    of them learn that a platform was involved.
+    What is issued here is an ordinary local session, which is what makes pairing,
+    API keys, sockets and the OAuth server work unchanged - none of them learn that
+    a platform was involved.
+
+    The platform's token is a different thing kept alongside it. The CMS knows a
+    caller by that token and by nothing else, and the platform hands it out once,
+    at sign-in - so this is the only moment in the whole session when it exists.
+    Sealing it into `cms_session_tokens` (see `app.cms.tokens`) is what lets the
+    Web apps module call the CMS as this person without asking them to copy a
+    token out of a browser tab by hand; signing out forgets it.
     """
+    subject = identity.subject
     refresh_token = create_refresh_token(
         subject=str(user.id), credential_version=user.credential_version
     )
@@ -95,6 +104,7 @@ async def _issue_session(
         user_agent=request.headers.get("User-Agent"),
     )
     access_token = create_access_token(subject=str(user.id), sid=str(session.id))
+    await _remember_platform_token(db, user, identity.token)
     # The trail records who signed in and how; the platform's subject is the stable
     # half of that identity, and the token that carried it is not written anywhere.
     await record_audit(
@@ -107,6 +117,18 @@ async def _issue_session(
         ip_address=_client_address(request),
     )
     return Token(access_token=access_token, refresh_token=refresh_token)
+
+
+async def _remember_platform_token(db: DBSession, user: User, token: str) -> None:
+    """Keep the platform token for the modules that speak to the CMS for this person.
+
+    Only when there is a CMS to speak to: a secret nobody will present is a secret
+    stored for no reason, and a deployment that never configured one should not be
+    accumulating them.
+    """
+    if not token or not settings.CMS_BASE_URL:
+        return
+    await CmsSitesService(db).remember_token(user, None, token)
 
 
 @router.get("/unione/config", response_model=UnioneConfigRead)
@@ -176,7 +198,7 @@ async def unione_login(
         session_service=session_service,
         user=user,
         action="unione.login",
-        subject=identity.subject,
+        identity=identity,
     )
 
 
@@ -215,7 +237,7 @@ async def unione_login_sms(
         session_service=session_service,
         user=user,
         action="unione.login-sms",
-        subject=identity.subject,
+        identity=identity,
     )
 
 
@@ -246,5 +268,5 @@ async def unione_once(
         session_service=session_service,
         user=user,
         action="unione.once",
-        subject=identity.subject,
+        identity=identity,
     )

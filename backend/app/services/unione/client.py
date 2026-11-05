@@ -18,9 +18,12 @@ What reaches the platform is the platform's own protocol, not ours:
   for the person reading it. That sentence is the one we pass on - it is the only
   place that knows whether it was the password, the code, or a lockout.
 
-The platform token obtained on the way is used once, for the identity it carries,
-and then dropped: it is never stored, never logged, and never used to authenticate
-a later request. Everything after the sign-in runs on this deployment's own session.
+The platform token obtained on the way is the only thing that can speak for this
+person anywhere else on the platform - the CMS is one such place, and it knows a
+caller by that token and by nothing else. It never leaves this process in the
+clear: the sign-in hands it to `cms_session_tokens` sealed (see `app.cms.tokens`),
+where the Web apps module can present it to the CMS, and a token the modules have
+no use for is not kept at all. It is never logged.
 """
 
 from __future__ import annotations

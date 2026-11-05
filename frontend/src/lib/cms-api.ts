@@ -18,7 +18,7 @@ export interface CmsStatus {
   configured: boolean;
   platform_linked: boolean;
   can_use: boolean;
-  /** A token worth trying is on file, so the console need not ask for one. */
+  /** The token kept at sign-in is still worth trying, so there is nothing to ask. */
   has_token: boolean;
   reason: string | null;
 }
@@ -133,16 +133,12 @@ export function getCmsStatus(): Promise<CmsStatus> {
 }
 
 /**
- * Hand over the platform token this person is signed in with on the CMS.
+ * Forget the stored token.
  *
- * Checked by the server before it is kept: a token the CMS rejects comes back as
- * a refusal, not as a stored value that fails on the next page.
+ * There is no `connect` beside it: the token is kept by the sign-in that obtained
+ * it, so the console never posts one. This only ever removes - on sign-out, or
+ * when the CMS has stopped accepting the token that is on file.
  */
-export function connectCmsToken(token: string): Promise<CmsStatus> {
-  return apiClient.post<CmsStatus>("/cms/session", { token });
-}
-
-/** Forget the stored token, so a different account can be connected. */
 export function forgetCmsToken(): Promise<void> {
   return apiClient.delete<void>("/cms/session");
 }

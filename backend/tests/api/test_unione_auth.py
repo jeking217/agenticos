@@ -21,6 +21,7 @@ from app.core.config import settings
 from app.core.exceptions import AuthenticationError, ConflictError
 from app.main import app
 from app.services import rate_limit
+from app.services.cms_sites import CmsSitesService
 
 pytestmark = [pytest.mark.anyio, pytest.mark.security]
 
@@ -73,7 +74,15 @@ def _identity(subject: str = "7:42") -> SimpleNamespace:
 
 
 def _user() -> SimpleNamespace:
-    return SimpleNamespace(id=uuid4(), credential_version=3, is_active=True, email="a@b.test")
+    """A local account as the sign-in resolves it: keyed to the platform identity."""
+    return SimpleNamespace(
+        id=uuid4(),
+        credential_version=3,
+        is_active=True,
+        email="a@b.test",
+        oauth_provider="unione",
+        oauth_id="7:42",
+    )
 
 
 def _ciphertext(plaintext: str = "Uni@12345") -> str:
@@ -297,6 +306,56 @@ class TestLogin:
 
         assert response.status_code == 422
         assert platform.uname_calls == []
+
+
+class TestTokenCapture:
+    """The platform's token is kept at sign-in, which is the only time it exists.
+
+    The CMS identifies a caller by that token and by nothing else, so the Web apps
+    module needs a copy - and asking a person to copy one out of a browser tab is
+    the thing that copy is meant to spare them.
+    """
+
+    async def test_the_token_is_kept_for_the_web_apps_module(
+        self,
+        unione_client: AsyncClient,
+        unione_enabled: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(settings, "CMS_BASE_URL", "http://cms.test")
+        kept = AsyncMock()
+        monkeypatch.setattr(CmsSitesService, "remember_token", kept)
+
+        response = await unione_client.post(
+            _LOGIN, json={"username": "zhangsan", "password": _ciphertext()}
+        )
+
+        assert response.status_code == 200
+        kept.assert_awaited_once()
+        stored_user, organization_id, token = kept.await_args.args
+        assert token == "platform-token"
+        # The organization is not known at sign-in - there is no request context
+        # yet - and nothing filters the token by it.
+        assert organization_id is None
+        assert stored_user.email == "a@b.test"
+
+    async def test_nothing_is_kept_when_no_cms_is_configured(
+        self,
+        unione_client: AsyncClient,
+        unione_enabled: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A secret nobody will present is a secret stored for no reason."""
+        monkeypatch.setattr(settings, "CMS_BASE_URL", "")
+        kept = AsyncMock()
+        monkeypatch.setattr(CmsSitesService, "remember_token", kept)
+
+        response = await unione_client.post(
+            _LOGIN, json={"username": "zhangsan", "password": _ciphertext()}
+        )
+
+        assert response.status_code == 200
+        kept.assert_not_awaited()
 
 
 class TestOnce:
