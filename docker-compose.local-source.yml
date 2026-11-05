@@ -1,0 +1,84 @@
+# The API, run from this checkout, against the unione_agent stack that is already
+# up on this machine.
+#
+# There is no database and no cache of its own here, and nothing is created: the
+# containers in this file are the API only. Postgres is the deployment's
+# `unione_agent` on `base-postgresql`, Redis is `base-redis` (database 13), and
+# both are reached by name because this file joins the same Docker network. The
+# local run is therefore one more instance of the same application over the same
+# data - the accounts the portal signs in, the CMS tokens the Web-applications
+# module keeps, the settings an administrator changed - not a sandbox beside it.
+# Anything written here is visible to the containers serving `agent-app`, and the
+# reverse; that is the point of it.
+#
+# `make dev` cannot do this: it builds an image and brings Postgres and Redis of
+# its own on 5432 and 6379, and 5432 on this machine belongs to vllm-postgres.
+#
+#   docker compose -f docker-compose.local-source.yml up -d
+#   docker compose -f docker-compose.local-source.yml logs -f
+#   docker compose -f docker-compose.local-source.yml down
+#
+# `backend/.env` is the settings file and is read from the mount. The values that
+# matter there are the database, the portal and the CMS:
+#
+#   POSTGRES_DB=unione_agent                       # the deployment's own database
+#   UNIONE_AUTH_ENABLED=true
+#   UNIONE_BASE_URL=http://192.168.56.1/portal     # the portal, context path included
+#   CMS_BASE_URL=http://192.168.56.1               # the host: /cms/api is appended
+#
+# The overrides below are not settings, they are directions: `.env` names the
+# addresses a process on the host uses (2732, 2779), and these are where the same
+# two services answer from inside the network (5432, 6379).
+#
+# Why a container at all with the source on the host: the project runs on Python
+# 3.15 and this machine has 3.13, so `backend/.venv` cannot import the app
+# (`app/core/config.py` annotates a validator with a name only in scope under
+# PEP 649). The image already carries that interpreter and the exact dependency
+# set; the source is mounted over it, which is the same code, executed by hand.
+#
+# Its own project name, so it does not sit on top of the stack a plain
+# `docker compose up` owns: same checkout, two sets of containers.
+name: agenticos-src
+
+services:
+  app:
+    image: agenticos_backend:test
+    entrypoint: ["/app/.venv/bin/python", "-m", "uvicorn"]
+    # `--reload` with polling: the source is a Windows bind mount, where inotify
+    # is not available, so a watcher that listens for events sees nothing.
+    command:
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+      - --reload-dir
+      - /src/app
+      - --ws
+      - websockets-sansio
+    working_dir: /src
+    volumes:
+      - ./backend:/src
+    environment:
+      WATCHFILES_FORCE_POLLING: "true"
+      # The deployment's Postgres and Redis, by service name. Nothing here
+      # publishes a database port of its own.
+      POSTGRES_HOST: base-postgresql
+      POSTGRES_PORT: "5432"
+      REDIS_HOST: base-redis
+      REDIS_PORT: "6379"
+    ports:
+      - "8000:8000"
+    # Longer than `background.drain()`'s 30s: a stop mid-drain would leave an
+    # upload `processing` (the same reason the other compose files say so).
+    stop_grace_period: 40s
+    restart: unless-stopped
+    networks:
+      - unione
+
+networks:
+  # The stack that publishes /portal, /cms, and the Postgres and Redis above.
+  unione:
+    external: true
+    name: unione-cloud_net

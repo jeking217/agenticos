@@ -411,6 +411,40 @@ class Settings(BaseSettings):
     Its own setting because a preview link is handed to a browser: rotating it
     should not mean rotating every other thing this deployment signs.
     """
+
+    @field_validator("CMS_BASE_URL")
+    @classmethod
+    def cms_base_url(cls, value: str) -> str:
+        """The CMS's host, without the context path it was copied with.
+
+        Everything the CMS serves hangs off `/cms` - the API under `/cms/api`,
+        the preview under `/cms/debug`, the console under `/cms/manage` - so a
+        base URL that already ends in one of them is doubled into
+        `/cms/cms/api`, and a preview built from it is answered by nginx with a
+        portal page and HTTP 200 rather than a 404. That reads as "the CMS is
+        broken", not as "one setting is one segment too long".
+
+        Stripped rather than refused: the value here is whatever the operator
+        copied out of the address bar, and which address they meant is not in
+        doubt - the only address a CMS can have is its host.
+
+        Split rather than matched against the string, because the host may be
+        named `cms`: `https://cms` ends in the same four characters as the
+        context path it must not lose.
+        """
+        url = value.strip().rstrip("/")
+        parsed = urlsplit(url) if url else None
+        if parsed is None or not parsed.netloc:
+            return url
+        path = parsed.path.rstrip("/")
+        for suffix in ("/cms/api", "/cms/debug", "/cms/manage", "/cms"):
+            if path.endswith(suffix):
+                path = path[: -len(suffix)]
+                break
+        if path == parsed.path.rstrip("/"):
+            return url
+        return f"{parsed.scheme}://{parsed.netloc}{path}"
+
     CMS_WORKSPACE_DIR: Path | None = None
     """Where site workspaces live. Empty means `MEDIA_DIR/cms`."""
 
